@@ -1,7 +1,6 @@
 node_modules
 .nuxt
 package-lock.json
-dist
 static/sw.js
 config3d_domains
 *.patch
@@ -120,7 +119,6 @@ out
 
 # Nuxt.js build / generate output
 .nuxt
-dist
 
 # Gatsby files
 .cache/
