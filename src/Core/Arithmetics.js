@@ -1,12 +1,11 @@
 import * as THREE from 'three';
 
-class Base {
+class Arithmetic {
     constructor() {
         this.init();
     }
     init() {
-        
     }
 }
 
-export default Base;
+export default Arithmetic;

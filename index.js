@@ -1,4 +1,4 @@
-import _Scene from "./src/Scene"
+import _Scene from "./src/Scene/Scene"
 
 export const Scene = _Scene;
 
