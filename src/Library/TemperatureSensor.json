@@ -1,0 +1,50 @@
+{
+    "componentId": "r:novo.graphics::TemperatureSensor",
+    "componentName": "Temperature Sensor",
+
+    "files": {
+		"thumbnail": "Temperature-1.0.1.png",
+        "model": "Temperature-Sensor-1.0.3.glb"
+	},
+
+    "metadata": {
+        "description": "Large air vent",
+        "capacity": "500cfm",
+        "size": "257x64x225",
+        "material": "Galvanized Steel"
+    },
+    
+    "attributes": {
+        "sensor-input": {
+            "key": "sensor-input",
+            "value": 2,
+            "step": 20,
+            "min": 2,
+            "max": 100
+        }
+    },
+    
+    "object": {
+        "position": { "x": 0, "y": 0, "z": 530 },
+        "rotation": { "x": 0, "y": 0, "z": 0 },
+        "scale":    { "x": 1, "y": 1, "z": 1 },
+        "boundingBox": {
+            "dimensions": {
+                "x": 122,
+                "y": 82,
+                "z": 644.266
+            },
+            "origin": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+            }
+        }
+    },
+    
+    "isTransparencyEnabled": false,
+    "transparency": 0,
+    "isComponent": true,
+    "componentPosition": "ceiling",
+    "componentFacing": "inwards"
+}

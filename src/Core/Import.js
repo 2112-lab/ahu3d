@@ -1,19 +1,18 @@
-import * as THREE from 'three';
-
-class Assets {
+class Import {
     constructor() {
-        this.init();
+        this.assets = {};
     }
-    init() {
+    loadLibrary() {
+        const files = {};
+        const context = require.context(`../Library/`, true, /\.json$/);
+        context.keys().forEach((key) => {
+            const fileName = key.replace('./', '').replace('.json', '');
+            files[fileName] = context(key);
+        });       
+        return files;
+    }
+    loadXeto() {
     }
 }
 
-class Xeto {
-    constructor() {
-        this.init();
-    }
-    init() {
-    }
-}
-
-export default { Assets, Xeto };
+export default Import;
