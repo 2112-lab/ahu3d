@@ -1,17 +1,17 @@
 <template>
-  <div ref="threeContainer"></div>
+  <div id="threeContainer"></div>
 </template>
 
 <script>
-import { Scene, ModelLoader } from '~/../../../';
+import { Ahu3D } from '~/../../../';
 
 export default {
   mounted() {
-    this.sceneHelper = new Scene();
-    this.$refs.threeContainer.appendChild(this.sceneHelper.renderer.domElement);
+    this.ahu3d = new Ahu3D();
+    this.ahu3d.attachScene('#threeContainer');
 
-    const modelLoader = new ModelLoader(this.sceneHelper); 
-    modelLoader.loadComponent(this.sceneHelper.library['Fan']);
+    this.ahu3d.loadLibraryFromApp();
+    this.ahu3d.loadComponent(this.ahu3d.library['Fan']);
   }
 }
 </script>

@@ -3,8 +3,8 @@
     "componentName": "Fan",
 
     "files": {
-		"thumbnail": "Fan-1.0.2.png",
-        "model": "Fan/model.glb"
+		"thumbnail": "/components/png/Fan.png",
+        "model": "/components/glb/Fan.glb"
 	},    
     
     "metadata": {
@@ -22,6 +22,12 @@
             "max": 10,
             "targets": ["child002"],
             "axis": "x"
+        }
+    },
+
+    "methods": {
+        "spinMesh": {
+            "sourceAttributes": ["speed"]
         }
     },
 

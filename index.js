@@ -1,10 +1,7 @@
-import _Scene from "./src/Scene/Scene"
-import _ModelLoader from "./src/Core/ModelLoader"
+import _Ahu3D from "./src/Ahu3D"
 
-export const Scene = _Scene;
-export const ModelLoader = _ModelLoader;
+export const Ahu3D = _Ahu3D;
 
 export default {
-    Scene,
-    ModelLoader
+    Ahu3D
 }

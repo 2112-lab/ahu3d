@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
-class ModelLoader {
+class Object3DLoader {
     /**
      * Constructor
      * 
-     * Initializes the ModelLoader class with a scene helper and visibility settings.
+     * Initializes the Object3DLoader class with a scene helper and visibility settings.
      * 
      * @param {Object} sceneHelper - The helper object for managing the 3D scene.
      * @param {Boolean} labelsVisible - Flag to indicate if labels should be visible.
@@ -22,7 +22,7 @@ class ModelLoader {
      * Imports a 3D component, processes it, and adds it to the scene.
      * 
      * @param {Object} component - The component data including the model file URL.
-     * @param {Number} hvacOpacity - The opacity level to apply to the component.
+     * @param {Number} [hvacOpacity=1] - The opacity level to apply to the component.
      * @param {Boolean} [isVisible=true] - Whether the component should be visible.
      * @returns {Promise<Object>} The processed component mesh.
      */
@@ -159,4 +159,4 @@ class ModelLoader {
     }
 }
 
-export default ModelLoader;
+export default Object3DLoader;

@@ -2,13 +2,13 @@ class Import {
     constructor() {
         this.assets = {};
     }
-    loadLibrary() {
+    loadLibraryFromApp() {
         const files = {};
-        const context = require.context(`../Library/`, true, /\.json$/);
+        const context = require.context(`/static/components/json/`, true, /\.json$/);
         context.keys().forEach((key) => {
             const fileName = key.replace('./', '').replace('.json', '');
             files[fileName] = context(key);
-        });       
+        });
         return files;
     }
     loadXeto() {
