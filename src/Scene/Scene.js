@@ -9,7 +9,6 @@ class Scene {
 
     constructor() {
         this.ahuComponents = [];
-        this.animatedComponents = [];
         this.init();
     }
 
@@ -59,6 +58,8 @@ class Scene {
         this.tooltipParent = null;
         this.tooltipObject = null;
 
+        this.selectedMesh = null;
+
         // Add the fixed gradient background
         this.backgroundScene = new THREE.Scene();
         this.gradientBackground = this.createGradientBackground();
@@ -80,10 +81,15 @@ class Scene {
             this.renderer.render(this.scene, this.cameras.primary);
             this.labelRenderer.render(this.scene, this.cameras.primary);
 
-            for(const animatedComponent of this.animatedComponents) {
-                const attributeTarget = animatedComponent.userData.component.attributes.speed.targets[0];
-                const targetMesh = animatedComponent.children.filter(child => child.name === attributeTarget)[0];
-                this.spinMesh(targetMesh);
+            for(const ahuComponent of this.ahuComponents) {
+                const attributeKeys = Object.keys(ahuComponent.userData.component.attributes)
+                if(attributeKeys.includes("setAnimation")) {
+                    const attributeTargets = ahuComponent.userData.component.attributes.setAnimation.targets[0];
+                    const targetMeshes = ahuComponent.children.filter(child => attributeTargets.includes(child.name));
+                    for(const targetMesh of targetMeshes) {
+                        this.animateMesh(targetMesh);
+                    }
+                }
             }
             
         }
@@ -94,29 +100,34 @@ class Scene {
         this.addEventListeners();
     }
 
-    spinMesh(targetMesh) {
+    animateMesh(targetMesh) {
         var timer = Date.now() * 0.0005;
-        const speedAttribute = targetMesh.parent.userData.component.attributes['speed'];
-        if (speedAttribute.value > 0) {
-            targetMesh.rotation[speedAttribute.axis] = (timer * -5) * speedAttribute.value;
+        const animationAttribute = targetMesh.parent.userData.component.attributes.setAnimation;
+        if (animationAttribute.value > 0) {
+            targetMesh[animationAttribute.action][animationAttribute.axis] = (timer * -5) * animationAttribute.value;
         }
     }
 
     addEventListeners() {
         window.addEventListener('mousedown', this.onMouseDown.bind(this));
-        window.addEventListener('mousemove', this.onMouseMove.bind(this));
-        window.addEventListener('mouseup', this.onMouseUp.bind(this));
     }
 
     onMouseDown(event) {
-        this.isDragging = false;
-    }
+        if (this.tooltipObject && this.tooltipObject.element) {
+            const tooltipRect = this.tooltipObject.element.getBoundingClientRect();
+            const isInsideTooltip = (
+                event.clientX >= tooltipRect.left &&
+                event.clientX <= tooltipRect.right &&
+                event.clientY >= tooltipRect.top &&
+                event.clientY <= tooltipRect.bottom
+            );
+    
+            if (isInsideTooltip) {
+                // Click is inside the tooltip, so cancel the mesh click handling
+                return;
+            }
+        }
 
-    onMouseMove(event) {
-        this.isDragging = true;
-    }
-
-    onMouseUp(event) {
         this.onMeshClick(event);
     }
 
@@ -137,7 +148,10 @@ class Scene {
         if (hvacIntersects.length > 0) {
             const mesh = hvacIntersects[0].object.parent;
             console.log("mesh:", mesh);
-            this.showTooltip(mesh);
+
+            this.selectedMesh = mesh;
+
+            this.showTooltip();
         } else if (this.tooltipParent && this.tooltipObject) {
             this.tooltipParent.remove(this.tooltipObject);
             this.tooltipParent = null;
@@ -146,7 +160,11 @@ class Scene {
     }
     
 
-    showTooltip(mesh) {
+    showTooltip() {
+
+        const meshComponentData = this.selectedMesh.userData.component;
+        const meshAttributes = meshComponentData.attributes;
+
         const tooltipDiv = document.createElement('div');
         tooltipDiv.className = 'tooltip';
         tooltipDiv.style.marginTop = '-1em';
@@ -154,11 +172,12 @@ class Scene {
         tooltipDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
         tooltipDiv.style.color = 'white';
         tooltipDiv.style.borderRadius = '5px';
+        tooltipDiv.style.pointerEvents = 'auto';  // Allow pointer events
     
         // Create a first line of text
         const line1 = document.createElement('div');
         line1.style.marginBottom = '6px';
-        line1.textContent = `Component: ${mesh.userData.component.componentName || 'Mesh'}`;
+        line1.textContent = `Component: ${meshComponentData.componentName || 'Mesh'}`;
         tooltipDiv.appendChild(line1);
     
         // Create a second line with buttons and text
@@ -168,9 +187,13 @@ class Scene {
         line2.style.whiteSpace = 'nowrap';  // Prevent wrapping
     
         // Create text div for the attribute key
-        const attrKeys = Object.keys(mesh.userData.component.attributes);
+        const attrKeys = Object.keys(meshAttributes);
         const attrKeyDiv = document.createElement('div');
-        attrKeyDiv.textContent = `${attrKeys[0]}:`;
+    
+        let attrKeyText = meshAttributes[attrKeys[0]].key;
+        attrKeyText = attrKeyText[0].toUpperCase() + attrKeyText.slice(1);
+    
+        attrKeyDiv.textContent = `${attrKeyText}:`;
         attrKeyDiv.style.marginRight = '8px'; // Add some space between the key and the button
     
         // Create "-" button
@@ -182,10 +205,21 @@ class Scene {
         minusButton.style.backgroundColor = 'rgba(200, 200, 200, 0.4)';
         minusButton.style.color = 'white';
         minusButton.style.border = 'none';
-        minusButton.style.marginRight = '8px';  // Add some space between the button and the text    
+        minusButton.style.marginRight = '8px';  // Add some space between the button and the text
         
+        // Add event listener for the "-" button
+        minusButton.addEventListener('click', () => {
+            const methodKey = attrKeys[0];
+            const newValue = meshAttributes[attrKeys[0]].value - 1;
+
+            if(newValue >= meshAttributes[methodKey].min && newValue <= meshAttributes[methodKey].max) {
+                this.selectedMesh[methodKey](newValue);
+                console.log(`Attribute value changed:`, meshAttributes[attrKeys[0]].value);
+            }
+        });
+    
         // Create text div for the attribute value
-        const attrValue = mesh.userData.component.attributes[attrKeys[0]].value;
+        const attrValue = meshAttributes[attrKeys[0]].value;
         const attrValueDiv = document.createElement('div');
         attrValueDiv.textContent = `${attrValue}`;
         attrValueDiv.style.marginRight = '8px'; // Add some space between the value and the button
@@ -199,6 +233,18 @@ class Scene {
         plusButton.style.backgroundColor = 'rgba(200, 200, 200, 0.4)';
         plusButton.style.color = 'white';
         plusButton.style.border = 'none';
+        plusButton.style.pointerEvents = 'auto';  // Allow pointer events
+    
+        // Add event listener for the "+" button
+        plusButton.addEventListener('click', () => {
+            const methodKey = attrKeys[0];
+            const newValue = meshAttributes[attrKeys[0]].value + 1;
+
+            if(newValue >= meshAttributes[methodKey].min && newValue <= meshAttributes[methodKey].max) {
+                this.selectedMesh[methodKey](newValue);
+                console.log(`Attribute value changed:`, meshAttributes[attrKeys[0]].value);
+            }
+        });
     
         // Append buttons and text to the line2 div
         line2.appendChild(attrKeyDiv);
@@ -211,12 +257,18 @@ class Scene {
     
         const label = new CSS2DObject(tooltipDiv);
         label.position.set(0, 1.5, 0);  // Position the label slightly above the mesh
-        mesh.add(label);
+        this.selectedMesh.add(label);
     
-        this.tooltipParent = mesh;
+        this.tooltipParent = this.selectedMesh;
         this.tooltipObject = label;
     }
-       
+
+    updateTooltip() {
+        if (this.tooltipParent && this.tooltipObject) {
+            this.tooltipParent.remove(this.tooltipObject);
+            this.showTooltip();
+        }        
+    }    
 
     // Method to create a gradient background using ShaderMaterial
     createGradientBackground() {
@@ -267,18 +319,6 @@ class Scene {
         return gridHelper;
     }
 
-    createDemoCube() {
-        const geometry = new THREE.BoxGeometry();
-        const material = this.materials.createStandardMaterial();
-        const cube = new THREE.Mesh(geometry, material);
-        cube.userData.height = 1;
-        return cube;
-    }
-
-    addToScene(mesh) {
-        this.scene.add(mesh);
-    }
-
     addOrbitControl() {
         this.controls = new OrbitControls(this.cameras.primary, this.renderer.domElement);
         this.controls.autoRotate = false;
@@ -287,6 +327,10 @@ class Scene {
         if (this.base) {
             this.controls.target.set(0, 0, this.base.configs.height);
         }
+    }
+
+    addToScene(mesh) {
+        this.scene.add(mesh);
     }
 }
 

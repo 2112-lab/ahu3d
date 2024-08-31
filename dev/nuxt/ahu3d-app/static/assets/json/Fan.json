@@ -3,8 +3,8 @@
     "componentName": "Fan",
 
     "files": {
-		"thumbnail": "/components/png/Fan.png",
-        "model": "/components/glb/Fan.glb"
+		"thumbnail": "Fan.png",
+        "model": "Fan.glb"
 	},    
     
     "metadata": {
@@ -14,7 +14,8 @@
     },
 
     "attributes": {
-        "speed": {
+        "setAnimation": {
+            "action": "rotation",
             "key": "speed",
             "value": 1,
             "step": 1,
@@ -22,12 +23,6 @@
             "max": 10,
             "targets": ["child002"],
             "axis": "x"
-        }
-    },
-
-    "methods": {
-        "spinMesh": {
-            "sourceAttributes": ["speed"]
         }
     },
 

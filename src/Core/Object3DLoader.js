@@ -26,12 +26,14 @@ class Object3DLoader {
      * @param {Boolean} [isVisible=true] - Whether the component should be visible.
      * @returns {Promise<Object>} The processed component mesh.
      */
-    async loadComponent(component, hvacOpacity = 1, isVisible = true) {
+    async loadComponent(assetConfigs, component, hvacOpacity = 1, isVisible = true) {
         console.log("loadComponent started:", component, hvacOpacity, isVisible);
         this.hvacOpacity = hvacOpacity; // Set the opacity for the HVAC component.        
 
         let componentMesh = THREE.Mesh; // Initialize the component mesh variable.
-        componentMesh = await this.loadModel(component.files.model); // Load the 3D model.
+
+        console.log("assetConfigs:", assetConfigs);
+        componentMesh = await this.loadModel(assetConfigs.assetsPath + "glb/" + component.files.model); // Load the 3D model.
 
         componentMesh = this.processGLB(component, componentMesh); // Process the loaded model (GLB).
         return componentMesh; // Return the processed component mesh.
@@ -47,6 +49,7 @@ class Object3DLoader {
      */
     loadModel(url) {
         // url = "/components/Fan/model.glb"
+        console.log("loadModel url:", url);
         console.log("loadModel started:", url);
         return new Promise((resolve, reject) => {
             const loader = new GLTFLoader(); // Create a new GLTFLoader instance.
