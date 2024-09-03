@@ -3,8 +3,8 @@
     "componentName": "Cross-Joint - Sliced",
 
     "files": {
-        "thumbnail": "Cross-Joint-Sliced-1.0.0.png",
-        "model": "joints/Cross-Joint-Sliced-1.0.0.glb"
+        "thumbnail": "CrossJointSliced.png",
+        "model": "joints/CrossJointSliced.glb"
 	},
 
     "metadata": {

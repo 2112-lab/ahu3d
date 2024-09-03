@@ -1,6 +1,6 @@
-import Object3DLoader from "./Core/Object3DLoader"
-import Import from "./Core/Import"
-import Scene from "./Scene/Scene"
+import Object3DLoader from "./core/Object3DLoader"
+import Import from "./core/Import"
+import Scene from "./sceneHelper/Scene"
 
 class Ahu3D {
 
@@ -42,20 +42,54 @@ class Ahu3D {
             this.sceneHelper.updateTooltip();
         };
         ahuComponent.setTargetTransforms = function(value){
-            const attributes = this.userData.component.attributes;
+            const attribute = this.userData.component.attributes.setTargetTransforms;
 
-            if(value >= attributes.setTargetTransforms.min && value <= attributes.setTargetTransforms.max) {
-                this.userData.component.attributes.setTargetTransforms.value = value;
+            if(value >= attribute.min && value <= attribute.max) {
+                attribute.value = value;
                 this.sceneHelper.updateTooltip();            
 
                 this.traverse((child) => {
                     if (child.isMesh) {
-                        if(attributes.setTargetTransforms.targets.includes(child.name)) {
-                            child.rotation[attributes.setTargetTransforms['axis']] = attributes.setTargetTransforms.states[attributes.setTargetTransforms.value];
+                        if(attribute.targets.includes(child.name)) {
+                            child.rotation[attribute['axis']] = attribute.states[attribute.value];
                         }
                     }
                 });
             }            
+        };
+        ahuComponent.setTargetMaterials = function(value){
+            const attribute = this.userData.component.attributes.setTargetMaterials;
+
+            if(value >= attribute.min && value <= attribute.max) {
+                attribute.value = value;
+                this.sceneHelper.updateTooltip();
+
+                this.traverse((child) => {
+                    if (child.isMesh) {
+                        if(child.name.includes("child")) {
+                            for(const i in attribute.states.thresholds) {
+                                if(attribute.value >= attribute.states.thresholds[i]['value']) {
+                                    if(child.name.includes(attribute.states.thresholds[i].target)) {
+                                        child.material.color.setHex(attribute.states.active);
+                                    }
+                                }
+                                else {
+                                    if(child.name.includes(attribute.states.thresholds[i].target)) {
+                                        child.material.color.setHex(attribute.states.inactive);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+        };
+        ahuComponent.setInput = function(value){
+            const attribute = this.userData.component.attributes.setInput;
+
+            attribute.value = value;
+            this.sceneHelper.updateTooltip();
         };
     }
 

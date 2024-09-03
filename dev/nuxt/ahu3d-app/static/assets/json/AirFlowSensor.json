@@ -1,11 +1,11 @@
 {
-    "componentId": "r:novo.graphics::AirFilter",
-    "componentName": "Air Filter",
+    "componentId": "r:novo.graphics::AirFlowSensor",
+    "componentName": "Air Flow Sensor",
 
     "files": {
-		"thumbnail": "Air-Filter-1.0.1.png",
-        "model": "Air-Filter-1.0.1.glb"
-	}, 
+		"thumbnail": "AirFlowSensor.png",
+        "model": "AirFlowSensor.glb"
+	},
 
     "metadata": {
         "description": "Large air vent",
@@ -15,12 +15,9 @@
     },
     
     "attributes": {
-        "sensor-input": {
-            "key": "sensor-input",
-            "value": 2,
-            "step": 20,
-            "min": 2,
-            "max": 100
+        "setInput": {
+            "key": "sensor-reading",
+            "value": 5
         }
     },
     
@@ -31,8 +28,8 @@
         "boundingBox": {
             "dimensions": {
                 "x": 100,
-                "y": 1000,
-                "z": 1000
+                "y": 980,
+                "z": 945
             },
             "origin": {
                 "x": 0,

@@ -1,11 +1,11 @@
 {
-    "componentId": "r:novo.graphics::InsertEndSliced",
-    "componentName": "Insert End - Sliced",
+    "componentId": "r:novo.graphics::LinearDuctSliced",
+    "componentName": "Linear Duct - Sliced",
 
     "files": {
-		"thumbnail": "Linear-Duct-Sliced-1.0.3.png",
-        "model": "ends/Insert-Sliced-1.0.3.glb"
-	}, 
+        "thumbnail": "LinearDuctSliced.png",
+        "model": "LinearDuctSliced.glb"
+	},
 
     "metadata": {
         "description": "Fixed air duct",
@@ -33,7 +33,7 @@
         "scale":    { "x": 1, "y": 1, "z": 1 },
         "boundingBox": {
             "dimensions": {
-                "x": 200,
+                "x": 1000,
                 "y": 1030,
                 "z": 1060
             },
@@ -44,6 +44,7 @@
             }
         }
     },
+    
     "isTransparencyEnabled": true,
     "transparency": 0,
     "isComponent": false

@@ -1,10 +1,10 @@
 {
-    "componentId": "r:novo.graphics::AirFlowSensor",
-    "componentName": "Air Flow Sensor",
+    "componentId": "r:novo.graphics::TemperatureSensor",
+    "componentName": "Temperature Sensor",
 
     "files": {
-		"thumbnail": "Air-Flow-Sensor-1.0.1.png",
-        "model": "Air-Flow-Sensor-1.0.1.glb"
+		"thumbnail": "TemperatureSensor.png",
+        "model": "TemperatureSensor.glb"
 	},
 
     "metadata": {
@@ -15,12 +15,9 @@
     },
     
     "attributes": {
-        "sensor-input": {
-            "key": "sensor-input",
-            "value": 2,
-            "step": 20,
-            "min": 2,
-            "max": 100
+        "setInput": {
+            "key": "sensor-reading",
+            "value": 2
         }
     },
     
@@ -30,9 +27,9 @@
         "scale":    { "x": 1, "y": 1, "z": 1 },
         "boundingBox": {
             "dimensions": {
-                "x": 100,
-                "y": 980,
-                "z": 945
+                "x": 122,
+                "y": 82,
+                "z": 644.266
             },
             "origin": {
                 "x": 0,
@@ -41,7 +38,10 @@
             }
         }
     },
+    
     "isTransparencyEnabled": false,
     "transparency": 0,
-    "isComponent": true
+    "isComponent": true,
+    "componentPosition": "ceiling",
+    "componentFacing": "inwards"
 }

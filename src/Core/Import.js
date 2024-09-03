@@ -7,11 +7,6 @@ class Import {
     }
 
     async loadLibraryFromApp(assetConfigs) {
-        // assetConfigs = {
-        //     "components": ["Fan", /** Continuing list here **/],
-        //     "assetsPath": "/components/json/"
-        // }
-
         const files = {};
         const jsonFiles = assetConfigs.componentList;
         const assetsPath = assetConfigs.assetsPath;

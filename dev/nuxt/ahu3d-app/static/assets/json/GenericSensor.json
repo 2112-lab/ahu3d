@@ -1,10 +1,10 @@
 {
-    "componentId": "r:novo.graphics::TemperatureSensor",
-    "componentName": "Temperature Sensor",
+    "componentId": "r:novo.graphics::GenericSensor",
+    "componentName": "Generic Sensor",
 
     "files": {
-		"thumbnail": "Temperature-1.0.1.png",
-        "model": "Temperature-Sensor-1.0.3.glb"
+		"thumbnail": "GenericSensor.png",
+        "model": "GenericSensor.glb"
 	},
 
     "metadata": {
@@ -15,33 +15,29 @@
     },
     
     "attributes": {
-        "sensor-input": {
-            "key": "sensor-input",
-            "value": 2,
-            "step": 20,
-            "min": 2,
-            "max": 100
+        "setInput": {
+            "key": "sensor-reading",
+            "value": 7
         }
     },
     
     "object": {
-        "position": { "x": 0, "y": 0, "z": 530 },
+        "position": { "x": 0, "y": 0, "z": 650 },
         "rotation": { "x": 0, "y": 0, "z": 0 },
         "scale":    { "x": 1, "y": 1, "z": 1 },
         "boundingBox": {
             "dimensions": {
-                "x": 122,
-                "y": 82,
-                "z": 644.266
+                "x": 120,
+                "y": 80.5,
+                "z": 400
             },
             "origin": {
                 "x": 0,
                 "y": 0,
-                "z": 0
+                "z": 70
             }
         }
     },
-    
     "isTransparencyEnabled": false,
     "transparency": 0,
     "isComponent": true,

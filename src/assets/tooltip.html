@@ -1,0 +1,64 @@
+<div class="tooltip">
+    <style>
+        .tooltip {
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border-radius: 5px;
+            padding: 8px;
+            pointer-events: auto;
+            z-index: 1000;
+        }
+
+        .tooltip-header {
+            margin-bottom: 6px;
+        }
+
+        .tooltip-body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tooltip-row {
+            display: flex;  /* Flexbox layout */
+            align-items: center;  /* Vertically center items */
+            justify-content: start;  /* Space out items */
+            flex-wrap: nowrap;  /* Prevent items from wrapping to the next line */
+        }
+
+        .tooltip-key {
+            margin-right: 4px;
+        }
+
+        .tooltip-controls {
+            display: flex;  /* Flexbox layout for the controls */
+            align-items: center;  /* Vertically center buttons */
+        }
+
+        .tooltip-controls button {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: rgba(200, 200, 200, 0.4);
+            color: white;
+            border: none;
+            margin-left: 6px;
+            margin-right: 6px;
+            pointer-events: auto;
+        }
+
+        .tooltip-value {
+            white-space: nowrap;  /* Prevent the value from wrapping */
+        }
+    </style>
+    <div class="tooltip-header"></div>
+    <div class="tooltip-body">
+        <div class="tooltip-row">
+            <div class="tooltip-key"></div>
+            <div class="tooltip-controls">
+                <button class="tooltip-minus">-</button>
+                <div class="tooltip-value"></div>
+                <button class="tooltip-plus">+</button>
+            </div>
+        </div>
+    </div>
+</div>

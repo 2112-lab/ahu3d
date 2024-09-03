@@ -4,23 +4,36 @@ import Cameras from "./Cameras";
 import Materials from "./Materials";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
+import tooltipTemplate from '../assets/tooltip.html';
 
 class Scene {
 
     constructor() {
         this.ahuComponents = [];
+        this.tooltipTemplate = tooltipTemplate; // Store the imported HTML template
         this.init();
+    }
+
+    addDefaultLights(instanceLights) {
+        //Add lights in scene
+        Object.values(instanceLights.lights).forEach((light) => {
+            this.scene.add(light);
+        })
     }
 
     init() {
         this.scene = new THREE.Scene();
+        this.scene.scale.set(0.001, 0.001, 0.001);
 
         this.selectedObject = null;
         this.raycaster = new THREE.Raycaster();
         this.mouseVector = new THREE.Vector2();
         this.isDragging = false;
 
-        this.lights = new Lights();
+        //add default lights
+        const instanceLights = new Lights();
+        this.addDefaultLights(instanceLights);
+
         this.cameras = new Cameras({
             primary: {
                 fov: 75,
@@ -28,11 +41,12 @@ class Scene {
                 near: 0.01,
                 far: 10000,
             }
-        });        
-        this.materials = new Materials();        
-        this.addToScene(this.lights.hemisphereLight);
-        this.addToScene(this.lights.ambientLight);
-        this.addToScene(this.lights.spotLight);                
+        });
+        
+        this.cameras.primary.up.set(0, 0, 1);
+        this.scene.rotation.z = 180 * Math.PI/180;
+
+        this.materials = new Materials();
 
         this.renderer = new THREE.WebGLRenderer({
             alpha: true,
@@ -67,11 +81,13 @@ class Scene {
 
         // Add a grid to the scene
         this.grid = this.createGrid();
+        this.grid.rotation.x = 90 * Math.PI/180;
+        // this.grid.set(0, 0, 1);
         this.addToScene(this.grid);
         
-        this.cameras.primary.position.y = 4;
+        this.cameras.primary.position.y = 5;
         this.cameras.primary.position.z = 5;
-        this.cameras.primary.rotation.x = THREE.MathUtils.degToRad(-45);
+        // this.cameras.primary.rotation.z = THREE.MathUtils.degToRad(-45);
         
         const animate = () => {
             requestAnimationFrame(animate);
@@ -128,6 +144,12 @@ class Scene {
             }
         }
 
+        if (this.tooltipParent && this.tooltipObject) {
+            this.tooltipParent.remove(this.tooltipObject);
+            this.tooltipParent = null;
+            this.tooltipObject = null;
+        }
+
         this.onMeshClick(event);
     }
 
@@ -159,106 +181,52 @@ class Scene {
         }
     }
     
-
     showTooltip() {
-
         const meshComponentData = this.selectedMesh.userData.component;
         const meshAttributes = meshComponentData.attributes;
 
+        // Clone the loaded template
         const tooltipDiv = document.createElement('div');
-        tooltipDiv.className = 'tooltip';
-        tooltipDiv.style.marginTop = '-1em';
-        tooltipDiv.style.padding = '5px';
-        tooltipDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-        tooltipDiv.style.color = 'white';
-        tooltipDiv.style.borderRadius = '5px';
-        tooltipDiv.style.pointerEvents = 'auto';  // Allow pointer events
-    
-        // Create a first line of text
-        const line1 = document.createElement('div');
-        line1.style.marginBottom = '6px';
-        line1.textContent = `Component: ${meshComponentData.componentName || 'Mesh'}`;
-        tooltipDiv.appendChild(line1);
-    
-        // Create a second line with buttons and text
-        const line2 = document.createElement('div');
-        line2.style.display = 'flex';   // Arrange items in a row
-        line2.style.alignItems = 'center';  // Center items vertically
-        line2.style.whiteSpace = 'nowrap';  // Prevent wrapping
-    
-        // Create text div for the attribute key
+        tooltipDiv.innerHTML = this.tooltipTemplate.trim(); // Use the imported template
+        const tooltipElement = tooltipDiv.firstChild;
+
+        // Update the tooltip content
+        tooltipElement.querySelector('.tooltip-header').textContent = meshComponentData.componentName || 'Mesh';
+
         const attrKeys = Object.keys(meshAttributes);
-        const attrKeyDiv = document.createElement('div');
-    
-        let attrKeyText = meshAttributes[attrKeys[0]].key;
-        attrKeyText = attrKeyText[0].toUpperCase() + attrKeyText.slice(1);
-    
-        attrKeyDiv.textContent = `${attrKeyText}:`;
-        attrKeyDiv.style.marginRight = '8px'; // Add some space between the key and the button
-    
-        // Create "-" button
-        const minusButton = document.createElement('button');
-        minusButton.textContent = '-';
-        minusButton.style.width = '24px';
-        minusButton.style.height = '24px';
-        minusButton.style.borderRadius = '50%';  // Make it circular
-        minusButton.style.backgroundColor = 'rgba(200, 200, 200, 0.4)';
-        minusButton.style.color = 'white';
-        minusButton.style.border = 'none';
-        minusButton.style.marginRight = '8px';  // Add some space between the button and the text
-        
-        // Add event listener for the "-" button
-        minusButton.addEventListener('click', () => {
-            const methodKey = attrKeys[0];
-            const newValue = meshAttributes[attrKeys[0]].value - 1;
+        const attrKeyDiv = tooltipElement.querySelector('.tooltip-key');
+        const attrValueDiv = tooltipElement.querySelector('.tooltip-value');
+        attrKeyDiv.textContent = `${meshAttributes[attrKeys[0]].key}:`;
+        attrValueDiv.textContent = `${meshAttributes[attrKeys[0]].value}`;
 
-            if(newValue >= meshAttributes[methodKey].min && newValue <= meshAttributes[methodKey].max) {
-                this.selectedMesh[methodKey](newValue);
-                console.log(`Attribute value changed:`, meshAttributes[attrKeys[0]].value);
-            }
-        });
-    
-        // Create text div for the attribute value
-        const attrValue = meshAttributes[attrKeys[0]].value;
-        const attrValueDiv = document.createElement('div');
-        attrValueDiv.textContent = `${attrValue}`;
-        attrValueDiv.style.marginRight = '8px'; // Add some space between the value and the button
-    
-        // Create "+" button
-        const plusButton = document.createElement('button');
-        plusButton.textContent = '+';
-        plusButton.style.width = '24px';
-        plusButton.style.height = '24px';
-        plusButton.style.borderRadius = '50%';  // Make it circular
-        plusButton.style.backgroundColor = 'rgba(200, 200, 200, 0.4)';
-        plusButton.style.color = 'white';
-        plusButton.style.border = 'none';
-        plusButton.style.pointerEvents = 'auto';  // Allow pointer events
-    
-        // Add event listener for the "+" button
-        plusButton.addEventListener('click', () => {
-            const methodKey = attrKeys[0];
-            const newValue = meshAttributes[attrKeys[0]].value + 1;
+        const minusButton = tooltipElement.querySelector('.tooltip-minus');
+        const plusButton = tooltipElement.querySelector('.tooltip-plus');
 
-            if(newValue >= meshAttributes[methodKey].min && newValue <= meshAttributes[methodKey].max) {
-                this.selectedMesh[methodKey](newValue);
-                console.log(`Attribute value changed:`, meshAttributes[attrKeys[0]].value);
-            }
-        });
-    
-        // Append buttons and text to the line2 div
-        line2.appendChild(attrKeyDiv);
-        line2.appendChild(minusButton);
-        line2.appendChild(attrValueDiv);
-        line2.appendChild(plusButton);
-    
-        // Append line2 to the tooltip
-        tooltipDiv.appendChild(line2);
-    
-        const label = new CSS2DObject(tooltipDiv);
+        if (attrKeys[0] !== 'setInput') {
+            minusButton.addEventListener('click', () => {
+                const methodKey = attrKeys[0];
+                const newValue = meshAttributes[attrKeys[0]].value - meshAttributes[attrKeys[0]].step;
+                if (newValue >= meshAttributes[methodKey].min && newValue <= meshAttributes[methodKey].max) {
+                    this.selectedMesh[methodKey](newValue);
+                }
+            });
+
+            plusButton.addEventListener('click', () => {
+                const methodKey = attrKeys[0];
+                const newValue = meshAttributes[attrKeys[0]].value + meshAttributes[attrKeys[0]].step;
+                if (newValue >= meshAttributes[methodKey].min && newValue <= meshAttributes[methodKey].max) {
+                    this.selectedMesh[methodKey](newValue);
+                }
+            });
+        } else {
+            minusButton.style.display = 'none';
+            plusButton.style.display = 'none';
+        }
+
+        const label = new CSS2DObject(tooltipElement);
         label.position.set(0, 1.5, 0);  // Position the label slightly above the mesh
         this.selectedMesh.add(label);
-    
+
         this.tooltipParent = this.selectedMesh;
         this.tooltipObject = label;
     }
@@ -291,9 +259,13 @@ class Scene {
         `;
 
         // Define shader uniforms for the colors
+        // const uniforms = {
+        //     topColor: { value: new THREE.Color(0x87CEEB) },   // Light blue (sky color)
+        //     bottomColor: { value: new THREE.Color(0xFFFFFF) } // White (ground color)
+        // };
         const uniforms = {
-            topColor: { value: new THREE.Color(0x87CEEB) },   // Light blue (sky color)
-            bottomColor: { value: new THREE.Color(0xFFFFFF) } // White (ground color)
+            bottomColor: { value: new THREE.Color(0x000000) },   // Even lighter blue for the night sky
+            topColor : { value: new THREE.Color(0x3B5F8A) } // Lighter blue for the ground at night
         };
 
         // Create ShaderMaterial
@@ -314,7 +286,7 @@ class Scene {
     }
 
     // Method to create a grid helper and return it
-    createGrid(size = 7, divisions = 14, color1 = 0x111111, color2 = 0x333333) {
+    createGrid(size = 7000, divisions = 14, color1 = 0x777777, color2 = 0x555555) {
         const gridHelper = new THREE.GridHelper(size, divisions, color1, color2);
         return gridHelper;
     }

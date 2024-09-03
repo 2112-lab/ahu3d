@@ -3,8 +3,8 @@
     "componentName": "Cap End - Sliced",
 
     "files": {
-		"thumbnail": "Linear-Duct-Sliced-1.0.3.png",
-        "model": "ends/Cap-Sliced-1.0.3.glb"
+		"thumbnail": "CapEndSliced.png",
+        "model": "ends/CapEndSliced.glb"
 	},
 
     "metadata": {

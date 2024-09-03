@@ -1,10 +1,10 @@
 {
-    "componentId": "r:novo.graphics::HeatingCoil",
-    "componentName": "Heating Coil",
+    "componentId": "r:novo.graphics::CoolingCoil",
+    "componentName": "Cooling Coil",
 
     "files": {
-		"thumbnail": "Heating-Coil.1.0.1.png",
-        "model": "Coil-1.0.2.glb"
+		"thumbnail": "CoolingCoil.png",
+        "model": "Coil.glb"
 	},
 
     "metadata": {
@@ -15,15 +15,15 @@
     },
     
     "attributes": {
-        "level": {
+        "setTargetMaterials": {
             "key": "level",
             "value": 0,
             "step": 20,
             "min": 0,
             "max": 100,
             "states": {
-                "active": "0xE71217",
-                "inactive": "0x808080",
+                "active": "0x1217E7",
+                "inactive": "0xA5A5A5",
                 "thresholds": [
                     {
                         "value": 20,
@@ -67,6 +67,7 @@
             }
         }
     },
+    
     "isTransparencyEnabled": false,
     "transparency": 0,
     "isComponent": true

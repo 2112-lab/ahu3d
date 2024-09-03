@@ -103,16 +103,20 @@ class Object3DLoader {
             }
         });
 
-        mainMesh.rotation.x = THREE.MathUtils.degToRad(-90);
-        // mainMesh.rotation.z = THREE.MathUtils.degToRad(-90);
+        // Set the position of the main mesh.
+        mainMesh.position.x = cmpJson.object.position.x;
+        mainMesh.position.y = cmpJson.object.position.y;
+        mainMesh.position.z = cmpJson.object.position.z;
 
-        mainMesh.position.y += (cmpJson.object.boundingBox.dimensions.z / 1000) / 2;
+        // Set the rotation of the main mesh.
+        mainMesh.rotation.x = cmpJson.object.rotation.x;
+        mainMesh.rotation.y = cmpJson.object.rotation.y;           
+        mainMesh.rotation.z = cmpJson.object.rotation.z;
 
-        mainMesh.scale.set(
-            0.001, 
-            0.001, 
-            0.001
-        );
+        // object.rotation.z = 90 * Math.PI/180;
+        // object.rotation.x = -90 * Math.PI/180;
+
+        mainMesh.scale.x = cmpJson.object.scale.x;
 
         mainMesh.name = "hvac"; // Name the main mesh "hvac".
         mainMesh.userData.component = cmpJson; // Store the component data in the mesh's userData.
