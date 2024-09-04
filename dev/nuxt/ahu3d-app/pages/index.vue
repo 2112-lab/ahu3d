@@ -21,43 +21,108 @@ export default {
     }
 
     // Load in your component assets into memory, passing in assetConfigs(required) as an argument.
-    this.library = await ahu3d.loadLibraryFromApp(assetConfigs);
+    await ahu3d.loadLibraryFromApp(assetConfigs);
 
-    console.log("this.library:", this.library);
+    // Import xeto data and clean it up.
+    const mockXeto = this.getMockXeto();
+    const cleanedXeto = await ahu3d.loadXeto(mockXeto);
+    console.log("this.cleanedXeto:", cleanedXeto);
 
     // Instantiate your component meshes into the page's 3d scene.
-    const airFilter = await ahu3d.loadComponent("AirFilter");
-    airFilter.position.y += 1000;
+    this.instantiateMockComponents(ahu3d);
+  },
+  methods: {
+    getMockXeto() {
+      const mockXeto = [
+        {
+          "id": "r:novo.graphics::AHU-1",
+          "spec": "r:novo.graphics::AhuGroup",
+          "graphicLocation": {
+            "start": "A1",
+            "end": "B1"
+          },
+          "ducts": [
+            "r:novo.graphics::Edge-1"
+          ],
+          "blockStyle": {
+            "ductEnds": "none",
+            "flowDirection": "startToEnd",
+            "componentPadding": {
+              "startSpace": 250,
+              "endSpace": 250
+            }
+          }
+        },
 
-    const airFlowSensor = await ahu3d.loadComponent("AirFlowSensor");
-    airFlowSensor.position.y -= 1000;
+        {
+          "id": "r:novo.graphics::Edge-1",
+          "spec": "r:novo.graphics::DuctEdge",
+          "graphicLocation": {
+            "start": "A1",
+            "end": "B1"
+          },
+          "components": [
+            "r:novo.graphics::Fan-1"
+          ],
+          "blockStyle": {
+            "ductEnds": "insert",
+            "flowDirection": "startToEnd",
+            "componentPadding": {
+              "startSpace": 200,
+              "endSpace": 200
+            }
+          }
+        },
 
-    const coolingCoil = await ahu3d.loadComponent("CoolingCoil");
-    coolingCoil.position.x += 2000;
-    coolingCoil.position.y -= 1000;
+        {
+          "id": "r:novo.graphics::Fan-1",
+          "spec": "r:novo.graphics::AhuComponent",
+          "componentId": "r:novo.graphics::Fan",
+          "blockStyle": {
+            "flowDirection": "endToStart",
+            "componentPadding": {
+              "startSpace": 300,
+              "endSpace": 300
+            }
+          }
+        }
+      ];
+      return mockXeto
+    },
+    async instantiateMockComponents(ahu3d) {
+      const airFilter = await ahu3d.loadComponent("AirFilter");
+      airFilter.position.y += 1000;
 
-    const damper = await ahu3d.loadComponent("Damper");
-    damper.position.x += 1000;
-    damper.position.y += 1000;
+      const airFlowSensor = await ahu3d.loadComponent("AirFlowSensor");
+      airFlowSensor.position.y -= 1000;
 
-    const fan = await ahu3d.loadComponent("Fan");
-    fan.position.x -= 1000;
-    fan.position.y -= 1000;
+      const coolingCoil = await ahu3d.loadComponent("CoolingCoil");
+      coolingCoil.position.x += 2000;
+      coolingCoil.position.y -= 1000;
 
-    const genericSensor = await ahu3d.loadComponent("GenericSensor");
-    genericSensor.position.x += 2000;
-    genericSensor.position.y += 1000;    
+      const damper = await ahu3d.loadComponent("Damper");
+      damper.position.x += 1000;
+      damper.position.y += 1000;
 
-    const heatingCoil = await ahu3d.loadComponent("HeatingCoil");
-    heatingCoil.position.x -= 1000;
-    heatingCoil.position.y += 1000;
+      const fan = await ahu3d.loadComponent("Fan");
+      fan.position.x -= 1000;
+      fan.position.y -= 1000;
 
-    const temperatureSensor = await ahu3d.loadComponent("TemperatureSensor");
-    temperatureSensor.position.x += 1000;
-    temperatureSensor.position.y -= 1000;
+      const genericSensor = await ahu3d.loadComponent("GenericSensor");
+      genericSensor.position.x += 2000;
+      genericSensor.position.y += 1000;    
 
-    fan.setAnimation(1);
-    damper.setTargetTransforms(2);
+      const heatingCoil = await ahu3d.loadComponent("HeatingCoil");
+      heatingCoil.position.x -= 1000;
+      heatingCoil.position.y += 1000;
+
+      const temperatureSensor = await ahu3d.loadComponent("TemperatureSensor");
+      temperatureSensor.position.x += 1000;
+      temperatureSensor.position.y -= 1000;
+
+      fan.setAnimation(1);
+      damper.setTargetTransforms(2);
+    }
   }
 }
 </script>

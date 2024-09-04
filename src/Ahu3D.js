@@ -21,6 +21,11 @@ class Ahu3D {
         return this.library;
     }
 
+    loadXeto(xeto) {
+        this.cleanedXeto = this.imports.loadXeto(xeto);
+        return this.cleanedXeto;
+    }
+
     async loadComponent(componentKey) {
         const ahuComponent = await this.object3DLoader.loadComponent(this.assetConfigs, this.library[componentKey]);
 
