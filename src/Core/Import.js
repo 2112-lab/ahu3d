@@ -39,10 +39,9 @@ class Import {
 
         const requests = jsonFiles.map(fileName => {
             const requestPath = `${assetsPath}json/${fileName}.json`;
-            console.log("requestPath:", requestPath);
             return axios.get(requestPath) // Return the promise here
                 .then(response => {
-                    console.log(`Loaded ${fileName}.json successfully`);
+                    // console.log(`Loaded ${fileName}.json successfully`);
                     files[fileName] = response.data;
                 })
                 .catch(error => {
@@ -52,7 +51,7 @@ class Import {
 
         await Promise.all(requests); // Wait for all promises to resolve
 
-        console.log("files:", files); // Now this will log after all requests are completed
+        // console.log("files:", files); // Now this will log after all requests are completed
 
         this.componentLibEntries = files;
         this.validater = new Validate(this.componentLibEntries);  
@@ -61,14 +60,14 @@ class Import {
     }
 
     /**
-     * loadXeto
+     * preprocessXeto
      * 
      * Loads and processes the provided Xeto assembly data by cloning the input and analyzing it.
      * 
      * @param {Object} xeto - The Xeto assembly data.
      * @returns {Array} The cleaned and transformed Xeto assembly data.
      */
-    loadXeto(xeto) {
+    preprocessXeto(xeto) {
         xeto = JSON.parse(JSON.stringify(xeto));
 
         let xetoDictionary = {};
@@ -76,11 +75,7 @@ class Import {
         xetoDictionary.ductsList = xeto.filter(child => child.spec.includes('DuctEdge'));
         xetoDictionary.componentsList = xeto.filter(child => child.spec.includes('Component'));
 
-        console.log("xetoDictionary 1:", xetoDictionary);
-
         this.analyzer.analyzeAndTransform(xetoDictionary);
-
-        console.log("xetoDictionary 2:", xetoDictionary);
 
         this.validater.propogateBlockStyle(xetoDictionary);
 

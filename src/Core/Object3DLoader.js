@@ -8,12 +8,10 @@ class Object3DLoader {
      * Initializes the Object3DLoader class with a scene helper and visibility settings.
      * 
      * @param {Object} sceneHelper - The helper object for managing the 3D scene.
-     * @param {Boolean} labelsVisible - Flag to indicate if labels should be visible.
      */
-    constructor(sceneHelper, labelsVisible) {
+    constructor(sceneHelper) {
         this.sceneHelper = sceneHelper; // Store the scene helper.
-        this.labelsVisible = labelsVisible; // Set the label visibility.
-        this.hvacOpacity = 1; // Initialize the HVAC opacity.
+        this.assetConfigs = null;
     }
 
     /**
@@ -26,16 +24,16 @@ class Object3DLoader {
      * @param {Boolean} [isVisible=true] - Whether the component should be visible.
      * @returns {Promise<Object>} The processed component mesh.
      */
-    async loadComponent(assetConfigs, component, hvacOpacity = 1, isVisible = true) {
-        console.log("loadComponent started:", component, hvacOpacity, isVisible);
-        this.hvacOpacity = hvacOpacity; // Set the opacity for the HVAC component.        
+    async loadComponent(component, isVisible = true, hvacOpacity = 1) {
+        // console.log("loadComponent started:", component, isVisible, hvacOpacity);     
 
         let componentMesh = THREE.Mesh; // Initialize the component mesh variable.
 
-        console.log("assetConfigs:", assetConfigs);
-        componentMesh = await this.loadModel(assetConfigs.assetsPath + "glb/" + component.files.model); // Load the 3D model.
+        componentMesh = await this.loadModel(this.assetConfigs.assetsPath + "glb/" + component.files.model); // Load the 3D model.
 
         componentMesh = this.processGLB(component, componentMesh); // Process the loaded model (GLB).
+        componentMesh.visible = isVisible;
+
         return componentMesh; // Return the processed component mesh.
     }
 
@@ -48,9 +46,7 @@ class Object3DLoader {
      * @returns {Promise<Object>} A promise that resolves to the loaded GLTF model.
      */
     loadModel(url) {
-        // url = "/components/Fan/model.glb"
-        console.log("loadModel url:", url);
-        console.log("loadModel started:", url);
+        // console.log("loadModel started:", url);
         return new Promise((resolve, reject) => {
             const loader = new GLTFLoader(); // Create a new GLTFLoader instance.
             loader.load(url, gltf => resolve(gltf), null, reject); // Load the model and resolve or reject the promise.
@@ -66,7 +62,7 @@ class Object3DLoader {
      * @param {Object} gltf - The loaded GLTF model.
      * @returns {Object} The processed and configured mesh.
      */
-    processGLB(component, gltf) {
+    processGLB(component, gltf, isVisible = true, hvacOpacity = 1) {
         let cmpJson = JSON.parse(JSON.stringify(component)); // Clone the component data.
 
         const mesh = gltf.scene; // Extract the mesh from the GLTF scene.
@@ -97,7 +93,7 @@ class Object3DLoader {
             if (child.isMesh) { // If the child is a mesh.
                 if (child.name.includes("child")) { // If the child mesh name includes "child".
                     child.material.transparent = true; // Make the material transparent.
-                    child.material.opacity = this.hvacOpacity; // Apply the specified opacity.
+                    child.material.opacity = hvacOpacity; // Apply the specified opacity.
                     child.material.depthWrite = true; // Enable depth writing.
                 }
             }

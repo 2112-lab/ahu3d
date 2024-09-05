@@ -4,7 +4,7 @@
 
     "files": {
         "thumbnail": "LinearDuctSliced.png",
-        "model": "LinearDuctSliced.glb"
+        "model": "ducts/LinearDuctSliced.glb"
 	},
 
     "metadata": {

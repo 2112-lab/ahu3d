@@ -11,7 +11,7 @@ class Validate {
      * @param {Object} xetoDictionary - A dictionary of the ahuGroup, ductsList, and componentsList.
      */
     propogateBlockStyle(xetoDictionary) {
-        console.log("propogateBlockStyle started");
+        console.log("propogateBlockStyle started:", this.componentLibEntries);
 
         for(const duct of xetoDictionary.ductsList) {
 
