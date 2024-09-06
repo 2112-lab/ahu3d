@@ -9,8 +9,6 @@ class Import {
      * Initializes the Import class and sets up the necessary properties for processing the Xeto assembly data.
      */
     constructor() {
-        console.log("Import started");
-
         this.assets = {};
         this.assetConfigs = null;
 
@@ -20,7 +18,7 @@ class Import {
         this.cleanedXeto = [];
 
         this.analyzer = new Analyze();
-        this.validater = null;     
+        this.validator = null;     
     }
 
     /**
@@ -54,7 +52,7 @@ class Import {
         // console.log("files:", files); // Now this will log after all requests are completed
 
         this.componentLibEntries = files;
-        this.validater = new Validate(this.componentLibEntries);  
+        this.validator = new Validate(this.componentLibEntries);  
 
         return files; // Returning the files object directly
     }
@@ -68,6 +66,13 @@ class Import {
      * @returns {Array} The cleaned and transformed Xeto assembly data.
      */
     preprocessXeto(xeto) {
+
+        const isValid = this.validator.validateJsonBlocks(xeto);
+
+        if(!isValid) {
+            return isValid;
+        }
+
         xeto = JSON.parse(JSON.stringify(xeto));
 
         let xetoDictionary = {};
@@ -77,7 +82,7 @@ class Import {
 
         this.analyzer.analyzeAndTransform(xetoDictionary);
 
-        this.validater.propogateBlockStyle(xetoDictionary);
+        this.validator.propogateBlockStyle(xetoDictionary);
 
         const cleanedXeto = [
             ...xetoDictionary.ahuGroup,

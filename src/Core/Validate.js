@@ -2,6 +2,51 @@ class Validate {
     constructor(componentLibEntries) {
         this.componentLibEntries = componentLibEntries;
     }
+
+    validateJsonBlocks(xeto) {
+        // Track the valid IDs for EdgeBlocks and Components
+        const edgeBlocks = new Set();
+        const components = new Set();
+      
+        // First, gather all IDs for EdgeBlocks and Components
+        xeto.forEach(item => {
+          if (item.spec === 'r:novo.graphics::DuctEdge') {
+            edgeBlocks.add(item.id);
+          }
+          if (item.spec === 'r:novo.graphics::Component') {
+            components.add(item.id);
+          }
+        });
+      
+        // Now validate the structure
+        for (const item of xeto) {
+          if (item.spec === 'r:novo.graphics::AhuGroup') {
+            // Validate ducts (AhuBlock needs to reference valid EdgeBlock)
+            if (item.ducts) {
+              for (const duct of item.ducts) {
+                if (!edgeBlocks.has(duct)) {
+                  alert(`Error: Invalid EdgeBlock reference: ${duct} in AHU Block: ${item.id}`);
+                  return false; // Exit the function after the first error
+                }
+              }
+            }
+          } else if (item.spec === 'r:novo.graphics::DuctEdge') {
+            // Validate components (EdgeBlock needs to reference valid Component)
+            if (item.components) {
+              for (const component of item.components) {
+                if (!components.has(component)) {
+                  alert(`Error: Invalid Component reference: ${component} in Edge Block: ${item.id}`);
+                  return false; // Exit the function after the first error
+                }
+              }
+            }
+          }
+        }
+
+        console.log('Validation passed.'); // Show success message if everything is valid
+        return true;        
+      }
+
     /**
      * propogateBlockStyle
      * 
@@ -44,6 +89,7 @@ class Validate {
                 }
 
                 const splitComponentId = componentBlock.componentId.split("::")[1];
+                console.log("splitComponentId:", splitComponentId);
                 const componentLibEntry = this.componentLibEntries[splitComponentId];
                 if(componentLibEntry.componentPosition != undefined && componentBlock.blockStyle.componentPosition == undefined) {
                     componentBlock.blockStyle.componentPosition = componentLibEntry.componentPosition;

@@ -5,23 +5,23 @@ class Lights {
         const lightsSettings = {
             "hemisphereLight": {
                 "type": "hemisphere",
-                "skyColor": "ffffff",
-                "groundColor": "333333",
-                "intensity": 0.3,
+                "skyColor": "#ffffff",
+                "groundColor": "#333333",
+                "intensity": 0.1,
                 "castShadow": false,
                 "shadow": false
             },
             "ambientLight": {
                 "type": "ambient",
-                "color": "555555",
-                "intensity": 0.3,
+                "color": "#bbbbbb",
+                "intensity": 0.4,
                 "castShadow": false,
                 "shadow": false
             },
             "spotLight": {
                 "type": "spot",
-                "color": "555555",
-                "intensity": 0.5,
+                "color": "#bbbbbb",
+                "intensity": 0.9,
                 "penumbra": 0,
                 "decay": 0,
                 "distance": 50000,
@@ -43,8 +43,8 @@ class Lights {
             },
             "spotLight1": {
                 "type": "spot",
-                "color": "dddddd",
-                "intensity": 0.6,
+                "color": "#dddddd",
+                "intensity": 0.9,
                 "penumbra": 0,
                 "decay": 0,
                 "distance": 20000,
@@ -58,8 +58,8 @@ class Lights {
             },
             "spotLight2": {
                 "type": "spot",
-                "color": "dddddd",
-                "intensity": 0.6,
+                "color": "#dddddd",
+                "intensity": 0.9,
                 "penumbra": 0,
                 "decay": 0,
                 "distance": 20000,
@@ -73,8 +73,8 @@ class Lights {
             },
             "spotLight3": {
                 "type": "spot",
-                "color": "dddddd",
-                "intensity": 0.6,
+                "color": "#dddddd",
+                "intensity": 0.9,
                 "penumbra": 0,
                 "decay": 0,
                 "distance": 20000,

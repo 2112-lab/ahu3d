@@ -33,13 +33,26 @@ class Ahu3D {
         return this.library;
     }
 
-    preprocessXeto(xeto) {
-        this.cleanedXeto = this.imports.preprocessXeto(xeto);
-        return this.cleanedXeto;
+    async loadXeto(xeto) {
+        const cleanedXeto = this.imports.preprocessXeto(xeto);
+
+        if(!cleanedXeto) {
+            return;
+        }
+
+        const assembly = await this.calculateAssembly(cleanedXeto);
+
+        this.sceneHelper.clearScene();
+
+        await this.renderAssembly(assembly);
+
+        this.sceneHelper.fitAssemblyIntoView();
+
+        return assembly;
     }
 
-    async loadComponent(componentKey) {
-        const ahuComponent = await this.object3DLoader.loadComponent(this.library[componentKey]);
+    async loadComponent(componentKey, isVisible) {
+        const ahuComponent = await this.object3DLoader.loadComponent(this.library[componentKey], isVisible);
 
         // Attach sceneHelper to the component
         ahuComponent.sceneHelper = this.sceneHelper;
@@ -117,8 +130,6 @@ class Ahu3D {
         const methodKey = attrKeys[0];
         const attributeValue = ahuComponentAttributes[methodKey].value;
         ahuComponent[methodKey](attributeValue);
-
-        this.sceneHelper.ahuComponents.push(ahuComponent);
     }
 
     /**
@@ -150,10 +161,6 @@ class Ahu3D {
         console.log("setAhuAssembly started");
         this.assembly = await this.arithmetics.calculateAssembly(cleanedXeto);
         return this.assembly;
-    }
-
-    async renderAssembly() {
-        await this.renderAssembly();
     }
 
     /**
@@ -232,10 +239,17 @@ class Ahu3D {
                 child.material = child.material.clone(); // Clone the material
             }
         });
+
+        clonedInstance.sceneHelper = this.sceneHelper;
+
+        this.extendObject3D(clonedInstance); 
+        // this.initializeAttributeStates(clonedInstance);
     
         // Add the cloned instance to the scene and make it visible
         await this.sceneHelper.addToScene(clonedInstance);
         clonedInstance.visible = true;
+
+        
     }
 }
 

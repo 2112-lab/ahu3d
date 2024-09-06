@@ -97,15 +97,22 @@ class Scene {
             this.renderer.render(this.scene, this.cameras.primary);
             this.labelRenderer.render(this.scene, this.cameras.primary);
 
-            for(const ahuComponent of this.ahuComponents) {
-                const attributeKeys = Object.keys(ahuComponent.userData.component.attributes)
-                if(attributeKeys.includes("setAnimation")) {
-                    const attributeTargets = ahuComponent.userData.component.attributes.setAnimation.targets[0];
-                    const targetMeshes = ahuComponent.children.filter(child => attributeTargets.includes(child.name));
-                    for(const targetMesh of targetMeshes) {
-                        this.animateMesh(targetMesh);
+            this.scene.traverse((ahuComponent) => {
+                if (ahuComponent.isObject3D && ahuComponent.name == 'hvac') {
+
+                    const attributeKeys = Object.keys(ahuComponent.userData.component.attributes)
+                    if(attributeKeys.includes("setAnimation")) {
+                        const attributeTargets = ahuComponent.userData.component.attributes.setAnimation.targets[0];
+                        const targetMeshes = ahuComponent.children.filter(child => attributeTargets.includes(child.name));
+                        for(const targetMesh of targetMeshes) {
+                            this.animateMesh(targetMesh);
+                        }
                     }
                 }
+            });
+
+            for(const ahuComponent of this.ahuComponents) {
+                
             }
             
         }
@@ -301,8 +308,49 @@ class Scene {
         }
     }
 
+    fitAssemblyIntoView() {
+        const camera = this.cameras.primary;
+
+        const box = new THREE.Box3();
+        this.scene.traverse((object) => {
+            if (object.isObject3D && object.name == 'hvac') {
+                const objectBox = new THREE.Box3().setFromObject(object);
+                box.union(objectBox); // Expand the bounding box to include the object's box
+            }
+        });
+
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+
+        const maxSize = Math.max(size.x, size.y, size.z);
+        const fov = camera.fov * (Math.PI / 180); // Convert field of view to radians
+        const cameraDistance = maxSize / (2 * Math.tan(fov / 2));
+
+        // Update the camera position
+        camera.position.copy(center);
+        camera.position.y += cameraDistance + 2; // Move the camera back along the z-axis
+        camera.position.z = center.z + 2;
+        camera.updateProjectionMatrix();
+
+        camera.lookAt(center);
+
+        // Update the OrbitControls' target
+        this.controls.target.copy(center);
+        this.controls.update(); // Ensure the controls are updated
+    } 
+
     addToScene(mesh) {
         this.scene.add(mesh);
+    }
+
+    clearScene() {
+        console.log("clearScene started:");
+        const sceneChildren = this.scene.children.filter(
+            (child) => child.name == 'hvac' && child.isObject3D
+        );
+        sceneChildren.forEach((child) => {
+            this.scene.remove(child);
+        });
     }
 }
 
