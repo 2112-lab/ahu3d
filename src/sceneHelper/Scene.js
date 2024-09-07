@@ -1,8 +1,18 @@
+/*
+ * Scene.js
+ * 
+ * Author: Caleb Ebers
+ * Date: 9/06/2024
+ * 
+ * This module manages the 3D scene setup, including adding objects, 
+ * configuring interactions, and updating animations.
+ * 
+ */
 import * as THREE from 'three';
-import Lights from "./Lights";
-import Cameras from "./Cameras";
-import Materials from "./Materials";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import Lights from "./Lights.js";
+import Cameras from "./Cameras.js";
+import Materials from "./Materials.js";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import tooltipTemplate from '../assets/tooltip.html';
 
@@ -178,10 +188,12 @@ class Scene {
             const mesh = hvacIntersects[0].object.parent;
             console.log("mesh:", mesh);
 
-            this.selectedMesh = mesh;
-
-            this.showTooltip();
-        } else if (this.tooltipParent && this.tooltipObject) {
+            if(mesh.userData.component.isComponent) {
+                this.selectedMesh = mesh;
+                this.showTooltip();
+            }            
+        } 
+        else if (this.tooltipParent && this.tooltipObject) {
             this.tooltipParent.remove(this.tooltipObject);
             this.tooltipParent = null;
             this.tooltipObject = null;
@@ -195,7 +207,7 @@ class Scene {
         // Clone the loaded template
         const tooltipDiv = document.createElement('div');
         tooltipDiv.innerHTML = this.tooltipTemplate.trim(); // Use the imported template
-        const tooltipElement = tooltipDiv.firstChild;
+        const tooltipElement = tooltipDiv.firstElementChild;
 
         // Update the tooltip content
         tooltipElement.querySelector('.tooltip-header').textContent = meshComponentData.componentName || 'Mesh';

@@ -1,3 +1,13 @@
+/*
+ * Lights.js
+ * 
+ * Author: Caleb Ebers
+ * Date: 9/06/2024
+ * 
+ * This module configures lighting for the 3D scene, including ambient, directional, 
+ * and point lights to illuminate different components of the AHU models.
+ * 
+ */
 import * as THREE from 'three';
 
 class Lights {

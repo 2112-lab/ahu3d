@@ -17,6 +17,7 @@
 
 <script>
 import { Ahu3D } from '~/../../../';
+// import tooltipTemplate from './tooltip.html';
 
 export default {
   async mounted() {

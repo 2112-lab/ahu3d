@@ -31,7 +31,8 @@
     },
     "components": [
       "r:novo.graphics::Fan-2",
-      "r:novo.graphics::HeatingCoil-2"
+      "r:novo.graphics::HeatingCoil-2",
+      "r:novo.graphics::NonExistentComponent"
     ],
     "id": "r:novo.graphics::Edge-1",
     "spec": "r:novo.graphics::DuctEdge",

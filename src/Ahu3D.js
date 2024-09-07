@@ -1,7 +1,17 @@
-import Scene from "./sceneHelper/Scene"
-import Import from "./core/Import"
-import Object3DLoader from "./core/Object3DLoader"
-import Arithmetics from "./core/Arithmetics"
+/*
+ * Ahu3D.js
+ * 
+ * Author: Caleb Ebers
+ * Date: 9/06/2024
+ * 
+ * This class manages the 3D representation of an AHU (Air Handling Unit) within the scene, 
+ * handling loading of models, animations, and interactions within the 3D environment.
+ * 
+ */
+import Scene from "./sceneHelper/Scene.js"
+import Import from "./core/Import.js"
+import Object3DLoader from "./core/Object3DLoader.js"
+import Arithmetics from "./core/Arithmetics.js"
 
 class Ahu3D {
 

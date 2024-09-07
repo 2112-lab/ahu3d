@@ -1,30 +1,57 @@
 const path = require('path');
+const WebpackObfuscator = require('webpack-obfuscator');
+const TerserPlugin = require('terser-webpack-plugin');
 
-module.exports = {
-    entry: './src/index.js', // Replace with your entry point
-    output: {
-        filename: 'bundle.js',
-        path: path.resolve(__dirname, 'dist'),
-        libraryTarget: 'umd',
-    },
-    module: {
-        rules: [
-            {
-                test: /\.html$/,
-                use: {
-                    loader: 'html-loader',
-                    options: {
-                        sources: false,
+module.exports = (env, argv) => {
+    const isDevelopment = argv.mode === 'development';
+    console.log("isDevelopment:", isDevelopment);
+
+    return {
+        mode: isDevelopment ? 'development' : 'production', // Set mode explicitly
+        entry: './src/index.js',
+        output: {
+            filename: 'bundle.js',
+            path: path.resolve(__dirname, 'dist'),
+            libraryTarget: 'umd',
+        },
+        module: {
+            rules: [
+                {
+                    test: /\.html$/,
+                    use: {
+                        loader: 'html-loader',
+                        options: {
+                            sources: false,
+                        },
                     },
                 },
+            ],
+        },
+        resolve: {
+            extensions: ['.js', '.json'],
+            fallback: {
+                path: false,
             },
-            // Add other loaders as needed
+        },
+        plugins: [
+            ...(isDevelopment ? [] : [
+                new WebpackObfuscator({
+                    rotateStringArray: true,
+                }, ['**/Scene.js']),
+            ]),
         ],
-    },
-    resolve: {
-        extensions: ['.js', '.json'], // Extensions Webpack will resolve
-        fallback: {
-            "path": false // Prevent path from being polyfilled in the client-side bundle
-        }
-    },
+        optimization: {
+            minimize: !isDevelopment,  // Minimize only in production mode
+            minimizer: [
+                new TerserPlugin({
+                    terserOptions: {
+                        compress: {
+                            drop_console: !isDevelopment,  // Keep console logs in development
+                        },
+                        mangle: !isDevelopment,  // Only mangle in production
+                    },
+                }),
+            ],
+        },
+    };
 };

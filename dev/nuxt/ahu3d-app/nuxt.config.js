@@ -39,6 +39,19 @@ export default {
   ],
 
   // Build Configuration: https://go.nuxtjs.dev/config-build
-  build: {
-  }
+  // build: {
+  //   extend(config, { isDev, isClient }) {
+  //     // Add rule for HTML files
+  //     config.module.rules.push({
+  //       test: /\.html$/,
+  //       use: ['html-loader']
+  //     });
+
+  //     // You can add more custom Webpack rules here if necessary
+  //   }
+  // }
+
+  // watch: [
+  //   path.resolve(__dirname, '~/../../../')  // Adjust the path to your module
+  // ]
 }

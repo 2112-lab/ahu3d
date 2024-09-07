@@ -1,16 +1,19 @@
+/*
+ * Object3DLoader.js
+ * 
+ * Author: Caleb Ebers
+ * Date: 9/06/2024
+ * 
+ * This class handles loading 3D objects and animations, integrating them with the scene, 
+ * and managing memory resources effectively for smooth performance.
+ * 
+ */
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 class Object3DLoader {
-    /**
-     * Constructor
-     * 
-     * Initializes the Object3DLoader class with a scene helper and visibility settings.
-     * 
-     * @param {Object} sceneHelper - The helper object for managing the 3D scene.
-     */
     constructor(sceneHelper) {
-        this.sceneHelper = sceneHelper; // Store the scene helper.
+        this.sceneHelper = sceneHelper;
         this.assetConfigs = null;
     }
 

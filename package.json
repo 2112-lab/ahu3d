@@ -1,14 +1,13 @@
 {
   "name": "@musashi/ahu3d",
-  "version": "1.0.18",
+  "version": "1.0.25",
   "description": "",
   "main": "dist/bundle.js",
   "files": [
-    "dist",
-    "src",
-    "assets"
+    "dist"
   ],
   "scripts": {
+    "send": "npm run build && npm publish",
     "build": "webpack --mode production",
     "dev": "webpack --mode development --watch"
   },
@@ -23,6 +22,7 @@
   },
   "devDependencies": {
     "html-loader": "^5.1.0",
-    "html-minifier-terser": "^7.2.0"
+    "html-minifier-terser": "^7.2.0",
+    "webpack-obfuscator": "^3.5.1"
   }
 }

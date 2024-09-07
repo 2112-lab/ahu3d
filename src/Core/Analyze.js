@@ -1,17 +1,14 @@
+/*
+ * Analyze.js
+ * 
+ * Author: Caleb Ebers
+ * Date: 9/06/2024
+ * 
+ * This module handles analysis tasks within the scene, including real-time metrics and 
+ * performance evaluation based on the loaded 3D models.
+ * 
+ */
 class Analyze {
-    /**
-     * analyzeAndTransform
-     * 
-     * Analyzes and transforms the assembly data by aligning ducts, consolidating redundant ducts,
-     * and ensuring that block styles are properly propagated throughout the assembly.
-     * 
-     * Functions Invoked:
-     * - getPrimaryDuct
-     * - alignPrimaryDuct
-     * - alignSecondaryDucts
-     * - consolidateRedundantDucts
-     * - propogateBlockStyle
-     */
     analyzeAndTransform(xetoDictionary) {
         console.log("analyzeAndTransform started");
         

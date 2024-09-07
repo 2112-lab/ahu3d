@@ -1,9 +1,23 @@
+/*
+ * Validate.js
+ * 
+ * Author: Caleb Ebers
+ * Date: 9/06/2024
+ * 
+ * This module is responsible for validating the JSON configuration files, ensuring all 
+ * necessary components and parameters are correctly defined and structured.
+ * 
+ */
 class Validate {
     constructor(componentLibEntries) {
         this.componentLibEntries = componentLibEntries;
     }
 
     validateJsonBlocks(xeto) {
+
+        let alertMessage = "";
+        let isValid = true;
+
         // Track the valid IDs for EdgeBlocks and Components
         const edgeBlocks = new Set();
         const components = new Set();
@@ -25,8 +39,11 @@ class Validate {
             if (item.ducts) {
               for (const duct of item.ducts) {
                 if (!edgeBlocks.has(duct)) {
-                  alert(`Error: Invalid EdgeBlock reference: ${duct} in AHU Block: ${item.id}`);
-                  return false; // Exit the function after the first error
+                  if(alertMessage != "") {
+                    alertMessage += "\n\n";
+                  }
+                  alertMessage += `Invalid EdgeBlock reference: ${duct} in AHU Block: ${item.id}`;
+                  isValid = false;
                 }
               }
             }
@@ -35,16 +52,25 @@ class Validate {
             if (item.components) {
               for (const component of item.components) {
                 if (!components.has(component)) {
-                  alert(`Error: Invalid Component reference: ${component} in Edge Block: ${item.id}`);
-                  return false; // Exit the function after the first error
+                  if(alertMessage != "") {
+                    alertMessage += "\n\n";
+                  }
+                  alertMessage += `Invalid Component reference: ${component} in Edge Block: ${item.id}`;
+                  isValid = false;
                 }
               }
             }
           }
         }
 
-        console.log('Validation passed.'); // Show success message if everything is valid
-        return true;        
+        if(isValid) {
+          console.log('Validation passed.');
+        }
+        else {
+          alert(alertMessage);
+        }
+        
+        return isValid;        
       }
 
     /**
@@ -89,7 +115,7 @@ class Validate {
                 }
 
                 const splitComponentId = componentBlock.componentId.split("::")[1];
-                console.log("splitComponentId:", splitComponentId);
+
                 const componentLibEntry = this.componentLibEntries[splitComponentId];
                 if(componentLibEntry.componentPosition != undefined && componentBlock.blockStyle.componentPosition == undefined) {
                     componentBlock.blockStyle.componentPosition = componentLibEntry.componentPosition;

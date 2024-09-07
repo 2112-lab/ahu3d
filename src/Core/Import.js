@@ -1,13 +1,18 @@
+/*
+ * Import.js
+ * 
+ * Author: Caleb Ebers
+ * Date: 9/06/2024
+ * 
+ * This module is responsible for loading external assets, such as 3D models and textures, 
+ * into the scene, ensuring compatibility and correct positioning.
+ * 
+ */
 import axios from 'axios';
-import Analyze from "./Analyze"
-import Validate from "./Validate"
+import Analyze from "./Analyze.js"
+import Validate from "./Validate.js"
 
 class Import {
-    /**
-     * Constructor
-     * 
-     * Initializes the Import class and sets up the necessary properties for processing the Xeto assembly data.
-     */
     constructor() {
         this.assets = {};
         this.assetConfigs = null;

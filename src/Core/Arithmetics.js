@@ -1,4 +1,15 @@
 /*
+ * Arithmetics.js
+ * 
+ * Author: Caleb Ebers
+ * Date: 9/06/2024
+ * 
+ * This class handles the calculation, placement, and orientation of HVAC assembly segments 
+ * using the provided component library entries and cleaned assembly data. It ensures that 
+ * all segments are correctly aligned, dimensioned, and positioned within the scene.
+ * 
+ */
+/*
  * Arithmetic.js
  * 
  * Author: Caleb Ebers
@@ -8,22 +19,6 @@
  * using the provided component library entries and cleaned assembly data. It ensures that 
  * all segments are correctly aligned, dimensioned, and positioned within the scene.
  * 
- * Functions Invoked:
- * - constructor: calculateAssembly
- * - calculateAssembly: getPrimaryDuct, buildAssembly, createDuctEnds, placeSegments, getAssemblyDimensions, translateAssemblySegment
- * - getPrimaryDuct: ductsList.filter
- * - createDuctEnds: getOrientation
- * - buildAssembly: loadAssemblyMeshes
- * - loadAssemblyMeshes: Promise.all
- * - placeSegments: getOrientation, orientAssemblySegment, translateAssemblySegment, spawnJoint, getJointEntry
- * - getAssemblyDimensions: getRow
- * - getRow: None
- * - getJointEntry: None
- * - spawnJoint: getRelativePosition, getJointEntry
- * - getRelativePosition: getRow
- * - getOrientation: getRow
- * - translateAssemblySegment: None
- * - orientAssemblySegment: THREE.MathUtils.degToRad
  */
 
 import * as THREE from 'three';
