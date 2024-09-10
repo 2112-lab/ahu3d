@@ -1,28 +1,37 @@
 <template>
-<div>
-  <div id="sceneContainer">
-    <div style="position:absolute; top:6px; left:6px">
-      <span style="color:white; margin-right:6px">Load Xeto Samples:</span>
-      <button type="button" @click="loadMockXeto(0)">1</button>
-      <button type="button" @click="loadMockXeto(1)">2</button>
-      <button type="button" @click="loadMockXeto(2)">3</button>
-      <button type="button" @click="loadMockXeto(3)">4</button>
-      <button type="button" @click="loadMockXeto(4)">5</button>
-      <button type="button" @click="loadMockXeto(5)">6</button>
+  <div id="pageWrapper">
+    <div id="sceneContainer"></div>
+
+    <div id="buttonContainer">
+      <span style="margin-right:6px">Load Xeto Samples:</span>
+      <button id="button" type="button" @click="loadMockXeto(0)">1</button>
+      <button id="button" type="button" @click="loadMockXeto(1)">2</button>
+      <button id="button" type="button" @click="loadMockXeto(2)">3</button>
+      <button id="button" type="button" @click="loadMockXeto(3)">4</button>
+      <button id="button" type="button" @click="loadMockXeto(4)">5</button>
+      <button id="button" type="button" @click="loadMockXeto(5)">6</button>
     </div>
   </div>
-    
-</div>
 </template>
 
 <script>
 import { Ahu3D } from '~/../../../';
-// import tooltipTemplate from './tooltip.html';
 
 export default {
   async mounted() {
+    if(process.env.NODE_ENV === 'development') {
+      const pageWrapper = document.getElementById("pageWrapper");
+      if (pageWrapper) {
+        pageWrapper.style.background = "#111";
+      }
+      const buttonContainer = document.getElementById("buttonContainer");
+      if (buttonContainer) {
+        buttonContainer.style.color = "white";
+      }
+    }
+
     // Create an Ahu3D instance.
-    this.ahu3d = new Ahu3D();
+    this.ahu3d = new Ahu3D(0.667, false, false);
 
     // Attach a 3d scene to the page, passing an html id an an argument.
     // Example HTML: <div id="sceneContainer"></div>
@@ -112,6 +121,24 @@ export default {
 <style>
   body {
     margin:0;
-    background:#111;
+    background:#333;
+  }
+
+  #pageWrapper {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh; /* Full height of the viewport */
+    background:#eee;
+  }
+
+  #sceneContainer {
+    position: relative;
+    background: #333; /* Optional background color for visibility */
+  }
+
+  #buttonContainer {
+    margin-top: 20px; /* Adds some space between the sceneContainer and buttons */
   }
 </style>

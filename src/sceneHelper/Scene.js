@@ -18,7 +18,10 @@ import tooltipTemplate from '../assets/tooltip.html';
 
 class Scene {
 
-    constructor() {
+    constructor(rendererScale, selectorEnabled, tooltipEnabled) {
+        this.rendererScale = rendererScale;
+        this.selectorEnabled = selectorEnabled;
+        this.tooltipEnabled = tooltipEnabled;
         this.ahuComponents = [];
         this.tooltipTemplate = tooltipTemplate; // Store the imported HTML template
         this.init();
@@ -63,7 +66,7 @@ class Scene {
             antialias: true,
             preserveDrawingBuffer: true
         });
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setSize(window.innerWidth * this.rendererScale, window.innerHeight * this.rendererScale);
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.renderer.localClippingEnabled = true;
@@ -142,7 +145,9 @@ class Scene {
     }
 
     addEventListeners() {
-        window.addEventListener('mousedown', this.onMouseDown.bind(this));
+        if(this.selectorEnabled) {
+            window.addEventListener('mousedown', this.onMouseDown.bind(this));
+        }
     }
 
     onMouseDown(event) {
@@ -201,53 +206,55 @@ class Scene {
     }
     
     showTooltip() {
-        const meshComponentData = this.selectedMesh.userData.component;
-        const meshAttributes = meshComponentData.attributes;
+        if(this.tooltipEnabled) {
+            const meshComponentData = this.selectedMesh.userData.component;
+            const meshAttributes = meshComponentData.attributes;
 
-        // Clone the loaded template
-        const tooltipDiv = document.createElement('div');
-        tooltipDiv.innerHTML = this.tooltipTemplate.trim(); // Use the imported template
-        const tooltipElement = tooltipDiv.firstElementChild;
+            // Clone the loaded template
+            const tooltipDiv = document.createElement('div');
+            tooltipDiv.innerHTML = this.tooltipTemplate.trim(); // Use the imported template
+            const tooltipElement = tooltipDiv.firstElementChild;
 
-        // Update the tooltip content
-        tooltipElement.querySelector('.tooltip-header').textContent = meshComponentData.componentName || 'Mesh';
+            // Update the tooltip content
+            tooltipElement.querySelector('.tooltip-header').textContent = meshComponentData.componentName || 'Mesh';
 
-        const attrKeys = Object.keys(meshAttributes);
-        const attrKeyDiv = tooltipElement.querySelector('.tooltip-key');
-        const attrValueDiv = tooltipElement.querySelector('.tooltip-value');
-        attrKeyDiv.textContent = `${meshAttributes[attrKeys[0]].key}:`;
-        attrValueDiv.textContent = `${meshAttributes[attrKeys[0]].value}`;
+            const attrKeys = Object.keys(meshAttributes);
+            const attrKeyDiv = tooltipElement.querySelector('.tooltip-key');
+            const attrValueDiv = tooltipElement.querySelector('.tooltip-value');
+            attrKeyDiv.textContent = `${meshAttributes[attrKeys[0]].key}:`;
+            attrValueDiv.textContent = `${meshAttributes[attrKeys[0]].value}`;
 
-        const minusButton = tooltipElement.querySelector('.tooltip-minus');
-        const plusButton = tooltipElement.querySelector('.tooltip-plus');
+            const minusButton = tooltipElement.querySelector('.tooltip-minus');
+            const plusButton = tooltipElement.querySelector('.tooltip-plus');
 
-        if (attrKeys[0] !== 'setInput') {
-            minusButton.addEventListener('click', () => {
-                const methodKey = attrKeys[0];
-                const newValue = meshAttributes[attrKeys[0]].value - meshAttributes[attrKeys[0]].step;
-                if (newValue >= meshAttributes[methodKey].min && newValue <= meshAttributes[methodKey].max) {
-                    this.selectedMesh[methodKey](newValue);
-                }
-            });
+            if (attrKeys[0] !== 'setInput') {
+                minusButton.addEventListener('click', () => {
+                    const methodKey = attrKeys[0];
+                    const newValue = meshAttributes[attrKeys[0]].value - meshAttributes[attrKeys[0]].step;
+                    if (newValue >= meshAttributes[methodKey].min && newValue <= meshAttributes[methodKey].max) {
+                        this.selectedMesh[methodKey](newValue);
+                    }
+                });
 
-            plusButton.addEventListener('click', () => {
-                const methodKey = attrKeys[0];
-                const newValue = meshAttributes[attrKeys[0]].value + meshAttributes[attrKeys[0]].step;
-                if (newValue >= meshAttributes[methodKey].min && newValue <= meshAttributes[methodKey].max) {
-                    this.selectedMesh[methodKey](newValue);
-                }
-            });
-        } else {
-            minusButton.style.display = 'none';
-            plusButton.style.display = 'none';
+                plusButton.addEventListener('click', () => {
+                    const methodKey = attrKeys[0];
+                    const newValue = meshAttributes[attrKeys[0]].value + meshAttributes[attrKeys[0]].step;
+                    if (newValue >= meshAttributes[methodKey].min && newValue <= meshAttributes[methodKey].max) {
+                        this.selectedMesh[methodKey](newValue);
+                    }
+                });
+            } else {
+                minusButton.style.display = 'none';
+                plusButton.style.display = 'none';
+            }
+
+            const label = new CSS2DObject(tooltipElement);
+            label.position.set(0, 1.5, 0);  // Position the label slightly above the mesh
+            this.selectedMesh.add(label);
+
+            this.tooltipParent = this.selectedMesh;
+            this.tooltipObject = label;
         }
-
-        const label = new CSS2DObject(tooltipElement);
-        label.position.set(0, 1.5, 0);  // Position the label slightly above the mesh
-        this.selectedMesh.add(label);
-
-        this.tooltipParent = this.selectedMesh;
-        this.tooltipObject = label;
     }
 
     updateTooltip() {
@@ -278,14 +285,17 @@ class Scene {
         `;
 
         // Define shader uniforms for the colors
-        // const uniforms = {
-        //     topColor: { value: new THREE.Color(0x87CEEB) },   // Light blue (sky color)
-        //     bottomColor: { value: new THREE.Color(0xFFFFFF) } // White (ground color)
-        // };
-        const uniforms = {
-            bottomColor: { value: new THREE.Color(0x000000) },   // Even lighter blue for the night sky
-            topColor : { value: new THREE.Color(0x3B5F8A) } // Lighter blue for the ground at night
+        let uniforms = {
+            topColor: { value: new THREE.Color(0x87CEEB) },   // Light blue (sky color)
+            bottomColor: { value: new THREE.Color(0xFFFFFF) } // White (ground color)
         };
+
+        if(process.env.NODE_ENV === 'development') {
+            uniforms = {
+                bottomColor: { value: new THREE.Color(0x000000) },   // Even lighter blue for the night sky
+                topColor : { value: new THREE.Color(0x3B5F8A) } // Lighter blue for the ground at night
+            };
+        }
 
         // Create ShaderMaterial
         const material = new THREE.ShaderMaterial({
