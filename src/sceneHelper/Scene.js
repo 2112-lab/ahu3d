@@ -18,10 +18,11 @@ import tooltipTemplate from '../assets/tooltip.html';
 
 class Scene {
 
-    constructor(rendererScale, selectorEnabled, tooltipEnabled) {
-        this.rendererScale = rendererScale;
-        this.selectorEnabled = selectorEnabled;
-        this.tooltipEnabled = tooltipEnabled;
+    constructor(moduleConfigs) {
+        this.moduleConfigs = moduleConfigs;
+
+        this.selectorEnabled = this.moduleConfigs.ui.showSelector;
+        this.tooltipEnabled = this.moduleConfigs.ui.showTooltip;
         this.ahuComponents = [];
         this.tooltipTemplate = tooltipTemplate; // Store the imported HTML template
         this.init();
@@ -44,17 +45,10 @@ class Scene {
         this.isDragging = false;
 
         //add default lights
-        const instanceLights = new Lights();
+        const instanceLights = new Lights(this.moduleConfigs.scene.lights);
         this.addDefaultLights(instanceLights);
 
-        this.cameras = new Cameras({
-            primary: {
-                fov: 75,
-                aspect: window.innerWidth / window.innerHeight,
-                near: 0.01,
-                far: 10000,
-            }
-        });
+        this.cameras = new Cameras(this.moduleConfigs.scene.cameras);
         
         this.cameras.primary.up.set(0, 0, 1);
         this.scene.rotation.z = 180 * Math.PI/180;
@@ -66,7 +60,8 @@ class Scene {
             antialias: true,
             preserveDrawingBuffer: true
         });
-        this.renderer.setSize(window.innerWidth * this.rendererScale, window.innerHeight * this.rendererScale);
+        this.renderer.setSize(this.moduleConfigs.scene.renderer.size.width, this.moduleConfigs.scene.renderer.size.height);
+
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.renderer.localClippingEnabled = true;
@@ -360,6 +355,25 @@ class Scene {
         this.controls.target.copy(center);
         this.controls.update(); // Ensure the controls are updated
     } 
+
+    updateSceneOpacity(dict) {
+        console.log("updateSceneOpacity started:", dict);
+        const hvacObjects = this.scene.children.filter(child => child.name === 'hvac');
+
+        for(const i in hvacObjects) {
+            if(hvacObjects[i].userData.component.isTransparencyEnabled) {
+                for(const j in hvacObjects[i].children) {
+                    if(hvacObjects[i].children[j].isMesh) {
+                        if(dict.componentIds.includes(hvacObjects[i].userData.component.componentId)) {
+                            console.log("found component");
+                            hvacObjects[i].children[j].material.opacity = dict.value;
+                            hvacObjects[i].children[j].material.depthWrite = dict.value < 1 ? false : true;
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     addToScene(mesh) {
         this.scene.add(mesh);

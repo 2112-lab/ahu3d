@@ -11,101 +11,16 @@
 import * as THREE from 'three';
 
 class Lights {
-    constructor() {
-        const lightsSettings = {
-            "hemisphereLight": {
-                "type": "hemisphere",
-                "skyColor": "#ffffff",
-                "groundColor": "#333333",
-                "intensity": 0.1,
-                "castShadow": false,
-                "shadow": false
-            },
-            "ambientLight": {
-                "type": "ambient",
-                "color": "#bbbbbb",
-                "intensity": 0.4,
-                "castShadow": false,
-                "shadow": false
-            },
-            "spotLight": {
-                "type": "spot",
-                "color": "#bbbbbb",
-                "intensity": 0.9,
-                "penumbra": 0,
-                "decay": 0,
-                "distance": 50000,
-                "position": {
-                    "x": -15000,
-                    "y": -15000,
-                    "z": 20000
-                },
-                "castShadow": true,
-                "shadow": {
-                    "mapSize": {
-                        "width": 512,
-                        "height": 512
-                    },
-                    "near": 10,
-                    "far": 200,
-                    "focus": 0.4
-                }
-            },
-            "spotLight1": {
-                "type": "spot",
-                "color": "#dddddd",
-                "intensity": 0.9,
-                "penumbra": 0,
-                "decay": 0,
-                "distance": 20000,
-                "position": {
-                    "x": -15000,
-                    "y": -15000,
-                    "z": 20000
-                },
-                "castShadow": false,
-                "shadow": false
-            },
-            "spotLight2": {
-                "type": "spot",
-                "color": "#dddddd",
-                "intensity": 0.9,
-                "penumbra": 0,
-                "decay": 0,
-                "distance": 20000,
-                "position": {
-                    "x": 15000,
-                    "y": -15000,
-                    "z": 20000
-                },
-                "castShadow": false,
-                "shadow": false
-            },
-            "spotLight3": {
-                "type": "spot",
-                "color": "#dddddd",
-                "intensity": 0.9,
-                "penumbra": 0,
-                "decay": 0,
-                "distance": 20000,
-                "position": {
-                    "x": -15000,
-                    "y": 15000,
-                    "z": 20000
-                },
-                "castShadow": false,
-                "shadow": false
-            }
-        }
-        this.setupLights(lightsSettings);
+    constructor(lightConfigs) {
+        this.setupLights(lightConfigs);
     }
     
-    setupLights(lightsSettings) {
-        let lightsKeys = Object.keys(lightsSettings)
+    setupLights(lightConfigs) {
+        let lightsKeys = Object.keys(lightConfigs)
         this.lights = {};
 
         lightsKeys.forEach((key) => {
-            const light = lightsSettings[key];
+            const light = lightConfigs[key];
             if (light.type === "hemisphere") {
                 this.lights[key] = new THREE.HemisphereLight(
                     new THREE.Color(light.skyColor), 

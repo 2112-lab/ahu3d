@@ -32,7 +32,12 @@ export default {
 
   // Modules for dev and build (recommended): https://go.nuxtjs.dev/config-modules
   buildModules: [
+    '@nuxtjs/vuetify',
   ],
+  vuetify: {
+    // Vuetify options
+    theme: { dark: false },
+  },
 
   // Modules: https://go.nuxtjs.dev/config-modules
   modules: [

@@ -4,7 +4,7 @@
 
     "files": {
 		"thumbnail": "InsertEndSliced.png",
-        "model": "ends/InsertEndSliced.glb"
+        "model": "InsertEndSliced.glb"
 	}, 
 
     "metadata": {

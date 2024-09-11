@@ -51,7 +51,7 @@
         }
     },
     
-    "isTransparencyEnabled": false,
+    "isTransparencyEnabled": true,
     "transparency": 0,
     "isComponent": true
 }

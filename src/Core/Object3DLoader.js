@@ -32,7 +32,8 @@ class Object3DLoader {
 
         let componentMesh = THREE.Mesh; // Initialize the component mesh variable.
 
-        componentMesh = await this.loadModel(this.assetConfigs.assetsPath + "glb/" + component.files.model); // Load the 3D model.
+        const componentDirectory = component.componentId.split('::')[1];
+        componentMesh = await this.loadModel(this.assetConfigs.assetsPath + componentDirectory + "/" + component.files.model); // Load the 3D model.
 
         componentMesh = this.processGLB(component, componentMesh); // Process the loaded model (GLB).
         componentMesh.visible = isVisible;

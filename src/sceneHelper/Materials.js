@@ -12,13 +12,10 @@ import * as THREE from 'three';
 
 class Materials {
     constructor() {
-        this.init();
-    }
-    init() {
-        
+        this.createStandardMaterial();
     }
     createStandardMaterial() {
-        return new THREE.MeshStandardMaterial({ color: 0x00ff00 });
+        return new THREE.MeshStandardMaterial({ color: "0x00ff00" });
     }
 }
 

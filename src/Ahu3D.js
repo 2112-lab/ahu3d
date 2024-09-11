@@ -14,6 +14,8 @@ import Import from "./core/Import.js"
 import Object3DLoader from "./core/Object3DLoader.js"
 import Arithmetics from "./core/Arithmetics.js"
 import Utils from "./core/Utils.js"
+import moduleDefaults from './assets/module_defaults.json';
+import _ from 'lodash';  // You can use lodash for deep merge
 
 class Ahu3D {
 
@@ -24,8 +26,12 @@ class Ahu3D {
      * @param {boolean} [selectorEnabled=true] - Enables the selector, default is true.
      * @param {boolean} [tooltipEnabled=true] - Enables tooltips, default is true.
      */
-    constructor(rendererScale = 1, selectorEnabled = true, tooltipEnabled = true) {
-        this.sceneHelper = new Scene(rendererScale, selectorEnabled, tooltipEnabled);
+    constructor(moduleConfigs = moduleDefaults) {
+        
+        this.moduleConfigs = _.merge({}, moduleDefaults, moduleConfigs);
+        console.log("this.moduleConfigs:", this.moduleConfigs);
+
+        this.sceneHelper = new Scene(this.moduleConfigs);
         this.imports = new Import();
         this.utils = new Utils(this.sceneHelper);
         this.object3DLoader = new Object3DLoader(this.sceneHelper);
@@ -136,6 +142,10 @@ class Ahu3D {
         this.utils.initializeAttributeStates(ahuComponent);
 
         return ahuComponent;
+    }
+
+    updateSceneOpacity(dict) {
+        this.sceneHelper.updateSceneOpacity(dict);
     }
 }
 

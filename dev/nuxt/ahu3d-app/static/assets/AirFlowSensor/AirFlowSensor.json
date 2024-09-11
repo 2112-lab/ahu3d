@@ -1,10 +1,10 @@
 {
-    "componentId": "r:novo.graphics::GenericSensor",
-    "componentName": "Generic Sensor",
+    "componentId": "r:novo.graphics::AirFlowSensor",
+    "componentName": "Air Flow Sensor",
 
     "files": {
-		"thumbnail": "GenericSensor.png",
-        "model": "GenericSensor.glb"
+		"thumbnail": "AirFlowSensor.png",
+        "model": "AirFlowSensor.glb"
 	},
 
     "metadata": {
@@ -17,30 +17,28 @@
     "attributes": {
         "setInput": {
             "key": "sensor-reading",
-            "value": 7
+            "value": 5
         }
     },
     
     "object": {
-        "position": { "x": 0, "y": 0, "z": 650 },
+        "position": { "x": 0, "y": 0, "z": 500 },
         "rotation": { "x": 0, "y": 0, "z": 0 },
         "scale":    { "x": 1, "y": 1, "z": 1 },
         "boundingBox": {
             "dimensions": {
-                "x": 120,
-                "y": 80.5,
-                "z": 400
+                "x": 100,
+                "y": 980,
+                "z": 945
             },
             "origin": {
                 "x": 0,
                 "y": 0,
-                "z": 70
+                "z": 0
             }
         }
     },
-    "isTransparencyEnabled": false,
+    "isTransparencyEnabled": true,
     "transparency": 0,
-    "isComponent": true,
-    "componentPosition": "ceiling",
-    "componentFacing": "inwards"
+    "isComponent": true
 }

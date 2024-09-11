@@ -4,7 +4,7 @@
 
     "files": {
 		"thumbnail": "LJointSliced.png",
-        "model": "joints/LJointSliced.glb"
+        "model": "LJointSliced.glb"
 	},
 
     "metadata": {

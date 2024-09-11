@@ -4,7 +4,7 @@
 
     "files": {
 		"thumbnail": "CapEndSliced.png",
-        "model": "ends/CapEndSliced.glb"
+        "model": "CapEndSliced.glb"
 	},
 
     "metadata": {
