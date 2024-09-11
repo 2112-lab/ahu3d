@@ -1,6 +1,6 @@
 {
   "name": "@musashi/ahu3d",
-  "version": "1.0.27",
+  "version": "1.0.29",
   "description": "",
   "main": "dist/bundle.js",
   "files": [
@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "login": "aws codeartifact login --tool npm --repository npm-store --domain musashi --domain-owner 580797708825 --region us-east-1 --namespace musashi",
-    "send": "npm run build && npm publish",
+    "send": "npm run build && npm run login && npm publish",
     "build": "webpack --mode production",
     "dev": "webpack --mode development --watch",
     "docs": "jsdoc -c jsdoc.json && node removeFooter.js"

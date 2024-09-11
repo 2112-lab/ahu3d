@@ -1,5 +1,5 @@
 <template>
-<v-app data-app>
+<v-app>
   <div id="pageWrapper">
     <!-- Title and Subtitle -->
     <div id="titleContainer">
@@ -17,7 +17,7 @@
     <!-- Scene Container -->
     <div id="sceneContainer"></div>
 
-    <v-row class="mt-1">
+    <v-row class="mt-1" style="height:100px">
 
     <!-- Buttons -->
     <div id="buttonContainer">
@@ -119,7 +119,7 @@ export default {
       scene: {
         renderer: {
           size: {
-            width: 640,
+            width: 840,
             height: 480
           }
         }
@@ -224,10 +224,14 @@ export default {
   #pageWrapper {
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: space-between; /* Adjust this to distribute space */
     align-items: center;
     height: 100vh;
+    padding-bottom: 40px; /* Add space to avoid overlap with footer */
+    box-sizing: border-box; /* Ensure padding is included in height */
+    border: 1px solid black;
     background: #eee;
+    overflow-y: auto; /* Enable scrolling if content overflows */
   }
 
   #titleContainer {

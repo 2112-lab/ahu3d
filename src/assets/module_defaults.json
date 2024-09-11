@@ -2,7 +2,7 @@
 	"scene": {
 		"renderer": {
 			"size": {
-				"width": 480,			
+				"width": 840,			
                 "height": 480
             }
 		},

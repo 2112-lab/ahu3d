@@ -48,7 +48,7 @@ class Scene {
         const instanceLights = new Lights(this.moduleConfigs.scene.lights);
         this.addDefaultLights(instanceLights);
 
-        this.cameras = new Cameras(this.moduleConfigs.scene.cameras);
+        this.cameras = new Cameras(this.moduleConfigs.scene.cameras, this.moduleConfigs.scene.renderer.size);
         
         this.cameras.primary.up.set(0, 0, 1);
         this.scene.rotation.z = 180 * Math.PI/180;

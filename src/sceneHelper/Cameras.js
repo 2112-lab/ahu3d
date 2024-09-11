@@ -11,15 +11,16 @@
 import * as THREE from 'three';
 
 class Cameras {
-    constructor(cameraConfigs) {
+    constructor(cameraConfigs, size) {
         this.cameraConfigs = cameraConfigs;
+        this.size = size;
         this.init();
     }
     init() {
 
         this.primary = new THREE.PerspectiveCamera(
             this.cameraConfigs.primary.fov,
-            this.cameraConfigs.primary.aspect,
+            this.size.width / this.size.height,
             this.cameraConfigs.primary.near,
             this.cameraConfigs.primary.far,
         );

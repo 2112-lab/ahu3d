@@ -41,7 +41,7 @@ class Import {
         const assetsPath = assetConfigs.assetsPath;
 
         const requests = jsonFiles.map(fileName => {
-            const requestPath = `${assetsPath}/${fileName}/${fileName}.json`;
+            const requestPath = `${assetsPath}${fileName}/${fileName}.json`;
             return axios.get(requestPath) // Return the promise here
                 .then(response => {
                     // console.log(`Loaded ${fileName}.json successfully`);
