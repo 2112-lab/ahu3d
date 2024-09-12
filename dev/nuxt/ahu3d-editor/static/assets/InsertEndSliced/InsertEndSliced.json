@@ -1,0 +1,50 @@
+{
+    "componentId": "r:novo.graphics::InsertEndSliced",
+    "componentName": "Insert End - Sliced",
+
+    "files": {
+		"thumbnail": "InsertEndSliced.png",
+        "model": "InsertEndSliced.glb"
+	}, 
+
+    "metadata": {
+        "description": "Fixed air duct",
+        "capacity": "500cfm",
+        "size": "328x252x252",
+        "material": "Galvanized Steel"
+    },
+    
+    "attributes": {
+        "length": {
+            "key": "length",
+            "value": 1000,
+            "default": 1000,
+            "step": 500,
+            "min": 1000,
+            "max": 4500,
+            "lengthTarget": "child001",
+            "insertTarget": "child002"
+        }
+    },
+    
+    "object": {
+        "position": { "x": 0, "y": 0, "z": 530.00 },
+        "rotation": { "x": 0, "y": 0, "z": 0 },
+        "scale":    { "x": 1, "y": 1, "z": 1 },
+        "boundingBox": {
+            "dimensions": {
+                "x": 200,
+                "y": 1030,
+                "z": 1060
+            },
+            "origin": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+            }
+        }
+    },
+    "isTransparencyEnabled": true,
+    "transparency": 0,
+    "isComponent": false
+}

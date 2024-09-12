@@ -1,0 +1,44 @@
+{
+    "componentId": "r:novo.graphics::AirFilter",
+    "componentName": "Air Filter",
+
+    "files": {
+		"thumbnail": "AirFilter.png",
+        "model": "AirFilter.glb"
+	}, 
+
+    "metadata": {
+        "description": "Large air vent",
+        "capacity": "500cfm",
+        "size": "257x64x225",
+        "material": "Galvanized Steel"
+    },
+    
+    "attributes": {
+        "setInput": {
+            "key": "sensor-reading",
+            "value": 3
+        }
+    },
+    
+    "object": {
+        "position": { "x": 0, "y": 0, "z": 500 },
+        "rotation": { "x": 0, "y": 0, "z": 0 },
+        "scale":    { "x": 1, "y": 1, "z": 1 },
+        "boundingBox": {
+            "dimensions": {
+                "x": 100,
+                "y": 1000,
+                "z": 1000
+            },
+            "origin": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+            }
+        }
+    },
+    "isTransparencyEnabled": true,
+    "transparency": 0,
+    "isComponent": true
+}

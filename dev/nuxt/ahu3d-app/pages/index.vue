@@ -3,8 +3,8 @@
   <div id="pageWrapper">
     <!-- Title and Subtitle -->
     <div id="titleContainer">
-      <h1>Ahu3D Parametric Module</h1>
-      <h2 style="margin-top:20px;">Demo App</h2>
+      <h1>Ahu3d Module</h1>
+      <h2 style="margin-top:20px;">Parametric Air Handling Unit</h2>
     </div>
 
     <!-- Description -->
@@ -19,66 +19,100 @@
 
     <v-row class="mt-1" style="height:100px">
 
-    <!-- Buttons -->
-    <div id="buttonContainer">
-      <span style="margin-right:6px">Load Xeto Samples:</span>
-      <button id="button" type="button" @click="loadMockXeto(0)">1</button>
-      <button id="button" type="button" @click="loadMockXeto(1)">2</button>
-      <button id="button" type="button" @click="loadMockXeto(2)">3</button>
-      <button id="button" type="button" @click="loadMockXeto(3)">4</button>
-      <button id="button" type="button" @click="loadMockXeto(4)">5</button>
-      <button id="button" type="button" @click="loadMockXeto(5)">6</button>
-    </div>
+      <div id="buttonContainer">
+        <span style="margin-right:6px">Load Xeto Samples:</span>
+        <button id="button" type="button" @click="loadMockXeto(0)">1</button>
+        <button id="button" type="button" @click="loadMockXeto(1)">2</button>
+        <button id="button" type="button" @click="loadMockXeto(2)">3</button>
+        <button id="button" type="button" @click="loadMockXeto(3)">4</button>
+        <button id="button" type="button" @click="loadMockXeto(4)">5</button>
+        <button id="button" type="button" @click="loadMockXeto(5)">6</button>
+      </div>
 
-    <div class="ml-6 mt-4">
-      <v-menu
-        v-model="menu"
-        :close-on-content-click="false"
-        max-width="290"
-        offset-y
-        top
-      >
-        <template v-slot:activator="{ on, attrs }">
-          <v-btn
-            v-bind="attrs"
-            v-on="on"
-            dense
-          >
-            Select Options
-          </v-btn>
-        </template>
+      <div class="ml-6 mt-4">
+        <v-menu
+          v-model="menu"
+          :close-on-content-click="false"
+          max-width="290"
+          offset-y
+          top
+        >
+          <template v-slot:activator="{ on, attrs }">
+            <v-btn
+              v-bind="attrs"
+              v-on="on"
+              dense
+              :disabled="renderedAssembly.length === 0"
+            >
+              Select Options
+            </v-btn>
+          </template>
 
-        <v-list dense>
-          <v-list-item-group v-for="option in options" :key="option.value">
-            <v-list-item>
-              <v-list-item-content>
-                <v-checkbox
-                  v-model="selectedOptions"
-                  :label="option.text"
-                  :value="option.value"
-                  dense
-                ></v-checkbox>
-              </v-list-item-content>
-            </v-list-item>
-          </v-list-item-group>
-        </v-list>
-      </v-menu>
+          <v-list dense>
+            <v-list-item-group v-for="option in options" :key="option.value">
+              <v-list-item>
+                <v-list-item-content>
+                  <v-checkbox
+                    v-model="option.isSelected"
+                    :label="option.text"
+                    dense
+                    @change="updateSelectedOptions"
+                  ></v-checkbox>
+                </v-list-item-content>
+              </v-list-item>
+            </v-list-item-group>
+          </v-list>
+
+        </v-menu>
+
+        
+      </div>
+
+      <div>
+
+        <v-slider
+          v-model="sliderValue"
+          min="0"
+          max="1"
+          label="Transparency"
+          thumb-label=""
+          step="0.1"
+          style="width:300px"
+          class="ml-6 mb-0 mt-5"
+          discrete
+          :disabled="selectedOptions.length === 0"
+          @input="updateTransparencyToSelected"
+        ></v-slider>
+
+        <div class="ml-6">
+          <v-row no-gutters style="color:#000a" class="mt-2">
+            <span class="mr-4 mt-1">
+              Set Attribute:
+            </span>
+            <v-btn 
+              x-small 
+              fab 
+              class="mr-2" 
+              style="font-size:24px; padding-bottom:1px" 
+              @click="setAttributeOnSelected(-1)"
+              :disabled="selectedOptions.length !== 1"
+            >
+              -
+            </v-btn>
+            <v-btn 
+              x-small 
+              fab 
+              style="font-size:16px; padding-bottom:0px" 
+              @click="setAttributeOnSelected(1)"
+              :disabled="selectedOptions.length !== 1"
+            >
+              +
+            </v-btn>
+          </v-row>
+        </div>
+      </div>
 
       
-    </div>
-
-    <v-slider
-      v-model="sliderValue"
-      min="0"
-      max="1"
-      label="Transparency"
-      thumb-label=""
-      step="0.1"
-      style="width:500px"
-      class="ml-6 mb-0 mt-5"
-      discrete
-      @input="updateSceneOpacity"
-    ></v-slider>
 
     </v-row>
 
@@ -104,8 +138,7 @@ export default {
       selectedOptions: [], // stores selected checkboxes
       options: [],
       sliderValue: 0, // Default value for the slider
-      assembly: null,
-      componentsList: [],
+      renderedAssembly: [],
     };
   },
   async mounted() {
@@ -119,7 +152,7 @@ export default {
       scene: {
         renderer: {
           size: {
-            width: 840,
+            width: 850,
             height: 480
           }
         }
@@ -141,40 +174,76 @@ export default {
     };
 
     await this.ahu3d.loadLibraryFromApp(assetConfigs);
-    // await this.ahu3d.loadComponent("Fan");
 
+    // const fan = await this.ahu3d.loadComponent("Fan");
+    // fan.position.x += 1000;
+    // fan.setAttribute(1);
+    // fan.setTransparency(0.1);
+    
+    // const damper = await this.ahu3d.loadComponent("Damper");
+    // damper.position.x -= 1000;
+    // damper.setAttribute(0);
     
   },
   methods: {
-    updateSceneOpacity() {
-      const dict = {
-        value: (1 - this.sliderValue),
-        componentIds: this.selectedOptions 
+    setAttributeOnSelected(factor) {
+      console.log("setAttributeOnSelected:", factor);
+
+      for(const option of this.options) {
+        if(option.isSelected) {
+          const object3d = option.object3d;
+
+          const ahuComponentAttributes = object3d.userData.component.attributes;
+          const attrKeys = Object.keys(ahuComponentAttributes);
+          const methodKey = attrKeys[0];
+
+          const min = ahuComponentAttributes[methodKey].min;
+          const max = ahuComponentAttributes[methodKey].max;
+          const step = ahuComponentAttributes[methodKey].step;
+
+          const newValue = ahuComponentAttributes[methodKey].value + (step * factor);
+
+          if(newValue >= min && newValue <= max) {
+            object3d.setAttribute(newValue);
+          }
+        }
       }
-      this.ahu3d.updateSceneOpacity(dict);
+
+    },
+    updateSelectedOptions() {
+      this.selectedOptions = this.options
+        .filter(option => option.isSelected)
+        .map(option => option.value);
+    },
+    updateTransparencyToSelected() {
+      for(const option of this.options) {
+        if(option.isSelected) {
+          const component = option.object3d;
+          component.setTransparency(1 - this.sliderValue);
+        }
+      }
     },
     async loadMockXeto(index = 0) {
       const mockXeto = this.getMockXeto(index);
-      this.assembly = await this.ahu3d.loadXeto(mockXeto);
-      console.log("this.assembly:", this.assembly);
-      this.componentsList = this.getAllComponents(this.assembly);
-      console.log("this.assembly this.componentsList:", this.componentsList);
+      this.renderedAssembly = await this.ahu3d.loadXeto(mockXeto);
+      console.log("this.renderedAssembly:", this.renderedAssembly);
 
       this.options = [];
-      for(const component of this.componentsList) {
-        this.options.push({
-          text: component,
-          value: component
-        });
-      }
-    },
-    getAllComponents(ducts) {
-      return ducts.reduce((componentsList, duct) => {
-        if (duct.xetoDuct && duct.xetoDuct.components) {
-          return componentsList.concat(duct.xetoDuct.components);
+
+      for(const object3d of this.renderedAssembly) {
+        if(object3d.userData.component.isComponent) {
+          this.options.push({
+            text: object3d.userData.component.componentId,
+            value: object3d.userData.component.componentId,
+            object3d:object3d,
+            isSelected: false,
+          });
         }
-        return componentsList;
-      }, []);
+      }
+
+      console.log("this.options:", this.options);
+
+      
     },
     getMockXeto(index = 0) {
       const mockXetoArray = [
@@ -236,15 +305,15 @@ export default {
 
   #titleContainer {
     text-align: center;
-    margin-top:20px;
-    margin-bottom:20px;
+    margin-top:40px;
+    margin-bottom:40px;
     line-height: 0.5;
   }
 
   #descriptionContainer {
     text-align: center;
     margin-top: 10px;
-    margin-bottom: 10px;
+    margin-bottom: 20px;
     line-height: 0.3;
   }
 
@@ -260,13 +329,22 @@ export default {
 
   footer {
     position: absolute;
-    left: 10px;
-    bottom: 10px;
+    padding:4px;
+    padding-left:10px;
+    left: 0px;
+    bottom: 0px;
+    border-top:1px solid #5555; 
+    width:100%;
   }
 
   #button {
     border:1px solid #5555;
     width:30px;
     height:30px;
+  }
+
+  .v-input__control{
+    height:30px;
+    width:500px;
   }
 </style>

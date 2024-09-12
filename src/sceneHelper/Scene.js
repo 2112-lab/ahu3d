@@ -171,7 +171,7 @@ class Scene {
     }
 
     onMeshClick(event) {
-        event.preventDefault();
+        // event.preventDefault();
 
         this.boundingClientRect = this.renderer.domElement.getBoundingClientRect();    
         this.mouseVector.x = ((event.clientX - this.boundingClientRect.left) / this.boundingClientRect.width) * 2 - 1;

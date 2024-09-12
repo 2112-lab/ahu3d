@@ -109,11 +109,11 @@ class Ahu3D {
 
         this.sceneHelper.clearScene();
 
-        await this.utils.renderAssembly(assembly);
+        const renderedAssembly = await this.utils.renderAssembly(assembly);
 
         this.sceneHelper.fitAssemblyIntoView();
 
-        return assembly;
+        return renderedAssembly;
     }
 
     /**

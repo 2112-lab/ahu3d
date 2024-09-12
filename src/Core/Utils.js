@@ -22,6 +22,15 @@ export default class Utils {
    * @param {Object} ahuComponent - The Object3D instance representing the AHU component.
    */
   extendObject3D(ahuComponent) {
+    ahuComponent.setAttribute = function(value){
+      console.log("setAttribute started:", ahuComponent);
+
+      const ahuComponentAttributes = ahuComponent.userData.component.attributes;
+      const attrKeys = Object.keys(ahuComponentAttributes);
+      const methodKey = attrKeys[0];
+
+      ahuComponent[methodKey](value);
+    };
     ahuComponent.setAnimation = function(value){
       this.userData.component.attributes.setAnimation.value = value;
       this.sceneHelper.updateTooltip();
@@ -75,6 +84,14 @@ export default class Utils {
       attribute.value = value;
       this.sceneHelper.updateTooltip();
     };
+    ahuComponent.setTransparency = function(value){
+      for(const i in this.children) {
+        if(this.children[i].isMesh) {
+          this.children[i].material.opacity = value;
+          this.children[i].material.depthWrite = value < 1 ? false : true;
+        }
+      }
+    };
   }
 
   /**
@@ -110,24 +127,44 @@ export default class Utils {
 
   async renderAssembly(assembly) {
     console.log("renderAssembly started");
+    let renderedAssembly = [];
+  
+    // Iterate over the assembly segments
     for (const segment of assembly) {
-      // Clone and position meshes, joints, ends, and ducts
+      const clonePromises = [];
+  
+      // Clone and position meshes
       for (const mesh of segment.segment.meshes) {
         const instance = this.instanceSet[mesh.userData.component.componentName];
-        this.cloneInstance(mesh.userData, instance, mesh.userData.component.componentName);
+        clonePromises.push(this.cloneInstance(mesh.userData, instance, mesh.userData.component.componentName));
       }
+  
+      // Clone and position joints
       for (const joint of segment.segment.joints) {
         const instance = this.instanceSet[joint.userData.component.componentName];
-        this.cloneInstance(joint.userData, instance, joint.userData.component.componentName);
+        clonePromises.push(this.cloneInstance(joint.userData, instance, joint.userData.component.componentName));
       }
+  
+      // Clone and position ends
       for (const end of segment.segment.ends) {
         const instance = this.instanceSet[end.userData.component.componentName];
-        this.cloneInstance(end.userData, instance, end.userData.component.componentName);
+        clonePromises.push(this.cloneInstance(end.userData, instance, end.userData.component.componentName));
       }
+  
+      // Clone and position duct
       const instance = this.instanceSet[segment.segment.duct.userData.component.componentName];
-      this.cloneInstance(segment.segment.duct.userData, instance, segment.xetoDuct.id);
+      clonePromises.push(this.cloneInstance(segment.segment.duct.userData, instance, segment.xetoDuct.id));
+  
+      // Wait for all clones in the current segment to complete
+      const clonedInstances = await Promise.all(clonePromises);
+  
+      // Add the cloned instances to the rendered assembly
+      renderedAssembly.push(...clonedInstances);
     }
+  
+    return renderedAssembly;
   }
+  
 
   /**
    * cloneInstance
@@ -175,7 +212,9 @@ export default class Utils {
     this.extendObject3D(clonedInstance); 
 
     // Add the cloned instance to the scene and make it visible
-    await this.sceneHelper.addToScene(clonedInstance);
+    this.sceneHelper.addToScene(clonedInstance);
     clonedInstance.visible = true;
+
+    return clonedInstance;
   }
 }
