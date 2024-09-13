@@ -27,7 +27,7 @@ class Import {
     }
 
     /**
-     * loadLibraryFromApp
+     * loadLibrary
      * 
      * Loads component library entries from the specified asset configurations by sending asynchronous
      * requests to fetch JSON files and store their data.
@@ -35,7 +35,7 @@ class Import {
      * @param {Object} assetConfigs - Configuration object with paths to assets and component list.
      * @returns {Object} The loaded files object.
      */
-    async loadLibraryFromApp(assetConfigs) {
+    async loadLibrary(assetConfigs) {
         const files = {};
         const jsonFiles = assetConfigs.componentList;
         const assetsPath = assetConfigs.assetsPath;

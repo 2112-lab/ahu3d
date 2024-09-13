@@ -88,7 +88,7 @@ export default class Utils {
       for(const i in this.children) {
         if(this.children[i].isMesh) {
           this.children[i].material.opacity = value;
-          this.children[i].material.depthWrite = value < 1 ? false : true;
+          this.children[i].renderOrder = 1;
         }
       }
     };
@@ -115,13 +115,16 @@ export default class Utils {
    */
   async loadInstanceSet() {
     let instanceSet = {};
-
-    // Loop through each component entry and import its corresponding 3D mesh
-    for (const key in this.library) {
+  
+    // Create an array of promises for loading each component's 3D mesh
+    const loadPromises = Object.keys(this.library).map(async (key) => {
       const mesh = await this.object3DLoader.loadComponent(this.library[key], false);
       instanceSet[this.library[key].componentName] = mesh; // Store mesh in instanceSet
-    }
-
+    });
+  
+    // Wait for all promises to resolve
+    await Promise.all(loadPromises);
+  
     this.instanceSet = instanceSet;
   }
 

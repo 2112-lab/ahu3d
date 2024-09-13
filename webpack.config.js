@@ -7,12 +7,13 @@ module.exports = (env, argv) => {
     console.log("isDevelopment:", isDevelopment);
 
     return {
-        mode: isDevelopment ? 'development' : 'production', // Set mode explicitly
         entry: './src/index.js',
         output: {
             filename: 'bundle.js',
             path: path.resolve(__dirname, 'dist'),
+            library: 'Ahu3D',  // Explicitly name the library
             libraryTarget: 'umd',
+            globalObject: 'this',  // Ensure compatibility in both browser and Node.js environments
         },
         module: {
             rules: [
@@ -37,6 +38,7 @@ module.exports = (env, argv) => {
             ...(isDevelopment ? [] : [
                 new WebpackObfuscator({
                     rotateStringArray: true,
+                    reservedNames: ['^Ahu3D$'],  // Preserve the Ahu3D class name
                 }, ['**/Scene.js']),
             ]),
         ],
@@ -48,7 +50,9 @@ module.exports = (env, argv) => {
                         compress: {
                             drop_console: !isDevelopment,  // Keep console logs in development
                         },
-                        mangle: !isDevelopment,  // Only mangle in production
+                        mangle: {
+                            reserved: ['Ahu3D'],  // Prevent mangling the Ahu3D class name
+                        },
                     },
                 }),
             ],

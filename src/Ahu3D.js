@@ -38,6 +38,8 @@ class Ahu3D {
         this.library = null;
         this.assetConfigs = null;
         this.instanceSet = null;
+        this.libraryLoadInitiated = false;
+        this.isLibraryLoaded = false;
     }
 
     /**
@@ -62,18 +64,20 @@ class Ahu3D {
      * 
      * @example
      * const assetConfigs = {
-     *   "assetsPath": "/assets/",
+     *   "assetsPath": "https://novo-assets.s3.amazonaws.com/assets/",
      *   "componentList": ["Filter", "Fan", "Damper"]
      * };
-     * ahu3d.loadLibraryFromApp(assetConfigs).then((library) => {
+     * ahu3d.loadLibrary(assetConfigs).then((library) => {
      *   console.log("Library loaded:", library);
      * });
      */
-    async loadLibraryFromApp(assetConfigs) {
+    async loadLibrary(assetConfigs) {
+        this.libraryLoadInitiated = true;
+
         this.assetConfigs = assetConfigs;
         this.object3DLoader.assetConfigs = assetConfigs;
 
-        this.library = await this.imports.loadLibraryFromApp(assetConfigs);
+        this.library = await this.imports.loadLibrary(assetConfigs);
 
         this.utils.library = this.library;
         this.utils.object3DLoader = this.object3DLoader;
@@ -82,6 +86,8 @@ class Ahu3D {
         console.log('Instances are ready')
 
         this.arithmetics = new Arithmetics(this.library);
+
+        this.isLibraryLoaded = true;
 
         return this.library;
     }
@@ -99,11 +105,32 @@ class Ahu3D {
      * });
      */
     async loadXeto(xeto) {
+
+        // Ensure that the loadLibrary method has been invoked.
+        if(this.libraryLoadInitiated == false) {
+            alert("Please load in the asset library before loading xeto.");
+            return null;
+        }
+
+        // This setInterval function will loop until the library is loaded.
+        if(this.isLibraryLoaded == false) {
+            await new Promise((resolve) => {
+                const checkLibraryInterval = setInterval(() => {
+                    if (this.isLibraryLoaded) {
+                        clearInterval(checkLibraryInterval);
+                        resolve();
+                    }
+                }, 100); // Check every 100ms
+            });
+        }        
+
         const cleanedXeto = this.imports.preprocessXeto(xeto);
 
         if(!cleanedXeto) {
             return;
         }
+
+        console.log("cleanedXeto:", cleanedXeto);
 
         const assembly = await this.arithmetics.calculateAssembly(cleanedXeto);
 
@@ -144,8 +171,16 @@ class Ahu3D {
         return ahuComponent;
     }
 
-    updateSceneOpacity(dict) {
-        this.sceneHelper.updateSceneOpacity(dict);
+    toggleGrid() {
+        this.sceneHelper.grid.visible = !this.sceneHelper.grid.visible;
+    }
+
+    toggleSelector() {
+        this.sceneHelper.selectorEnabled = !this.sceneHelper.selectorEnabled;
+    }
+
+    toggleTooltip() {
+        this.sceneHelper.tooltipEnabled = !this.sceneHelper.tooltipEnabled;
     }
 }
 

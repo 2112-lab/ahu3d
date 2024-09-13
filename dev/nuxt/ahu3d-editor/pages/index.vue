@@ -77,11 +77,6 @@
       };
     },
     async mounted() {
-      if (process.env.NODE_ENV !== 'development') {
-        document.getElementById("pageWrapper").style.background = "#111";
-        document.getElementById("pageWrapper").style.color = "white";
-      }
-
       this.instantiatePrimaryScene();
       this.instantiateSecondaryScene();
     },
@@ -107,7 +102,7 @@
     
         // Load component assets into memory
         const assetConfigs = {
-          assetsPath: "/assets/",
+          assetsPath: "https://ahu3d-assets.s3.amazonaws.com/assets/",
           componentList: [
             "LinearDuctSliced", "TJointSliced", "LJointSliced", "CrossJointSliced", 
             "InsertEndSliced", "CapEndSliced", "AirFilter", "AirFlowSensor", 
@@ -116,7 +111,7 @@
           ]
         };
     
-        await this.ahu3d_primary.loadLibraryFromApp(assetConfigs);
+        await this.ahu3d_primary.loadLibrary(assetConfigs);
       },
       async instantiateSecondaryScene() {
         // Initialize Ahu3D instance
@@ -139,7 +134,7 @@
     
         // Load component assets into memory
         const assetConfigs = {
-          assetsPath: "/assets/",
+          assetsPath: "https://ahu3d-assets.s3.amazonaws.com/assets/",
           componentList: [
             "LinearDuctSliced", "TJointSliced", "LJointSliced", "CrossJointSliced", 
             "InsertEndSliced", "CapEndSliced", "AirFilter", "AirFlowSensor", 
@@ -148,7 +143,7 @@
           ]
         };
     
-        await this.ahu3d_secondary.loadLibraryFromApp(assetConfigs);
+        await this.ahu3d_secondary.loadLibrary(assetConfigs);
       },
       displayMockXeto(index = 0) {
         const mockXeto = this.getMockXeto(index);

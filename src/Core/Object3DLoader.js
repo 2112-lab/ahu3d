@@ -33,7 +33,10 @@ class Object3DLoader {
         let componentMesh = THREE.Mesh; // Initialize the component mesh variable.
 
         const componentDirectory = component.componentId.split('::')[1];
-        componentMesh = await this.loadModel(this.assetConfigs.assetsPath + componentDirectory + "/" + component.files.model); // Load the 3D model.
+
+        const url = this.assetConfigs.assetsPath + componentDirectory + "/" + component.files.model;
+        componentMesh = await this.loadModel(url); // Load the 3D model.
+        console.log("loadModel finished:", componentMesh);
 
         componentMesh = this.processGLB(component, componentMesh); // Process the loaded model (GLB).
         componentMesh.visible = isVisible;
@@ -50,7 +53,7 @@ class Object3DLoader {
      * @returns {Promise<Object>} A promise that resolves to the loaded GLTF model.
      */
     loadModel(url) {
-        // console.log("loadModel started:", url);
+        console.log("loadModel started:", url);
         return new Promise((resolve, reject) => {
             const loader = new GLTFLoader(); // Create a new GLTFLoader instance.
             loader.load(url, gltf => resolve(gltf), null, reject); // Load the model and resolve or reject the promise.
@@ -89,7 +92,7 @@ class Object3DLoader {
         mainMesh.material = new THREE.MeshStandardMaterial({ 
             transparent: true, 
             opacity: 0,
-            depthWrite: false,
+            depthWrite: true,
         });
 
         // Traverse the children of the main mesh and set properties.

@@ -21,8 +21,11 @@ class Scene {
     constructor(moduleConfigs) {
         this.moduleConfigs = moduleConfigs;
 
+        this.boxHelpers = null;
+
         this.selectorEnabled = this.moduleConfigs.ui.showSelector;
         this.tooltipEnabled = this.moduleConfigs.ui.showTooltip;
+        this.grid = null;
         this.ahuComponents = [];
         this.tooltipTemplate = tooltipTemplate; // Store the imported HTML template
         this.init();
@@ -92,6 +95,8 @@ class Scene {
         this.grid.rotation.x = 90 * Math.PI/180;
         // this.grid.set(0, 0, 1);
         this.addToScene(this.grid);
+
+        console.log("this.grid:", this.grid);
         
         this.cameras.primary.position.y = 5;
         this.cameras.primary.position.z = 5;
@@ -140,34 +145,35 @@ class Scene {
     }
 
     addEventListeners() {
-        if(this.selectorEnabled) {
-            window.addEventListener('mousedown', this.onMouseDown.bind(this));
-        }
+        window.addEventListener('mousedown', this.onMouseDown.bind(this));
     }
 
     onMouseDown(event) {
-        if (this.tooltipObject && this.tooltipObject.element) {
-            const tooltipRect = this.tooltipObject.element.getBoundingClientRect();
-            const isInsideTooltip = (
-                event.clientX >= tooltipRect.left &&
-                event.clientX <= tooltipRect.right &&
-                event.clientY >= tooltipRect.top &&
-                event.clientY <= tooltipRect.bottom
-            );
-    
-            if (isInsideTooltip) {
-                // Click is inside the tooltip, so cancel the mesh click handling
-                return;
+        this.scene.remove(this.boxHelpers);
+        if(this.selectorEnabled) {
+            if (this.tooltipObject && this.tooltipObject.element) {
+                const tooltipRect = this.tooltipObject.element.getBoundingClientRect();
+                const isInsideTooltip = (
+                    event.clientX >= tooltipRect.left &&
+                    event.clientX <= tooltipRect.right &&
+                    event.clientY >= tooltipRect.top &&
+                    event.clientY <= tooltipRect.bottom
+                );
+        
+                if (isInsideTooltip) {
+                    // Click is inside the tooltip, so cancel the mesh click handling
+                    return;
+                }
             }
-        }
 
-        if (this.tooltipParent && this.tooltipObject) {
-            this.tooltipParent.remove(this.tooltipObject);
-            this.tooltipParent = null;
-            this.tooltipObject = null;
-        }
+            if (this.tooltipParent && this.tooltipObject) {
+                this.tooltipParent.remove(this.tooltipObject);
+                this.tooltipParent = null;
+                this.tooltipObject = null;
+            }
 
-        this.onMeshClick(event);
+            this.onMeshClick(event);
+        }
     }
 
     onMeshClick(event) {
@@ -190,7 +196,10 @@ class Scene {
 
             if(mesh.userData.component.isComponent) {
                 this.selectedMesh = mesh;
-                this.showTooltip();
+                if(this.tooltipEnabled) {
+                    this.addBoundingBox();
+                    this.showTooltip();
+                }
             }            
         } 
         else if (this.tooltipParent && this.tooltipObject) {
@@ -201,55 +210,53 @@ class Scene {
     }
     
     showTooltip() {
-        if(this.tooltipEnabled) {
-            const meshComponentData = this.selectedMesh.userData.component;
-            const meshAttributes = meshComponentData.attributes;
+        const meshComponentData = this.selectedMesh.userData.component;
+        const meshAttributes = meshComponentData.attributes;
 
-            // Clone the loaded template
-            const tooltipDiv = document.createElement('div');
-            tooltipDiv.innerHTML = this.tooltipTemplate.trim(); // Use the imported template
-            const tooltipElement = tooltipDiv.firstElementChild;
+        // Clone the loaded template
+        const tooltipDiv = document.createElement('div');
+        tooltipDiv.innerHTML = this.tooltipTemplate.trim(); // Use the imported template
+        const tooltipElement = tooltipDiv.firstElementChild;
 
-            // Update the tooltip content
-            tooltipElement.querySelector('.tooltip-header').textContent = meshComponentData.componentName || 'Mesh';
+        // Update the tooltip content
+        tooltipElement.querySelector('.tooltip-header').textContent = meshComponentData.componentName || 'Mesh';
 
-            const attrKeys = Object.keys(meshAttributes);
-            const attrKeyDiv = tooltipElement.querySelector('.tooltip-key');
-            const attrValueDiv = tooltipElement.querySelector('.tooltip-value');
-            attrKeyDiv.textContent = `${meshAttributes[attrKeys[0]].key}:`;
-            attrValueDiv.textContent = `${meshAttributes[attrKeys[0]].value}`;
+        const attrKeys = Object.keys(meshAttributes);
+        const attrKeyDiv = tooltipElement.querySelector('.tooltip-key');
+        const attrValueDiv = tooltipElement.querySelector('.tooltip-value');
+        attrKeyDiv.textContent = `${meshAttributes[attrKeys[0]].key}:`;
+        attrValueDiv.textContent = `${meshAttributes[attrKeys[0]].value}`;
 
-            const minusButton = tooltipElement.querySelector('.tooltip-minus');
-            const plusButton = tooltipElement.querySelector('.tooltip-plus');
+        const minusButton = tooltipElement.querySelector('.tooltip-minus');
+        const plusButton = tooltipElement.querySelector('.tooltip-plus');
 
-            if (attrKeys[0] !== 'setInput') {
-                minusButton.addEventListener('click', () => {
-                    const methodKey = attrKeys[0];
-                    const newValue = meshAttributes[attrKeys[0]].value - meshAttributes[attrKeys[0]].step;
-                    if (newValue >= meshAttributes[methodKey].min && newValue <= meshAttributes[methodKey].max) {
-                        this.selectedMesh[methodKey](newValue);
-                    }
-                });
+        if (attrKeys[0] !== 'setInput') {
+            minusButton.addEventListener('click', () => {
+                const methodKey = attrKeys[0];
+                const newValue = meshAttributes[attrKeys[0]].value - meshAttributes[attrKeys[0]].step;
+                if (newValue >= meshAttributes[methodKey].min && newValue <= meshAttributes[methodKey].max) {
+                    this.selectedMesh[methodKey](newValue);
+                }
+            });
 
-                plusButton.addEventListener('click', () => {
-                    const methodKey = attrKeys[0];
-                    const newValue = meshAttributes[attrKeys[0]].value + meshAttributes[attrKeys[0]].step;
-                    if (newValue >= meshAttributes[methodKey].min && newValue <= meshAttributes[methodKey].max) {
-                        this.selectedMesh[methodKey](newValue);
-                    }
-                });
-            } else {
-                minusButton.style.display = 'none';
-                plusButton.style.display = 'none';
-            }
-
-            const label = new CSS2DObject(tooltipElement);
-            label.position.set(0, 1.5, 0);  // Position the label slightly above the mesh
-            this.selectedMesh.add(label);
-
-            this.tooltipParent = this.selectedMesh;
-            this.tooltipObject = label;
+            plusButton.addEventListener('click', () => {
+                const methodKey = attrKeys[0];
+                const newValue = meshAttributes[attrKeys[0]].value + meshAttributes[attrKeys[0]].step;
+                if (newValue >= meshAttributes[methodKey].min && newValue <= meshAttributes[methodKey].max) {
+                    this.selectedMesh[methodKey](newValue);
+                }
+            });
+        } else {
+            minusButton.style.display = 'none';
+            plusButton.style.display = 'none';
         }
+
+        const label = new CSS2DObject(tooltipElement);
+        label.position.set(0, 1.5, 0);  // Position the label slightly above the mesh
+        this.selectedMesh.add(label);
+
+        this.tooltipParent = this.selectedMesh;
+        this.tooltipObject = label;
     }
 
     updateTooltip() {
@@ -356,23 +363,31 @@ class Scene {
         this.controls.update(); // Ensure the controls are updated
     } 
 
-    updateSceneOpacity(dict) {
-        console.log("updateSceneOpacity started:", dict);
-        const hvacObjects = this.scene.children.filter(child => child.name === 'hvac');
+    addBoundingBox() {
+        const dimensions = this.selectedMesh.userData.component.object.boundingBox.dimensions;
 
-        for(const i in hvacObjects) {
-            if(hvacObjects[i].userData.component.isTransparencyEnabled) {
-                for(const j in hvacObjects[i].children) {
-                    if(hvacObjects[i].children[j].isMesh) {
-                        if(dict.componentIds.includes(hvacObjects[i].userData.component.componentId)) {
-                            console.log("found component");
-                            hvacObjects[i].children[j].material.opacity = dict.value;
-                            hvacObjects[i].children[j].material.depthWrite = dict.value < 1 ? false : true;
-                        }
-                    }
-                }
-            }
-        }
+        // Create a box geometry using the bounding box dimensions
+        const boxGeometry = new THREE.BoxGeometry(dimensions.x, dimensions.y, dimensions.z);
+
+        // Create edges geometry from the box geometry
+        const edgesGeometry = new THREE.EdgesGeometry(boxGeometry);
+
+        // Create a line material
+        const lineMaterial = new THREE.LineBasicMaterial({ 
+            color: 0xFF0000,
+        });
+
+        // Create a line segments mesh from the edges geometry and line material
+        this.boxHelpers = new THREE.LineSegments(edgesGeometry, lineMaterial);
+
+        this.boxHelpers.position.copy(this.selectedMesh.position);
+        this.boxHelpers.rotation.copy(this.selectedMesh.rotation);
+        this.boxHelpers.position.x += this.selectedMesh.userData.component.object.boundingBox.origin.x;
+        this.boxHelpers.position.y += this.selectedMesh.userData.component.object.boundingBox.origin.y;
+        this.boxHelpers.position.z += this.selectedMesh.userData.component.object.boundingBox.origin.z;
+
+        // Step 3: Add the helper to the scene
+        this.addToScene(this.boxHelpers);
     }
 
     addToScene(mesh) {
