@@ -98,14 +98,10 @@
                 "near": 0.01,
                 "far": 10000
             }
-        },
-		"materials": { 
-            "color": "0x00ff00"
         }
 	},
 	"ui": {
 		"showSelector": true,
-		"showTooltip": true,
-		"toolTipTemplate": "/path/to/html/template/tooltip.html"
+		"showTooltip": true
 	}
 }

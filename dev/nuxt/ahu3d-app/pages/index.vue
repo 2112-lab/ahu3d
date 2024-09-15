@@ -18,8 +18,12 @@
       <div id="sceneContainer"></div>
   
       <v-row class="mt-1" style="height:0px;" no-gutters>
+
+        <!-- <v-btn>
+          Start
+        </v-btn> -->
   
-        <div id="buttonContainer">
+        <!-- <div id="buttonContainer">
           <span style="margin-right:6px">Load Xeto Samples:</span>
           <button id="button" type="button" @click="loadMockXeto(0)">1</button>
           <button id="button" type="button" @click="loadMockXeto(1)">2</button>
@@ -27,113 +31,19 @@
           <button id="button" type="button" @click="loadMockXeto(3)">4</button>
           <button id="button" type="button" @click="loadMockXeto(4)">5</button>
           <button id="button" type="button" @click="loadMockXeto(5)">6</button>
-        </div>
-  
-        <div class="ml-6 mt-4">
-          <v-menu
-            v-model="menu"
-            :close-on-content-click="false"
-            max-width="290"
-            offset-y
-            top
-          >
-            <template v-slot:activator="{ on, attrs }">
-              <v-btn
-                v-bind="attrs"
-                v-on="on"
-                dense
-                :disabled="renderedAssembly.length === 0 || isTooltipEnabled"
-              >
-                Select Options
-              </v-btn>
-            </template>
-  
-            <v-list dense>
-              <v-list-item-group v-for="option in options" :key="option.value">
-                <v-list-item>
-                  <v-list-item-content>
-                    <v-checkbox
-                      v-model="option.isSelected"
-                      :label="option.text.split('::')[1]"
-                      dense
-                      @change="updateSelectedOptions"
-                    ></v-checkbox>
-                  </v-list-item-content>
-                </v-list-item>
-              </v-list-item-group>
-            </v-list>
-  
-          </v-menu>
-  
-          
-        </div>
-  
-        <div>
-          <v-slider
-            v-model="sliderValue"
-            min="0"
-            max="1"
-            label="Transparency"
-            thumb-label=""
-            step="0.1"
-            style="width:300px"
-            class="ml-6 mb-0 mt-5"
-            discrete
-            :disabled="selectedOptions.length === 0 || isTooltipEnabled"
-            @input="updateTransparencyToSelected"
-          ></v-slider>
-        </div>
-  
-        <div class="ml-4 mt-5" :style="(selectedOptions.length !== 1) ? 'color:#0005':'color:#000a'">
-          <span>
-            Set Attribute:
-          </span>
-          <v-btn 
-            x-small 
-            fab 
-            class="ml-1 mr-1" 
-            style="font-size:24px; padding-bottom:1px" 
-            @click="setAttributeOnSelected(-1)"
-            :disabled="selectedOptions.length !== 1 || isTooltipEnabled"
-          >
-            -
-          </v-btn>
-          <span>{{ displayedAttributeValue }}</span>
-          <v-btn 
-            x-small 
-            fab 
-            class="ml-1 mr-1"
-            style="font-size:16px; padding-bottom:0px" 
-            @click="setAttributeOnSelected(1)"
-            :disabled="selectedOptions.length !== 1 || isTooltipEnabled"
-          >
-            +
-          </v-btn>
-        </div>     
+        </div>    -->
   
       </v-row>
-  
-      <v-row no-gutters>
-        <v-switch
-          v-model="isGridEnabled"
-          label="Grid"
-          @change="toggleGrid()"
-          style="width:90px"
-        ></v-switch>
-        <v-switch
-          v-model="isTooltipEnabled"
-          label="Toolbar"
-          @change="toggleTooltip()"
-          style="width:90px"
-        ></v-switch>
-      </v-row>
-  
-      <!-- <div class="mt-3">
-        <strong>Selected Options:</strong> {{ selectedOptions }}
-      </div> -->
   
       <footer>
-        Documentation: <a href="https://d7m20j52d3356.cloudfront.net/">Ahu3D</a>
+        Apps: 
+          <a target="_blank" rel="noopener noreferrer" href="https://ahu3d-api.config3d.net/">API</a>, 
+          <a target="_blank" rel="noopener noreferrer" href="https://ahu3d-editor.config3d.net/">Editor</a>, 
+          <a target="_blank" rel="noopener noreferrer" href="https://ahu3d-react.config3d.net/">React</a> <span class="mx-4">|</span> 
+        Documentation: 
+          <a target="_blank" rel="noopener noreferrer" href="https://ahu3d-docs.s3.amazonaws.com/Ahu3D.html">Ahu3D Module</a>,
+          <a target="_blank" rel="noopener noreferrer" href="https://ahu3d-docs.s3.amazonaws.com/Module+Configs.pdf">Module Configs</a>,
+          <a target="_blank" rel="noopener noreferrer" href="https://ahu3d-docs.s3.amazonaws.com/Component+Library.pdf">Component Library</a>
       </footer>
   
     </div>
@@ -155,6 +65,23 @@
         isGridEnabled: true,
         isTooltipEnabled: true,
         displayedAttributeValue: 0,
+        mockXetoArray: [
+          require("~/static/mock-data/xeto/2024-09-13_18-57-41_AHU-1-Xeto.json"),
+          require("~/static/mock-data/xeto/2024-09-13_18-57-41_AHU-2-Xeto.json"),
+          require("~/static/mock-data/xeto/2024-09-13_18-57-41_AHU-3-Xeto.json"),
+          require("~/static/mock-data/xeto/2024-09-13_18-57-41_AHU-4-Xeto.json"),
+          require("~/static/mock-data/xeto/2024-09-13_18-57-41_AHU-5-Xeto.json"),
+          require("~/static/mock-data/xeto/2024-09-13_18-57-41_AHU-6-Xeto.json"),
+          require("~/static/mock-data/xeto/2024-09-13_18-57-41_AHU-7-Xeto.json"),
+          require("~/static/mock-data/xeto/2024-09-13_18-57-41_AHU-8-Xeto.json"),
+          require("~/static/mock-data/xeto/2024-09-13_18-57-41_AHU-9-Xeto.json"),
+          require("~/static/mock-data/xeto/2024-09-13_18-57-41_AHU-10-Xeto.json"),
+          require("~/static/mock-data/xeto/2024-09-13_18-57-41_AHU-11-Xeto.json"),
+          require("~/static/mock-data/xeto/2024-09-13_18-57-41_AHU-12-Xeto.json"),
+          require("~/static/mock-data/xeto/2024-09-13_18-57-41_AHU-13-Xeto.json"),
+          require("~/static/mock-data/xeto/2024-09-13_18-57-41_AHU-14-Xeto.json"),
+          require("~/static/mock-data/xeto/2024-09-13_18-57-41_AHU-15-Xeto.json"),
+        ],
       };
     },
     async mounted() {
@@ -186,6 +113,8 @@
       };
   
       await this.ahu3d.loadLibrary(assetConfigs); // Loads the s3 assets into memory.
+
+      this.iterateAllXetos();
   
       // const fan = await this.ahu3d.loadComponent("Fan");
       // fan.position.x += 1000;
@@ -198,63 +127,12 @@
       
     },
     methods: {
-      toggleGrid() {
-        this.ahu3d.toggleGrid();
-      },
-      toggleTooltip() {
-        this.ahu3d.toggleTooltip()
-      },
-      setAttributeOnSelected(factor) {
-        console.log("setAttributeOnSelected:", factor);
-  
-        for(const option of this.options) {
-          if(option.isSelected) {
-            const object3d = option.object3d;
-  
-            const ahuComponentAttributes = object3d.userData.component.attributes;
-            const attrKeys = Object.keys(ahuComponentAttributes);
-            const methodKey = attrKeys[0];
-  
-            const min = ahuComponentAttributes[methodKey].min;
-            const max = ahuComponentAttributes[methodKey].max;
-            const step = ahuComponentAttributes[methodKey].step;
-  
-            const newValue = ahuComponentAttributes[methodKey].value + (step * factor);
-  
-            if(newValue >= min && newValue <= max) {
-              object3d.setAttribute(newValue);
-              this.displayedAttributeValue = newValue;
-            }
-          }
+      async iterateAllXetos() {
+        for (let i = 0; i < this.mockXetoArray.length; i++) {
+          await this.loadMockXeto(i);
+          await new Promise((resolve) => setTimeout(resolve, 2000)); // Delay of 2 seconds between iterations
         }
-      },
-      displayAttributeValue() {
-        console.log("this.options:", this.options);
-        for(const option of this.options) {
-          console.log("option:", option);
-          if(option.isSelected) {
-            const ahuComponentAttributes = option.object3d.userData.component.attributes;
-            const attrKeys = Object.keys(ahuComponentAttributes);
-            const methodKey = attrKeys[0];
-  
-            this.displayedAttributeValue = ahuComponentAttributes[methodKey].value;
-            break;
-          }
-        }
-      },
-      updateSelectedOptions() {
-        this.selectedOptions = this.options
-          .filter(option => option.isSelected)
-          .map(option => option.value);
-          this.displayAttributeValue();
-      },
-      updateTransparencyToSelected() {
-        for(const option of this.options) {
-          if(option.isSelected) {
-            const component = option.object3d;
-            component.setTransparency(1 - this.sliderValue);
-          }
-        }
+        console.log("Finished Xeto Tests");
       },
       async loadMockXeto(index = 0) {
         const mockXeto = this.getMockXeto(index);
@@ -276,15 +154,7 @@
         }
       },
       getMockXeto(index = 0) {
-        const mockXetoArray = [
-          require("~/static/mock-data/xeto/instances-xeto-Cross1-3.0.json"),
-          require("~/static/mock-data/xeto/instances-xeto-sample-1.json"),
-          require("~/static/mock-data/xeto/instances-xeto-sample-2.json"),
-          require("~/static/mock-data/xeto/instances-xeto-sample-3.json"),
-          require("~/static/mock-data/xeto/instances-xeto-sample-4.json"),
-          require("~/static/mock-data/xeto/instances-xeto-fail-sample.json"),
-        ];
-        return mockXetoArray[index];
+        return this.mockXetoArray[index];
       },
       async instantiateMockComponents(ahu3d) {
         const components = [

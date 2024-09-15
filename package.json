@@ -1,6 +1,6 @@
 {
   "name": "@musashi/ahu3d",
-  "version": "1.0.44",
+  "version": "1.0.45",
   "description": "",
   "main": "dist/bundle.js",
   "files": [
@@ -23,6 +23,7 @@
     "webpack-cli": "^5.1.4"
   },
   "devDependencies": {
+    "@adobe/jsonschema2md": "^8.0.2",
     "cheerio": "^1.0.0",
     "docdash": "^2.0.2",
     "html-loader": "^5.1.0",

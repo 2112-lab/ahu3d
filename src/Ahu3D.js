@@ -22,12 +22,9 @@ class Ahu3D {
     /**
      * Creates an instance of Ahu3D and initializes the scene and loaders.
      * 
-     * @param {number} [rendererScale=1] - The scale for the renderer, default is 1.
-     * @param {boolean} [selectorEnabled=true] - Enables the selector, default is true.
-     * @param {boolean} [tooltipEnabled=true] - Enables tooltips, default is true.
+     * @param {Object} [moduleConfigs=moduleDefaults] - Configuration options for the AHU 3D module.
      */
     constructor(moduleConfigs = moduleDefaults) {
-        
         this.moduleConfigs = _.merge({}, moduleDefaults, moduleConfigs);
         console.log("this.moduleConfigs:", this.moduleConfigs);
 
@@ -171,14 +168,32 @@ class Ahu3D {
         return ahuComponent;
     }
 
+    /**
+     * Toggles the visibility of the grid in the scene.
+     * 
+     * @example
+     * ahu3d.toggleGrid();
+     */
     toggleGrid() {
         this.sceneHelper.grid.visible = !this.sceneHelper.grid.visible;
     }
 
+    /**
+     * Toggles the selector functionality in the scene.
+     * 
+     * @example
+     * ahu3d.toggleSelector();
+     */
     toggleSelector() {
         this.sceneHelper.selectorEnabled = !this.sceneHelper.selectorEnabled;
     }
 
+    /**
+     * Toggles the tooltips in the scene.
+     * 
+     * @example
+     * ahu3d.toggleTooltip();
+     */
     toggleTooltip() {
         this.sceneHelper.tooltipEnabled = !this.sceneHelper.tooltipEnabled;
     }
