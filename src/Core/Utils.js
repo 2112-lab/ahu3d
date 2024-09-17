@@ -87,7 +87,7 @@ export default class Utils {
     ahuComponent.setTransparency = function(value){
       for(const i in this.children) {
         if(this.children[i].isMesh) {
-          this.children[i].material.opacity = value;
+          this.children[i].material.opacity = 1 - value;
           this.children[i].renderOrder = 1;
         }
       }

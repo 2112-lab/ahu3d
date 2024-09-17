@@ -1,0 +1,71 @@
+{
+    "componentId": "r:novo.graphics::CoolingCoil",
+    "componentName": "Cooling Coil",
+
+    "files": {
+		"thumbnail": "CoolingCoil.png",
+        "model": "Coil.glb"
+	},
+
+    "metadata": {
+        "description": "Temperature sensor",
+        "capacity": "500cfm",
+        "size": "225x38x129",
+        "material": "Galvanized Steel"
+    },
+    
+    "attributes": {
+        "setTargetMaterials": {
+            "key": "level",
+            "value": 0,
+            "step": 20,
+            "min": 0,
+            "max": 100,
+            "states": {
+                "active": "0x1217E7",
+                "inactive": "0xA5A5A5",
+                "thresholds": [
+                    {
+                        "value": 20,
+                        "target": "001"
+                    },
+                    {
+                        "value": 40,
+                        "target": "003"
+                    },
+                    {
+                        "value": 60,
+                        "target": "005"
+                    },
+                    {
+                        "value": 80,
+                        "target": "007"
+                    },
+                    {
+                        "value": 100,
+                        "target": "009"
+                    }
+                ]
+            }
+        }
+    },
+    
+    "object": {
+        "position": { "x": 0, "y": 0, "z": 500 },
+        "rotation": { "x": 0, "y": 0, "z": 0 },
+        "scale":    { "x": 1, "y": 1, "z": 1 },
+        "boundingBox": {
+            "dimensions": {
+                "x": 100,
+                "y": 1200,
+                "z": 1000
+            },
+            "origin": {
+                "x": 0,
+                "y": -100,
+                "z": 0
+            }
+        }
+    },
+    "isComponent": true
+}

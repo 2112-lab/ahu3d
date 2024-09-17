@@ -1,13 +1,12 @@
 {
   "name": "@musashi/ahu3d",
-  "version": "1.0.46",
+  "version": "1.0.47",
   "description": "",
   "main": "dist/bundle.js",
   "files": [
     "dist"
   ],
   "scripts": {
-    "login": "aws codeartifact login --tool npm --repository npm-store --domain musashi --domain-owner 580797708825 --region us-east-1 --namespace musashi",
     "send": "npm run build && npm run login && npm publish",
     "build": "webpack --mode production",
     "dev": "webpack --mode development --watch",
