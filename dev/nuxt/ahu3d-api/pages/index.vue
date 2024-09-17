@@ -186,15 +186,6 @@
       };
   
       await this.ahu3d.loadLibrary(assetConfigs); // Loads the s3 assets into memory.
-  
-      // const fan = await this.ahu3d.loadComponent("Fan");
-      // fan.position.x += 1000;
-      // fan.setAttribute(1);
-      // fan.setTransparency(0.1);
-      
-      // const damper = await this.ahu3d.loadComponent("Damper");
-      // damper.position.x -= 1000;
-      // damper.setAttribute(0);
       
     },
     methods: {
@@ -282,34 +273,9 @@
           require("~/static/mock-data/xeto/instances-xeto-sample-2.json"),
           require("~/static/mock-data/xeto/instances-xeto-sample-3.json"),
           require("~/static/mock-data/xeto/instances-xeto-sample-4.json"),
-          require("~/static/mock-data/xeto/instances-xeto-fail-sample.json"),
         ];
         return mockXetoArray[index];
       },
-      async instantiateMockComponents(ahu3d) {
-        const components = [
-          { name: "AirFilter", x: 0, y: 1000 },
-          { name: "AirFlowSensor", x: 0, y: -1000 },
-          { name: "CoolingCoil", x: 2000, y: -1000 },
-          { name: "Damper", x: 1000, y: 1000 },
-          { name: "Fan", x: -1000, y: -1000 },
-          { name: "GenericSensor", x: 2000, y: 1000 },
-          { name: "HeatingCoil", x: -1000, y: 1000 },
-          { name: "TemperatureSensor", x: 1000, y: -1000 }
-        ];
-        
-        for (const component of components) {
-          const loadedComponent = await ahu3d.loadComponent(component.name);
-          loadedComponent.position.x += component.x;
-          loadedComponent.position.y += component.y;
-        }
-  
-        const fan = await ahu3d.loadComponent("Fan");
-        fan.setAnimation(1);
-        
-        const damper = await ahu3d.loadComponent("Damper");
-        damper.setTargetTransforms(2);
-      }
     }
   }
   </script>

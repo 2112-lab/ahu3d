@@ -37,6 +37,7 @@ class Ahu3D {
         this.instanceSet = null;
         this.libraryLoadInitiated = false;
         this.isLibraryLoaded = false;
+        this.components = {};  // This object holds loaded assembly components
     }
 
     /**
@@ -137,35 +138,11 @@ class Ahu3D {
 
         this.sceneHelper.fitAssemblyIntoView();
 
+        for(const component of renderedAssembly) {
+            this.components[component.userData.component.componentId.split("::")[1]] = component;
+        }
+
         return renderedAssembly;
-    }
-
-    /**
-     * Loads a specific AHU component and optionally controls its visibility in the scene.
-     * 
-     * @param {string} componentKey - The key representing the component in the library.
-     * @param {boolean} isVisible - Determines if the component should be visible in the scene.
-     * @returns {Promise<Object>} The loaded AHU component.
-     * 
-     * @example
-     * const ahu3d = new Ahu3D();
-     * ahu3d.loadComponent('AirFilter', true).then((component) => {
-     *   console.log('Component loaded:', component);
-     * });
-     */
-    async loadComponent(componentKey, isVisible) {
-        const ahuComponent = await this.object3DLoader.loadComponent(this.library[componentKey], isVisible);
-
-        // Attach sceneHelper to the component
-        ahuComponent.sceneHelper = this.sceneHelper;
-
-        // Extend Object3D instance.
-        this.utils.extendObject3D(ahuComponent);  
-        
-        // Initialize the ahu component attributes for animations/transforms/etc.
-        this.utils.initializeAttributeStates(ahuComponent);
-
-        return ahuComponent;
     }
 
     /**
@@ -197,6 +174,51 @@ class Ahu3D {
     toggleTooltip() {
         this.sceneHelper.tooltipEnabled = !this.sceneHelper.tooltipEnabled;
     }
+
+    /**
+     * Sets an attribute for a specific component.
+     * 
+     * @param {string} key - The key for the component (e.g., "Fan-1", "Filter-2").
+     * @param {number|string} value - The value to set for the attribute.
+     * 
+     * @example
+     * const ahu3d = new Ahu3D();
+     * ahu3d.loadXeto(xetoData).then(() => {
+     *   // Set attribute for a specific component
+     *   ahu3d.setAttribute("Fan-1", 10);
+     * });
+     */
+    setAttribute(key, value) {
+        if (this.components[key]) {
+            this.components[key].setAttribute(value);
+        }
+        else {
+            console.warn(`Component with key ${key} not found`);
+        }
+    }
+
+    /**
+     * Sets the transparency for a specific component.
+     * 
+     * @param {string} key - The key for the component (e.g., "Fan-1", "Filter-2").
+     * @param {number} transparency - A value between 0 (fully transparent) and 1 (fully opaque).
+     * 
+     * @example
+     * const ahu3d = new Ahu3D();
+     * ahu3d.loadXeto(xetoData).then(() => {
+     *   // Set transparency for a specific component
+     *   ahu3d.setTransparency("Fan-1", 0.5);
+     * });
+     */
+    setTransparency(key, transparency) {
+        if (this.components[key]) {
+            this.components[key].setTransparency(transparency);
+        }
+        else {
+            console.warn(`Component with key ${key} not found`);
+        }
+    }
+
 }
 
 export default Ahu3D;

@@ -1,52 +1,87 @@
 <template>
-  <v-app>
+  <v-app id="appContainer">
     <div id="pageWrapper">
       <!-- Title and Subtitle -->
       <div id="titleContainer">
-        <h1>Ahu3d Module</h1>
-        <h2 style="margin-top:20px;">Parametric Air Handling Unit</h2>
+        <h1>Ahu3D Module</h1>
       </div>
   
       <!-- Description -->
       <div id="descriptionContainer">
-        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
-        <p>Vivamus lacinia odio vitae vestibulum vestibulum.</p>
-        <p>Cras vehicula, mi eget feugiat volutpat, ligula erat.</p>
+        <p>The ahu3d module provides parametric 3d renderings of air handling units, declared in the Xeto format.</p>
       </div>
   
       <!-- Scene Container -->
       <div id="sceneContainer"></div>
   
-      <v-row class="mt-1" style="height:0px;" no-gutters>
-
-        <!-- <v-btn>
-          Start
-        </v-btn> -->
-  
-        <!-- <div id="buttonContainer">
-          <span style="margin-right:6px">Load Xeto Samples:</span>
-          <button id="button" type="button" @click="loadMockXeto(0)">1</button>
-          <button id="button" type="button" @click="loadMockXeto(1)">2</button>
-          <button id="button" type="button" @click="loadMockXeto(2)">3</button>
-          <button id="button" type="button" @click="loadMockXeto(3)">4</button>
-          <button id="button" type="button" @click="loadMockXeto(4)">5</button>
-          <button id="button" type="button" @click="loadMockXeto(5)">6</button>
-        </div>    -->
-  
-      </v-row>
-  
-      <footer>
-        Apps: 
-          <a target="_blank" rel="noopener noreferrer" href="https://ahu3d-api.config3d.net/">API</a>, 
-          <a target="_blank" rel="noopener noreferrer" href="https://ahu3d-editor.config3d.net/">Editor</a>, 
-          <a target="_blank" rel="noopener noreferrer" href="https://ahu3d-react.config3d.net/">React</a> <span class="mx-4">|</span> 
-        Documentation: 
-          <a target="_blank" rel="noopener noreferrer" href="https://ahu3d-docs.s3.amazonaws.com/Ahu3D.html">Ahu3D Module</a>,
-          <a target="_blank" rel="noopener noreferrer" href="https://ahu3d-docs.s3.amazonaws.com/Module+Configs.pdf">Module Configs</a>,
-          <a target="_blank" rel="noopener noreferrer" href="https://ahu3d-docs.s3.amazonaws.com/Component+Library.pdf">Component Library</a>
-      </footer>
-  
     </div>
+    <section class="links-section">
+        <div style="margin-top: -60px;">
+          <h4>Demo Apps</h4>
+          <ul>
+            <li>
+              <a target="_blank" rel="noopener noreferrer" href="https://ahu3d-api.2112-lab.com/">ahu3d-api.2112-lab.com</a>
+              - Demo app showcasing API usage, through simple UI.
+            </li>
+            <li>
+              <a target="_blank" rel="noopener noreferrer" href="https://ahu3d-editor.2112-lab.com/">ahu3d-editor.2112-lab.com</a>
+              - Demo app showcasing multiple Ahu3d scene instances.
+            </li>
+            <li>
+              <a target="_blank" rel="noopener noreferrer" href="https://ahu3d-public.config3d.xyz/">ahu3d-public.2112-lab.com</a>
+              - Demo app showcasing public install and deployment of Ahu3d module.
+            </li>
+            <li>
+              <a target="_blank" rel="noopener noreferrer" href="https://ahu3d-react.2112-lab.com/">ahu3d-react.2112-lab.com</a>
+              - Demo apps showcasing React deployment of Ahu3d.
+            </li>
+          </ul>
+        </div>
+        <div style="margin-top: 30px;">
+          <h4>Documentation</h4>
+          <ul>
+            <li>
+              <a target="_blank" rel="noopener noreferrer" 
+                href="https://docs.google.com/document/d/1ioLP9HOlI0DK3IQX0SOHE9oWRklSPPBnmla5xpRQnxE/edit"
+              >Ahu3D Installation
+              </a>
+            </li>
+            <li>
+              <a target="_blank" rel="noopener noreferrer" 
+                href="https://docs.google.com/document/d/1zUB6131M7bpFOJWVdgIbgG64o6BgSs24YJjQHbds5Eo/edit"
+              >Ahu3D Usage
+              </a>
+                
+            </li>
+            
+            <li>
+              <a target="_blank" rel="noopener noreferrer" 
+                href="https://ahu3d-docs.s3.amazonaws.com/Ahu3D.html"
+              >Ahu3D API Documentation</a>
+            </li>
+            <li>
+              <a target="_blank" rel="noopener noreferrer" 
+                href="https://docs.google.com/document/d/1wwrTfEMKlB3ui6VUvGnHBAV69nk_kF0E0ROgrb-T7wk/edit?usp=drive_link"
+              >Ahu3D Configuration
+              </a>
+            </li>
+            <li>
+              <a target="_blank" rel="noopener noreferrer" 
+                href="https://docs.google.com/document/d/18p2HH0qPRwzycMW7K7ZT-QQTry8P59faajqZAXVuyHQ/edit#heading=h.45d8lonrbfcv"
+              >Ahu3D Component Library
+              </a>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <v-row no-gutters justify="center">
+        <footer style="font-size: 13px;">
+          PROPERTY OF COGNITIVE DYNAMICS LTD. - ALL RIGHTS RESERVED - 2024.
+        </footer>
+      </v-row>
+
+      
   </v-app>
   </template>
   
@@ -97,6 +132,8 @@
           }
         }
       });
+
+      this.ahu3d.toggleGrid();
   
       // Attach 3D scene to the page
       this.ahu3d.attachScene("#sceneContainer");
@@ -114,92 +151,43 @@
   
       await this.ahu3d.loadLibrary(assetConfigs); // Loads the s3 assets into memory.
 
-      this.iterateAllXetos();
-  
-      // const fan = await this.ahu3d.loadComponent("Fan");
-      // fan.position.x += 1000;
-      // fan.setAttribute(1);
-      // fan.setTransparency(0.1);
-      
-      // const damper = await this.ahu3d.loadComponent("Damper");
-      // damper.position.x -= 1000;
-      // damper.setAttribute(0);
-      
+      this.iterateAllXetos();      
     },
     methods: {
       async iterateAllXetos() {
-        for (let i = 0; i < this.mockXetoArray.length; i++) {
+        let iterateCount = 0;
+        let iterateLimit = 500;
+        let i = 0;
+        while (iterateCount < iterateLimit) {
           await this.loadMockXeto(i);
-          await new Promise((resolve) => setTimeout(resolve, 2000)); // Delay of 2 seconds between iterations
+          await new Promise((resolve) => setTimeout(resolve, 1000)); // Delay of 1 second(s) between iterations
+          i++;
+          if(i >= this.mockXetoArray.length) {
+            i = 0;
+          }
+          iterateCount++;
         }
         console.log("Finished Xeto Tests");
       },
       async loadMockXeto(index = 0) {
-        const mockXeto = this.getMockXeto(index);
-        this.renderedAssembly = await this.ahu3d.loadXeto(mockXeto);
-        console.log("this.renderedAssembly:", this.renderedAssembly);
-        if(this.renderedAssembly !== null) {
-          this.options = [];
-          for(const object3d of this.renderedAssembly) {
-            if(object3d.userData.component.isComponent) {
-              this.options.push({
-                text: object3d.userData.component.componentId,
-                value: object3d.userData.component.componentId,
-                object3d:object3d,
-                isSelected: false,
-              });
-            }
-          }
-          console.log("this.options:", this.options);
-        }
+        const mockXeto = this.mockXetoArray[index];
+        await this.ahu3d.loadXeto(mockXeto);
+
+        // this.ahu3d.setAttribute("Fan-0", 1);
+        // this.ahu3d.setTransparency("Fan-0", 0.5);
       },
-      getMockXeto(index = 0) {
-        return this.mockXetoArray[index];
-      },
-      async instantiateMockComponents(ahu3d) {
-        const components = [
-          { name: "AirFilter", x: 0, y: 1000 },
-          { name: "AirFlowSensor", x: 0, y: -1000 },
-          { name: "CoolingCoil", x: 2000, y: -1000 },
-          { name: "Damper", x: 1000, y: 1000 },
-          { name: "Fan", x: -1000, y: -1000 },
-          { name: "GenericSensor", x: 2000, y: 1000 },
-          { name: "HeatingCoil", x: -1000, y: 1000 },
-          { name: "TemperatureSensor", x: 1000, y: -1000 }
-        ];
-        
-        for (const component of components) {
-          const loadedComponent = await ahu3d.loadComponent(component.name);
-          loadedComponent.position.x += component.x;
-          loadedComponent.position.y += component.y;
-        }
-  
-        const fan = await ahu3d.loadComponent("Fan");
-        fan.setAnimation(1);
-        
-        const damper = await ahu3d.loadComponent("Damper");
-        damper.setTargetTransforms(2);
-      }
     }
   }
   </script>
   
-  <style>
-    body {
-      margin: 0;
-      background: #333;
-    }
-  
+  <style>  
     #pageWrapper {
       display: flex;
       flex-direction: column;
       justify-content: space-between; /* Adjust this to distribute space */
       align-items: center;
-      height: 100vh;
-      padding-bottom: 40px; /* Add space to avoid overlap with footer */
+      padding-bottom: 40px;
       box-sizing: border-box; /* Ensure padding is included in height */
-      border: 1px solid black;
-      background: #eee;
       overflow-y: auto; /* Enable scrolling if content overflows */
     }
   
@@ -207,7 +195,7 @@
       text-align: center;
       margin-top:40px;
       margin-bottom:40px;
-      line-height: 0.5;
+      line-height: 1;
     }
   
     #descriptionContainer {
@@ -227,16 +215,6 @@
       margin-top: 20px;
     }
   
-    footer {
-      position: absolute;
-      padding:4px;
-      padding-left:10px;
-      left: 0px;
-      bottom: 0px;
-      border-top:1px solid #5555; 
-      width:100%;
-    }
-  
     #button {
       border:1px solid #5555;
       width:30px;
@@ -247,6 +225,41 @@
       height:30px;
       width:500px;
       margin-left:5px;
+    }
+
+    .links-section {
+      padding:60px;
+      gap: 10px;
+    }
+
+    .links-section h4 {
+      margin-bottom: 5px; /* Space between heading and the list */
+    }
+
+    .links-section ul {
+      padding: 0;
+      margin: 0;
+      margin-left:17px;
+    }
+
+    .links-section ul li {
+      margin-bottom: 5px; /* Space between items */
+    }
+
+    .links-section ul li a {
+      text-decoration: none; /* Remove underline */
+      color: #007bff; /* Optional: style the link */
+      display: inline-block; /* Ensures alignment */
+      font-weight: bold; /* Make the links stand out */
+    }
+
+    .links-section ul li a:hover {
+      text-decoration: underline; /* Add underline on hover */
+    }
+
+    .links-section ul li {
+      font-size: 14px; /* Optional: adjust text size */
+      line-height: 1.4; /* Ensure good spacing for text */
     }
   </style>
   

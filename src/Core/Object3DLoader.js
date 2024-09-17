@@ -27,9 +27,7 @@ class Object3DLoader {
      * @param {Boolean} [isVisible=true] - Whether the component should be visible.
      * @returns {Promise<Object>} The processed component mesh.
      */
-    async loadComponent(component, isVisible = true, hvacOpacity = 1) {
-        // console.log("loadComponent started:", component, isVisible, hvacOpacity);     
-
+    async loadComponent(component, isVisible = true, hvacOpacity = 1) { 
         let componentMesh = THREE.Mesh; // Initialize the component mesh variable.
 
         const componentDirectory = component.componentId.split('::')[1];
