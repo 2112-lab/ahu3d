@@ -1,13 +1,13 @@
 {
   "name": "@musashi/ahu3d",
-  "version": "1.0.47",
+  "version": "1.0.49",
   "description": "",
   "main": "dist/bundle.js",
   "files": [
     "dist"
   ],
   "scripts": {
-    "send": "npm run build && npm run login && npm publish",
+    "send": "npm version patch && npm run build && npm publish",
     "build": "webpack --mode production",
     "dev": "webpack --mode development --watch",
     "docs": "jsdoc -c jsdoc.json && node removeFooter.js"

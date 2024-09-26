@@ -11,6 +11,11 @@ playwright-output/output.txt
 
 config
 
+dev/nuxt/ahu3d-api
+dev/nuxt/ahu3d-app
+dev/nuxt/ahu3d-editor
+dev/react
+
 # Created by https://www.toptal.com/developers/gitignore/api/osx,windows,linux,node
 # Edit at https://www.toptal.com/developers/gitignore?templates=osx,windows,linux,node
 

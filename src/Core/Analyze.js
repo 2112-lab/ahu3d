@@ -1,3 +1,21 @@
+//////////////////////////////////////////////////////////////////////////////////////
+//
+//	AHU3D - A Javascript Module for Parametric Design Tool for Air Handling Units.
+//
+//
+//	    LIMITED TEMPORARY LICENSE FOR DEMO PURPOSES ONLY - EXPIRES 2025/01/01
+//
+//
+//		   NOT AUTHORIZED FOR PRODUCTION DEPLOYENT OR REDISTRIBUTION.
+//
+//
+//				PROPERTY OF COGNITIVE DYNAMICS LTD.
+//
+//
+//				    ALL RIGHTS RESERVED - 2024.
+//
+//////////////////////////////////////////////////////////////////////////////////////
+
 /*
  * Analyze.js
  * 
@@ -6,6 +24,7 @@
  * 
  * This module handles analysis tasks within the scene, including real-time metrics and 
  * performance evaluation based on the loaded 3D models.
+ * 
  * 
  */
 class Analyze {

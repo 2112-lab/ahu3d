@@ -6,6 +6,7 @@
                 "height": 480
             }
 		},
+        "background": null,
 		"lights":  {
             "hemisphereLight": {
                 "type": "hemisphere",
@@ -102,6 +103,7 @@
 	},
 	"ui": {
 		"showSelector": true,
-		"showTooltip": true
+		"showTooltip": true,
+        "showGrid": false
 	}
 }

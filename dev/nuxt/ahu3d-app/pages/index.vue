@@ -61,14 +61,20 @@
             </li>
             <li>
               <a target="_blank" rel="noopener noreferrer" 
-                href="https://docs.google.com/document/d/1wwrTfEMKlB3ui6VUvGnHBAV69nk_kF0E0ROgrb-T7wk/edit?usp=drive_link"
+                href="https://docs.google.com/document/d/1wwrTfEMKlB3ui6VUvGnHBAV69nk_kF0E0ROgrb-T7wk/edit"
               >Ahu3D Configuration
               </a>
             </li>
             <li>
               <a target="_blank" rel="noopener noreferrer" 
-                href="https://docs.google.com/document/d/18p2HH0qPRwzycMW7K7ZT-QQTry8P59faajqZAXVuyHQ/edit#heading=h.45d8lonrbfcv"
+                href="https://docs.google.com/document/d/18p2HH0qPRwzycMW7K7ZT-QQTry8P59faajqZAXVuyHQ/edit"
               >Ahu3D Component Library
+              </a>
+            </li>
+            <li>
+              <a target="_blank" rel="noopener noreferrer" 
+                href="https://docs.google.com/document/d/1wiSCkvt9dILxXDfkkFS7EfVQEcfrQ4JAonNPixdtITo/edit"
+              >Ahu3D Distribution
               </a>
             </li>
           </ul>
@@ -129,17 +135,24 @@
               width: 850,
               height: 480
             }
-          }
+          },
+          background: {
+            topColor: "#FFFFFF",
+            bottomColor: "#FFFFFF"
+          },
+        },
+        ui: {
+          showTooltip: true,
+          showSelector: true,
+          showGrid: true
         }
       });
-
-      this.ahu3d.toggleGrid();
   
       // Attach 3D scene to the page
       this.ahu3d.attachScene("#sceneContainer");
   
       // A required object for defining component assets path and keys. 
-      const assetConfigs = {
+      let assetConfigs = {
         assetsPath: "https://ahu3d-assets.s3.amazonaws.com/assets/", // Remote path that points to the component library of json and glb files.
         componentList: [ // The complete list of keys for all components, ducts, ends, and joints. Include all keys for what you intend to render in assemblies.
           "LinearDuctSliced", "TJointSliced", "LJointSliced", "CrossJointSliced", 
@@ -148,10 +161,27 @@
           "TemperatureSensor"
         ]
       };
+
+      if(process.env.NODE_ENV === 'development') {
+        assetConfigs = {
+          assetsPath: "/assets/", // Remote path that points to the component library of json and glb files.
+          componentList: [ // The complete list of keys for all components, ducts, ends, and joints. Include all keys for what you intend to render in assemblies.
+            "LinearDuctSliced", "TJointSliced", "LJointSliced", "CrossJointSliced", 
+            "InsertEndSliced", "CapEndSliced", "AirFilter", "AirFlowSensor", 
+            "CoolingCoil", "Damper", "Fan", "GenericSensor", "HeatingCoil", 
+            "TemperatureSensor", "DwyerOutside", "FanPropeller", "FanHorizontal", 
+            "HumiditySensor", "SmokeDetector"
+          ]
+        }
+      }
   
       await this.ahu3d.loadLibrary(assetConfigs); // Loads the s3 assets into memory.
 
-      this.iterateAllXetos();      
+      await this.ahu3d.object3DLoader.loadComponent(this.ahu3d.library['Fan']);
+
+      this.ahu3d.sceneHelper.fitAssemblyIntoView();
+
+      // this.iterateAllXetos(); 
     },
     methods: {
       async iterateAllXetos() {
@@ -172,9 +202,6 @@
       async loadMockXeto(index = 0) {
         const mockXeto = this.mockXetoArray[index];
         await this.ahu3d.loadXeto(mockXeto);
-
-        // this.ahu3d.setAttribute("Fan-0", 1);
-        // this.ahu3d.setTransparency("Fan-0", 0.5);
       },
     }
   }
@@ -184,7 +211,7 @@
     #pageWrapper {
       display: flex;
       flex-direction: column;
-      justify-content: space-between; /* Adjust this to distribute space */
+      justify-content: space-between;
       align-items: center;
       padding-bottom: 40px;
       box-sizing: border-box; /* Ensure padding is included in height */
@@ -207,8 +234,6 @@
   
     #sceneContainer {
       position: relative;
-      background: #333;
-      border: 1px solid #5555; /* Border around the scene */
     }
   
     #buttonContainer {
@@ -228,7 +253,9 @@
     }
 
     .links-section {
-      padding:60px;
+      padding-top:60px;
+      padding-left:60px;
+      padding-bottom:15px;
       gap: 10px;
     }
 

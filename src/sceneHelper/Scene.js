@@ -1,3 +1,21 @@
+//////////////////////////////////////////////////////////////////////////////////////
+//
+//	AHU3D - A Javascript Module for Parametric Design Tool for Air Handling Units.
+//
+//
+//	    LIMITED TEMPORARY LICENSE FOR DEMO PURPOSES ONLY - EXPIRES 2025/01/01
+//
+//
+//		   NOT AUTHORIZED FOR PRODUCTION DEPLOYENT OR REDISTRIBUTION.
+//
+//
+//				PROPERTY OF COGNITIVE DYNAMICS LTD.
+//
+//
+//				    ALL RIGHTS RESERVED - 2024.
+//
+//////////////////////////////////////////////////////////////////////////////////////
+
 /*
  * Scene.js
  * 
@@ -85,28 +103,31 @@ class Scene {
 
         this.selectedMesh = null;
 
-        // Add the fixed gradient background
-        this.backgroundScene = new THREE.Scene();
-        this.gradientBackground = this.createGradientBackground();
-        this.backgroundScene.add(this.gradientBackground);
+        if(this.moduleConfigs.scene.background !== null) {
+            // Create a fixed gradient background
+            this.backgroundScene = new THREE.Scene();
+            this.gradientBackground = this.createGradientBackground();
+            this.backgroundScene.add(this.gradientBackground);
+        }
+        
 
         // Add a grid to the scene
         this.grid = this.createGrid();
         this.grid.rotation.x = 90 * Math.PI/180;
-        // this.grid.set(0, 0, 1);
-        this.addToScene(this.grid);
-
+        this.grid.visible = this.moduleConfigs.ui.showGrid;
         console.log("this.grid:", this.grid);
+        this.addToScene(this.grid);
         
         this.cameras.primary.position.y = 5;
         this.cameras.primary.position.z = 5;
-        // this.cameras.primary.rotation.z = THREE.MathUtils.degToRad(-45);
         
         const animate = () => {
             requestAnimationFrame(animate);
             this.renderer.autoClear = false;
             this.renderer.clear();
-            this.renderer.render(this.backgroundScene, this.cameras.primary);
+            if(this.moduleConfigs.scene.background !== null) {
+                this.renderer.render(this.backgroundScene, this.cameras.primary);
+            }
             this.renderer.render(this.scene, this.cameras.primary);
             this.labelRenderer.render(this.scene, this.cameras.primary);
 
@@ -122,12 +143,7 @@ class Scene {
                         }
                     }
                 }
-            });
-
-            for(const ahuComponent of this.ahuComponents) {
-                
-            }
-            
+            });            
         }
         
         animate();
@@ -187,11 +203,14 @@ class Scene {
         this.raycaster.setFromCamera(this.mouseVector, this.cameras.primary);
     
         const hvacIntersects = this.raycaster.intersectObjects(
-            this.scene.children.filter(child => child.name === 'hvac')
+            this.scene.children.filter(child => child.name === 'hvac' && child.visible)
         );
 
         if (hvacIntersects.length > 0) {
-            const mesh = hvacIntersects[0].object.parent;
+            let mesh = hvacIntersects[0].object.parent;
+            // if(mesh.parent.name === "hvac") {
+            //     mesh = mesh.parent;
+            // }
             console.log("mesh:", mesh);
 
             if(mesh.userData.component.isComponent) {
@@ -287,17 +306,18 @@ class Scene {
         `;
 
         // Define shader uniforms for the colors
-        let uniforms = {
-            topColor: { value: new THREE.Color(0x87CEEB) },   // Light blue (sky color)
-            bottomColor: { value: new THREE.Color(0xFFFFFF) } // White (ground color)
-        };
+        let uniforms = {};
 
-        if(process.env.NODE_ENV === 'development') {
-            uniforms = {
-                bottomColor: { value: new THREE.Color(0x000000) },   // Even lighter blue for the night sky
-                topColor : { value: new THREE.Color(0x3B5F8A) } // Lighter blue for the ground at night
-            };
+        for(const color in this.moduleConfigs.scene.background) {
+            uniforms[color] = { value: new THREE.Color(this.moduleConfigs.scene.background[color]) }
         }
+
+        // if(process.env.NODE_ENV === 'development') {
+        //     uniforms = {
+        //         bottomColor: { value: new THREE.Color("#000000") },   // Dark blue for the night sky
+        //         topColor : { value: new THREE.Color("#3B5F8A") } // Darker blue for the ground at night
+        //     };
+        // }
 
         // Create ShaderMaterial
         const material = new THREE.ShaderMaterial({
@@ -337,7 +357,7 @@ class Scene {
 
         const box = new THREE.Box3();
         this.scene.traverse((object) => {
-            if (object.isObject3D && object.name == 'hvac') {
+            if (object.isObject3D && object.name == 'hvac' && object.visible) {
                 const objectBox = new THREE.Box3().setFromObject(object);
                 box.union(objectBox); // Expand the bounding box to include the object's box
             }
@@ -397,7 +417,7 @@ class Scene {
     clearScene() {
         console.log("clearScene started:");
         const sceneChildren = this.scene.children.filter(
-            (child) => child.name == 'hvac' && child.isObject3D
+            (child) => child.name == 'hvac' && child.isObject3D && child.visible
         );
         sceneChildren.forEach((child) => {
             this.scene.remove(child);

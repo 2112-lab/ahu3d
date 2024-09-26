@@ -1,6 +1,6 @@
 {
     "componentId": "r:novo.graphics::AirFlowSensor",
-    "componentName": "Air Flow Sensor",
+    "componentName": "Airflow Sensor",
 
     "files": {
 		"thumbnail": "AirFlowSensor.png",
@@ -28,8 +28,8 @@
         "boundingBox": {
             "dimensions": {
                 "x": 100,
-                "y": 980,
-                "z": 945
+                "y": 1000,
+                "z": 1000
             },
             "origin": {
                 "x": 0,

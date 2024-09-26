@@ -1,3 +1,21 @@
+//////////////////////////////////////////////////////////////////////////////////////
+//
+//	AHU3D - A Javascript Module for Parametric Design Tool for Air Handling Units.
+//
+//
+//	    LIMITED TEMPORARY LICENSE FOR DEMO PURPOSES ONLY - EXPIRES 2025/01/01
+//
+//
+//		   NOT AUTHORIZED FOR PRODUCTION DEPLOYENT OR REDISTRIBUTION.
+//
+//
+//				PROPERTY OF COGNITIVE DYNAMICS LTD.
+//
+//
+//				    ALL RIGHTS RESERVED - 2024.
+//
+//////////////////////////////////////////////////////////////////////////////////////
+
 /*
  * Utils.js
  * 
@@ -22,6 +40,7 @@ export default class Utils {
    * @param {Object} ahuComponent - The Object3D instance representing the AHU component.
    */
   extendObject3D(ahuComponent) {
+    ahuComponent.sceneHelper = this.sceneHelper;
     ahuComponent.setAttribute = function(value){
       console.log("setAttribute started:", ahuComponent);
 
