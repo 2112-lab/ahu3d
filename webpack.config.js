@@ -52,28 +52,28 @@ module.exports = (env, argv) => {
                 path: false,
             },
         },
-        plugins: [
-            ...(isDevelopment ? [] : [
-                new WebpackObfuscator({
-                    rotateStringArray: true,
-                    reservedNames: ['^Ahu3D$'],  // Preserve the Ahu3D class name
-                }, ['**/Scene.js']),
-            ]),
-        ],
-        optimization: {
-            minimize: !isDevelopment,  // Minimize only in production mode
-            minimizer: [
-                new TerserPlugin({
-                    terserOptions: {
-                        compress: {
-                            drop_console: !isDevelopment,  // Keep console logs in development
-                        },
-                        mangle: {
-                            reserved: ['Ahu3D'],  // Prevent mangling the Ahu3D class name
-                        },
-                    },
-                }),
-            ],
-        },
+        // plugins: [
+        //     ...(isDevelopment ? [] : [
+        //         new WebpackObfuscator({
+        //             rotateStringArray: true,
+        //             reservedNames: ['^Ahu3D$'],  // Preserve the Ahu3D class name
+        //         }, ['**/Scene.js']),
+        //     ]),
+        // ],
+        // optimization: {
+        //     minimize: !isDevelopment,  // Minimize only in production mode
+        //     minimizer: [
+        //         new TerserPlugin({
+        //             terserOptions: {
+        //                 compress: {
+        //                     drop_console: !isDevelopment,  // Keep console logs in development
+        //                 },
+        //                 mangle: {
+        //                     reserved: ['Ahu3D'],  // Prevent mangling the Ahu3D class name
+        //                 },
+        //             },
+        //         }),
+        //     ],
+        // },
     };
 };

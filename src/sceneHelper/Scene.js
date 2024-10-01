@@ -131,18 +131,23 @@ class Scene {
             this.renderer.render(this.scene, this.cameras.primary);
             this.labelRenderer.render(this.scene, this.cameras.primary);
 
-            this.scene.traverse((ahuComponent) => {
-                if (ahuComponent.isObject3D && ahuComponent.name == 'hvac') {
+            this.scene.traverse((object3d) => {
+                if (object3d.isObject3D && object3d.name == 'hvac') {
 
-                    const attributeKeys = Object.keys(ahuComponent.userData.component.attributes)
+                    const attributeKeys = Object.keys(object3d.userData.component.attributes)
                     if(attributeKeys.includes("setAnimation")) {
-                        const attributeTargets = ahuComponent.userData.component.attributes.setAnimation.targets[0];
-                        const targetMeshes = ahuComponent.children.filter(child => attributeTargets.includes(child.name));
+                        const attributeTargets = object3d.userData.component.attributes.setAnimation.targets[0];
+                        const targetMeshes = object3d.children.filter(child => attributeTargets.includes(child.name));
                         for(const targetMesh of targetMeshes) {
                             this.animateMesh(targetMesh);
                         }
                     }
                 }
+                // Make the text face the camera
+                // if (object3d.name === "textMesh") {
+                //     // Update text orientation
+                //     this.updateTextOrientation(object3d, this.cameras.primary);
+                // }
             });            
         }
         
@@ -150,6 +155,20 @@ class Scene {
 
         this.addOrbitControl();
         this.addEventListeners();
+    }
+
+    updateTextOrientation(textMesh, camera) {
+        if (!textMesh || !camera) return;
+    
+        // Calculate the direction from the text to the camera
+        var direction = new THREE.Vector3().subVectors(camera.position, textMesh.position).normalize();
+    
+        // Create a quaternion that represents the rotation needed to align the text's y-axis with the direction vector
+        var up = new THREE.Vector3(0, 1, 0); // Y-axis
+        var quaternion = new THREE.Quaternion().setFromUnitVectors(up, direction);
+    
+        // Apply the quaternion to the text mesh
+        textMesh.quaternion.copy(quaternion);
     }
 
     animateMesh(targetMesh) {
@@ -208,9 +227,9 @@ class Scene {
 
         if (hvacIntersects.length > 0) {
             let mesh = hvacIntersects[0].object.parent;
-            // if(mesh.parent.name === "hvac") {
-            //     mesh = mesh.parent;
-            // }
+            if(mesh.parent.name === "hvac") {
+                mesh = mesh.parent;
+            }
             console.log("mesh:", mesh);
 
             if(mesh.userData.component.isComponent) {
@@ -420,6 +439,12 @@ class Scene {
             (child) => child.name == 'hvac' && child.isObject3D && child.visible
         );
         sceneChildren.forEach((child) => {
+            this.scene.remove(child);
+        });
+        const sceneIndicators = this.scene.children.filter(
+            (child) => child.name == 'arrowClone' && child.visible || child.name == 'textMesh' && child.visible
+        );
+        sceneIndicators.forEach((child) => {
             this.scene.remove(child);
         });
     }

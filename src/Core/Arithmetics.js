@@ -40,6 +40,8 @@
  */
 
 import * as THREE from 'three';
+import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
+import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 
 export default class Arithmetics {
     /**
@@ -54,7 +56,9 @@ export default class Arithmetics {
      * @param {Object} componentLibEntries - The library entries for the HVAC components.
      * @returns {Array} The precalculated assembly segments.
      */
-    constructor(componentLibEntries) {
+    constructor(componentLibEntries, arrowInstance, sceneHelper) {
+        this.arrowInstance = arrowInstance;
+        this.sceneHelper = sceneHelper;
         console.log("componentLibEntries:", componentLibEntries);
         this.componentLibEntries = componentLibEntries; // Store the component library entries.
         this.ductEntry = this.componentLibEntries['LinearDuctSliced']; // Retrieve the duct component from the library.
@@ -128,6 +132,8 @@ export default class Arithmetics {
         }
 
         this.determineFlowDirections(this.assemblySegments); // Determine and adjust flow directions for ducts
+
+        this.createFlowIndicators(); // Create arrows for the ducts with open ends.
 
         return this.assemblySegments; // Return the assembly segments.
     }
@@ -277,6 +283,287 @@ export default class Arithmetics {
         }
     }
 
+    createFlowIndicators() {
+        console.log("createFlowIndicators started");
+        for (const segment of this.assemblySegments) { // Iterate over each segment.
+
+            if (segment.xetoDuct.blockStyle.helpers &&
+                segment.xetoDuct.blockStyle.helpers.arrow && 
+                segment.xetoDuct.blockStyle.helpers.arrow.display ||
+                segment.xetoDuct.blockStyle.helpers &&
+                segment.xetoDuct.blockStyle.helpers.text &&
+                segment.xetoDuct.blockStyle.helpers.text.display) {
+                console.log("createFlowIndicators segment:", segment);
+
+                const segmentLoc = segment.xetoDuct.graphicLocation; // Get the segment's graphic location.
+
+                const startIntersections = this.assemblySegments.filter(child => 
+                    segmentLoc.start === child.xetoDuct.graphicLocation.start &&
+                    segment != child ||
+                    segmentLoc.start === child.xetoDuct.graphicLocation.end &&
+                    segment != child
+                ); // Find intersections at the start of the segment.
+
+                const endIntersections = this.assemblySegments.filter(child => 
+                    segmentLoc.end === child.xetoDuct.graphicLocation.start &&
+                    segment != child ||
+                    segmentLoc.end === child.xetoDuct.graphicLocation.end &&
+                    segment != child
+                ); // Find intersections at the end of the segment.
+
+                if (startIntersections.length == 0) { // If no start intersections are found.
+                    console.log("createFlowIndicators: 0 starts found");
+
+                    if(segment.xetoDuct.blockStyle.helpers.arrow) {
+                        if (segment.xetoDuct.blockStyle.helpers.arrow.display) {
+                            this.calcArrow(segment, "start");
+                            this.renderArrow(segment);
+                        }
+                    }
+                    if(segment.xetoDuct.blockStyle.helpers.text) {
+                        if (segment.xetoDuct.blockStyle.helpers.text.display) {
+                            this.calcTextMesh(segment, "start");  
+                            this.renderTextMesh(segment);                     
+                        }
+                    }
+                }
+
+                if (endIntersections.length == 0) { // If no end intersections are found.
+                    console.log("createFlowIndicators: 0 ends found");   
+
+                    if(segment.xetoDuct.blockStyle.helpers.arrow) {
+                        if (segment.xetoDuct.blockStyle.helpers.arrow.display) {
+                            this.calcArrow(segment, "end");
+                            this.renderArrow(segment);
+                        }
+                    }
+                    if(segment.xetoDuct.blockStyle.helpers.text) {
+                        if (segment.xetoDuct.blockStyle.helpers.text.display) {
+                            this.calcTextMesh(segment, "end");  
+                            this.renderTextMesh(segment);                     
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    calcArrow(segment, intersectionKey) {
+        console.log("calcArrow started");
+
+        let arrow = {
+            userData: {
+                component: {
+                    object: {}
+                }
+            }
+        }
+
+        let object = this.calcIndicator(segment, "arrow", intersectionKey);
+
+        arrow.userData.component.object = object;
+
+        segment.segment.arrows.push(arrow);
+    }
+
+    calcTextMesh(segment, intersectionKey) {
+        console.log("calcTextMesh started");
+
+        let textMesh = {
+            userData: {
+                component: {
+                    object: {}
+                }
+            }
+        }
+
+        let object = this.calcIndicator(segment, "textMesh", intersectionKey);
+
+        textMesh.userData.component.object.position = object.position;
+
+        segment.segment.textMeshes.push(textMesh);
+    }
+
+    calcIndicator(segment, indicatorKey, intersectionKey) {
+
+        let object = {
+            position: {
+                x: segment.segment.duct.userData.component.object.position.x,
+                y: segment.segment.duct.userData.component.object.position.y,
+                z: segment.segment.duct.userData.component.object.position.z
+            },
+            rotation: {
+                x: 0,
+                y: 0,
+                z: 0
+            }
+        }
+
+        let segmentOrientation = this.getOrientation(segment.xetoDuct.graphicLocation.start, segment.xetoDuct.graphicLocation.end);
+        console.log("createFlowIndicators segmentOrientation:", segmentOrientation);
+
+        if(segmentOrientation === "east") {
+
+            if(intersectionKey === "start") {
+                object.position.x -= segment.segment.duct.userData.component.object.boundingBox.dimensions.x / 2;
+                object.position.x -= 500;
+                object.position.x -= segment.xetoDuct.blockStyle.helpers.arrow.padding || 0;
+            }
+            if(intersectionKey === "end") {
+                object.position.x += segment.segment.duct.userData.component.object.boundingBox.dimensions.x / 2;
+                object.position.x += 500;
+                object.position.x += segment.xetoDuct.blockStyle.helpers.arrow.padding || 0;
+            }
+
+            if(indicatorKey == 'textMesh') {
+                object.position.x -= 500; // -500 for an offset
+                object.position.z += 120; // +120 for an offset
+                object.position.x += segment.xetoDuct.blockStyle.helpers.text.padding || 0;
+            }
+        }
+
+        if(segmentOrientation === "west") {
+
+            if(intersectionKey === "start") {
+                object.position.x += segment.segment.duct.userData.component.object.boundingBox.dimensions.x / 2;
+                object.position.x += 500;
+                object.position.x += segment.xetoDuct.blockStyle.helpers.arrow.padding || 0;
+            }
+            if(intersectionKey === "end") {
+                object.position.x -= segment.segment.duct.userData.component.object.boundingBox.dimensions.x / 2;
+                object.position.x -= 500;
+                object.position.x -= segment.xetoDuct.blockStyle.helpers.arrow.padding || 0;
+            }
+            
+            if(indicatorKey == 'textMesh') {
+                object.position.x -= 500; // -500 for an offset
+                object.position.z += 120; // +120 for an offset
+                object.position.x += segment.xetoDuct.blockStyle.helpers.text.padding || 0;
+            }
+        } 
+
+        if(segmentOrientation === "north") {
+            if(intersectionKey === "start") {
+                object.position.z -= segment.segment.duct.userData.component.object.boundingBox.dimensions.x / 2;
+                object.position.z -= 500;
+                object.position.z -= segment.xetoDuct.blockStyle.helpers.arrow.padding || 0;
+            }
+            if(intersectionKey === "end") {
+                object.position.z += segment.segment.duct.userData.component.object.boundingBox.dimensions.x / 2;
+                object.position.z += 500;
+                object.position.z += segment.xetoDuct.blockStyle.helpers.arrow.padding || 0;
+            }
+
+            object.rotation.y = THREE.MathUtils.degToRad(-90);
+            if(indicatorKey == 'textMesh') {
+                object.position.x += 100; // +100 for an offset
+                object.position.x += segment.xetoDuct.blockStyle.helpers.text.padding || 0;
+            }
+        }
+
+        if(segmentOrientation === "south") {
+            if(intersectionKey === "start") {
+                object.position.z += segment.segment.duct.userData.component.object.boundingBox.dimensions.x / 2;
+                object.position.z += 500;
+                object.position.z += segment.xetoDuct.blockStyle.helpers.arrow.padding || 0;
+            }
+            if(intersectionKey === "end") {
+                object.position.z -= segment.segment.duct.userData.component.object.boundingBox.dimensions.x / 2;
+                object.position.z -= 500;
+                object.position.z -= segment.xetoDuct.blockStyle.helpers.arrow.padding || 0;
+            }
+
+            object.rotation.y = THREE.MathUtils.degToRad(90);
+            if(indicatorKey == 'textMesh') {
+                object.position.x += 100; // +100 for an offset
+                object.position.x += segment.xetoDuct.blockStyle.helpers.text.padding || 0;
+            }
+        } 
+
+        if(segment.xetoDuct.blockStyle.flowDirection == "endToStart") {
+            if(indicatorKey == 'arrow') {
+                object.rotation.y += THREE.MathUtils.degToRad(180); 
+            }
+        }
+
+        return object;
+    }
+
+    renderArrow(segment) {
+        const clonedArrow = this.arrowInstance.clone();
+        clonedArrow.name = "arrowClone";
+
+        const material = segment.xetoDuct.blockStyle.helpers.arrow.material || { color: "#AAAAAA", opacity: 1 };
+        const color = material.color || '#AAAAAA';
+        const opacity = material.opacity || 1;
+
+        // Clone the materials of all children of the cloned instance
+        clonedArrow.traverse(child => {
+            if (child.isMesh && child.material) {  // Ensure child is a mesh and has a material
+                child.material = child.material.clone(); // Clone the material
+                child.material.color = new THREE.Color(color);
+                child.material.opacity = opacity;
+            }
+        });
+
+        clonedArrow.position.x = segment.segment.arrows[0].userData.component.object.position.x;
+        clonedArrow.position.y = segment.segment.arrows[0].userData.component.object.position.y;
+        clonedArrow.position.z = segment.segment.arrows[0].userData.component.object.position.z;
+
+        clonedArrow.rotation.x = segment.segment.arrows[0].userData.component.object.rotation.x;
+        clonedArrow.rotation.y = segment.segment.arrows[0].userData.component.object.rotation.y;
+        clonedArrow.rotation.z = segment.segment.arrows[0].userData.component.object.rotation.z;
+
+        clonedArrow.visible = true;
+        this.sceneHelper.addToScene(clonedArrow);
+    }
+
+    renderTextMesh(segment) {
+        const textValue = segment.xetoDuct.blockStyle.helpers.text.value || "Default";
+    
+        const loader = new FontLoader();
+        loader.load('https://ahu3d-assets.s3.amazonaws.com/helvetiker_regular.typeface.json', (font) => {
+            const textGeo = new TextGeometry(textValue, {
+                font: font,
+                size: 100,
+                height: 0.05,
+                curveSegments: 12,
+                bevelEnabled: true,
+                bevelThickness: 10,
+                bevelSize: 0.02,
+                bevelSegments: 5
+            });
+
+            // Set up the material for the main mesh.
+            const textMaterial = new THREE.MeshStandardMaterial({ 
+                transparent: true, 
+                opacity: 1,
+                depthWrite: true,
+            });
+
+            const textMesh = new THREE.Mesh(textGeo, textMaterial);
+            textMesh.name = "textMesh";
+
+            const material = segment.xetoDuct.blockStyle.helpers.text.material || { color: "#AAAAAA", opacity: 1 };
+            const color = material.color || '#AAAAAA';
+            const opacity = material.opacity || 1;
+
+            textMesh.material.color = new THREE.Color(color);
+            textMesh.material.opacity = opacity;
+
+            textMesh.position.x = segment.segment.textMeshes[0].userData.component.object.position.x;
+            textMesh.position.y = segment.segment.textMeshes[0].userData.component.object.position.y;
+            textMesh.position.z = segment.segment.textMeshes[0].userData.component.object.position.z;
+        
+            textMesh.rotation.x = THREE.MathUtils.degToRad(90);
+        
+            // Add to scene
+            this.sceneHelper.addToScene(textMesh);
+
+            textMesh.visible = true;
+        });
+    }
+
     /**
      * buildAssembly
      * 
@@ -363,7 +650,7 @@ export default class Arithmetics {
                 
             }
 
-            return { duct: duct, meshes: meshes, joints: [], ends: [] }; // Return the built assembly segment.
+            return { duct: duct, meshes: meshes, joints: [], ends: [], arrows: [], textMeshes: [] }; // Return the built assembly segment.
         } 
         catch (error) {
             console.error("Error in buildAssembly:", error); // Log any errors that occur during the build process.

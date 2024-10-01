@@ -56,6 +56,8 @@ class Ahu3D {
         this.libraryLoadInitiated = false;
         this.isLibraryLoaded = false;
         this.components = {};  // This object holds loaded assembly components
+
+        this.arrowInstance = this.utils.createArrowInstance();
     }
 
     /**
@@ -101,7 +103,7 @@ class Ahu3D {
         await this.utils.loadInstanceSet();
         console.log('Instances are ready')
 
-        this.arithmetics = new Arithmetics(this.library);
+        this.arithmetics = new Arithmetics(this.library, this.arrowInstance, this.sceneHelper);
 
         this.isLibraryLoaded = true;
 
@@ -148,9 +150,9 @@ class Ahu3D {
 
         console.log("cleanedXeto:", cleanedXeto);
 
-        const assembly = await this.arithmetics.calculateAssembly(cleanedXeto);
-
         this.sceneHelper.clearScene();
+
+        const assembly = await this.arithmetics.calculateAssembly(cleanedXeto);
 
         const renderedAssembly = await this.utils.renderAssembly(assembly);
 

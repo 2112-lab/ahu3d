@@ -104,6 +104,26 @@
 	"ui": {
 		"showSelector": true,
 		"showTooltip": true,
-        "showGrid": false
+        "showGrid": false,
+        "arrow": {
+            "material": {
+                "opacity": 0.5,
+                "color": "#00FF00"
+            },
+            "scale": {
+                "x": 1,
+                "y": 1,
+                "z": 1
+            },
+			"padding": 100
+        },
+        "text": {
+            "value": "Supply Air",
+            "material": {
+                "opacity": 1,
+                "color": "#FFFFFF"
+            },
+            "padding": 0
+        }
 	}
 }
