@@ -56,8 +56,6 @@ class Ahu3D {
         this.libraryLoadInitiated = false;
         this.isLibraryLoaded = false;
         this.components = {};  // This object holds loaded assembly components
-
-        this.arrowInstance = this.utils.createArrowInstance();
     }
 
     /**
@@ -103,7 +101,7 @@ class Ahu3D {
         await this.utils.loadInstanceSet();
         console.log('Instances are ready')
 
-        this.arithmetics = new Arithmetics(this.library, this.arrowInstance, this.sceneHelper);
+        this.arithmetics = new Arithmetics(this.library, this.sceneHelper);
 
         this.isLibraryLoaded = true;
 
