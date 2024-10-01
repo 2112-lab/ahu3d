@@ -118,6 +118,36 @@ class Validate {
                 duct.blockStyle.componentPadding = xetoDictionary.ahuGroup[0].blockStyle.componentPadding;
             }
 
+            const defaultHelpers = {
+              "arrow": {
+                "display": false,
+                "material": {
+                  "opacity": 0.5,
+                  "color": "#0000FF"
+                },
+                "padding": 0
+              },
+              "text": {
+                "display": false,
+                "value": "Mock Test",
+                "material": {
+                  "opacity": 1,
+                  "color": "#FFFFFF"
+                },
+                "padding": 0
+              }
+            }
+
+            if(duct.blockStyle.helpers == undefined) {
+              duct.blockStyle.helpers = xetoDictionary.ahuGroup[0].blockStyle.helpers || defaultHelpers;
+            }
+            if(duct.blockStyle.helpers.arrow == undefined) {
+              duct.blockStyle.helpers.arrow = xetoDictionary.ahuGroup[0].blockStyle.helpers.arrow;
+            }
+            if(duct.blockStyle.helpers.text == undefined) {
+              duct.blockStyle.helpers.text = xetoDictionary.ahuGroup[0].blockStyle.helpers.text;
+            }
+
             // if a component block is missing the blockStyle or any of the blockStyle attributes, inherit from the parent duct
             for(const componentId of duct.components) {
                 let componentBlock = xetoDictionary.componentsList.filter(child => child.id.includes(componentId))[0];
