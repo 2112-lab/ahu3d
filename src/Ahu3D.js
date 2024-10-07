@@ -58,6 +58,19 @@ class Ahu3D {
         this.components = {};  // This object holds loaded assembly components
     }
 
+    setOutlinePass(component, color) {
+        // Configure outline parameters
+        this.sceneHelper.outlinePasses[color].edgeStrength = 2;  // Outline thickness
+        this.sceneHelper.outlinePasses[color].edgeGlow = 1;      // Glow around edges
+        this.sceneHelper.outlinePasses[color].edgeThickness = 2.0; // Edge thickness
+        this.sceneHelper.outlinePasses[color].pulsePeriod = 0;     // Pulse animation
+        this.sceneHelper.outlinePasses[color].visibleEdgeColor.set(color);  // Color of the visible edge
+        this.sceneHelper.outlinePasses[color].hiddenEdgeColor.set('#000000');   // Color of the hidden edge
+
+        // Select the mesh to outline
+        this.sceneHelper.outlinePasses[color].selectedObjects.push(component);
+    }
+
     /**
      * Attaches the 3D scene to the DOM.
      * 

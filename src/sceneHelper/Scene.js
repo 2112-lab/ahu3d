@@ -33,6 +33,11 @@ import Materials from "./Materials.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import tooltipTemplate from '../assets/tooltip.html';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
+import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js';
 
 class Scene {
 
@@ -87,9 +92,14 @@ class Scene {
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.renderer.localClippingEnabled = true;
 
+        this.createComposer();
+
         // Initialize the CSS2DRenderer
         this.labelRenderer = new CSS2DRenderer();
-        this.labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        this.labelRenderer.setSize(
+            this.moduleConfigs.scene.renderer.size.width, 
+            this.moduleConfigs.scene.renderer.size.height
+        );
         this.labelRenderer.domElement.style.position = 'absolute';
         this.labelRenderer.domElement.style.pointerEvents = 'none';
         this.labelRenderer.domElement.style.top = '0px';
@@ -128,8 +138,11 @@ class Scene {
             if(this.moduleConfigs.scene.background !== null) {
                 this.renderer.render(this.backgroundScene, this.cameras.primary);
             }
+
             this.renderer.render(this.scene, this.cameras.primary);
             this.labelRenderer.render(this.scene, this.cameras.primary);
+
+            // this.composer.render();
 
             this.scene.traverse((object3d) => {
                 if (object3d.isObject3D && object3d.name == 'hvac') {
@@ -143,11 +156,6 @@ class Scene {
                         }
                     }
                 }
-                // Make the text face the camera
-                // if (object3d.name === "textMesh") {
-                //     // Update text orientation
-                //     this.updateTextOrientation(object3d, this.cameras.primary);
-                // }
             });            
         }
         
@@ -155,6 +163,32 @@ class Scene {
 
         this.addOrbitControl();
         this.addEventListeners();
+    }
+
+    createComposer() {
+        this.composer = new EffectComposer(this.renderer);
+
+        // Add the render pass (renders the scene normally)
+        const renderPass = new RenderPass(this.scene, this.cameras.primary);
+        this.composer.addPass(renderPass);
+
+        this.outlinePassColors = ['#FF0000', '#FFFF00', '#FFA500'];
+        this.outlinePasses = {};        
+        for(const color of this.outlinePassColors) {
+            this.outlinePasses[color] = new OutlinePass(new THREE.Vector2(
+                this.moduleConfigs.scene.renderer.size.width, 
+                this.moduleConfigs.scene.renderer.size.height
+            ), this.scene, this.cameras.primary);
+            this.composer.addPass(this.outlinePasses[color]);
+        }
+
+        // Optional: FXAA pass for anti-aliasing (improves the visual quality)
+        const fxaaPass = new ShaderPass(FXAAShader);
+        fxaaPass.material.uniforms['resolution'].value.set(
+            1 / this.moduleConfigs.scene.renderer.size.width, 
+            1 / this.moduleConfigs.scene.renderer.size.height
+        );
+        this.composer.addPass(fxaaPass);
     }
 
     updateTextOrientation(textMesh, camera) {
@@ -250,24 +284,24 @@ class Scene {
     showTooltip() {
         const meshComponentData = this.selectedMesh.userData.component;
         const meshAttributes = meshComponentData.attributes;
-
+    
         // Clone the loaded template
         const tooltipDiv = document.createElement('div');
         tooltipDiv.innerHTML = this.tooltipTemplate.trim(); // Use the imported template
         const tooltipElement = tooltipDiv.firstElementChild;
-
+    
         // Update the tooltip content
         tooltipElement.querySelector('.tooltip-header').textContent = meshComponentData.componentName || 'Mesh';
-
+    
         const attrKeys = Object.keys(meshAttributes);
         const attrKeyDiv = tooltipElement.querySelector('.tooltip-key');
         const attrValueDiv = tooltipElement.querySelector('.tooltip-value');
         attrKeyDiv.textContent = `${meshAttributes[attrKeys[0]].key}:`;
         attrValueDiv.textContent = `${meshAttributes[attrKeys[0]].value}`;
-
+    
         const minusButton = tooltipElement.querySelector('.tooltip-minus');
         const plusButton = tooltipElement.querySelector('.tooltip-plus');
-
+    
         if (attrKeys[0] !== 'setInput') {
             minusButton.addEventListener('click', () => {
                 const methodKey = attrKeys[0];
@@ -276,7 +310,7 @@ class Scene {
                     this.selectedMesh[methodKey](newValue);
                 }
             });
-
+    
             plusButton.addEventListener('click', () => {
                 const methodKey = attrKeys[0];
                 const newValue = meshAttributes[attrKeys[0]].value + meshAttributes[attrKeys[0]].step;
@@ -288,14 +322,23 @@ class Scene {
             minusButton.style.display = 'none';
             plusButton.style.display = 'none';
         }
-
+    
+        const tooltipWidth = 150;
+    
+        // Set the position of the tooltip using CSS
+        tooltipElement.style.position = 'absolute';
+        tooltipElement.style.left = `${(0) + (tooltipWidth / 2)}px`;
+        tooltipElement.style.pointerEvents = 'none'; // Optional: prevents interference with mouse events
+    
+        // Add the tooltip as a CSS2DObject
         const label = new CSS2DObject(tooltipElement);
-        label.position.set(0, 1.5, 0);  // Position the label slightly above the mesh
+    
+        // Add the label to the mesh
         this.selectedMesh.add(label);
-
+    
         this.tooltipParent = this.selectedMesh;
         this.tooltipObject = label;
-    }
+    }  
 
     updateTooltip() {
         if (this.tooltipParent && this.tooltipObject) {
@@ -413,7 +456,7 @@ class Scene {
 
         // Create a line material
         const lineMaterial = new THREE.LineBasicMaterial({ 
-            color: 0xFF0000,
+            color: 0x0000FF,
         });
 
         // Create a line segments mesh from the edges geometry and line material
@@ -447,6 +490,14 @@ class Scene {
         sceneIndicators.forEach((child) => {
             this.scene.remove(child);
         });
+    }
+
+    rendererToBlob(callback) {
+        console.log("rendering perspective camera");
+        this.controls.update();
+        this.renderer.render(this.scene, this.cameras.primary);
+    
+        this.renderer.domElement.toBlob(callback, 'image/png')
     }
 }
 
