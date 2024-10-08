@@ -35,6 +35,13 @@ import Utils from "./core/Utils.js"
 import moduleDefaults from './assets/module_defaults.json';
 import _ from 'lodash';  // You can use lodash for deep merge
 
+import * as THREE from 'three';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
+import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js';
+
 class Ahu3D {
 
     /**
@@ -58,17 +65,43 @@ class Ahu3D {
         this.components = {};  // This object holds loaded assembly components
     }
 
-    setOutlinePass(component, color) {
-        // Configure outline parameters
-        this.sceneHelper.outlinePasses[color].edgeStrength = 2;  // Outline thickness
-        this.sceneHelper.outlinePasses[color].edgeGlow = 1;      // Glow around edges
-        this.sceneHelper.outlinePasses[color].edgeThickness = 2.0; // Edge thickness
-        this.sceneHelper.outlinePasses[color].pulsePeriod = 0;     // Pulse animation
-        this.sceneHelper.outlinePasses[color].visibleEdgeColor.set(color);  // Color of the visible edge
-        this.sceneHelper.outlinePasses[color].hiddenEdgeColor.set('#000000');   // Color of the hidden edge
-
-        // Select the mesh to outline
-        this.sceneHelper.outlinePasses[color].selectedObjects.push(component);
+    setGlow(componentId, colors = ['white'], edgeGlow = 1, edgeThickness = 4, edgeStrengthFactor = 6) {       
+        const component = this.components[componentId];
+        if (component != undefined) {
+            // Assign the colors to the mesh's colorQueue
+            component.userData.colorQueue = [];
+            for (const color of colors) {
+                component.userData.colorQueue.push(this.sceneHelper[color]);
+            }
+    
+            // Create a new OutlinePass specifically for this component
+            const newOutlinePass = new OutlinePass(
+                new THREE.Vector2(window.innerWidth, window.innerHeight),
+                this.sceneHelper.scene,
+                this.sceneHelper.cameras.primary
+            );
+            newOutlinePass.edgeGlow = edgeGlow; // Glow around edges: 0 - 1
+            newOutlinePass.edgeThickness = edgeThickness; // Edge thickness: 1 - 4
+            component.userData.edgeStrengthFactor = edgeStrengthFactor; // Edge Strength Multiplier: 0 - infinity
+            newOutlinePass.hiddenEdgeColor.set(0x000000);
+    
+            // Set the current component to glow (selectedObjects)
+            newOutlinePass.selectedObjects = [component];
+            
+            // Store the outline pass reference in the component's userData for later update
+            component.userData.outlinePass = newOutlinePass;
+    
+            // Add the OutlinePass to the composer (important to add it to the rendering pipeline)
+            this.sceneHelper.composer.addPass(newOutlinePass);
+    
+            // Add the component to the glowingMeshes array so it gets updated in the cycle
+            this.sceneHelper.glowingMeshes.push(component);
+        }
+    }
+    
+    setGlowCycleDuration(duration) {
+        // The duration unit is in ms.
+        this.sceneHelper.glowCycleDuration = duration;
     }
 
     /**

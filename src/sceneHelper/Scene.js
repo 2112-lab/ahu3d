@@ -86,11 +86,29 @@ class Scene {
             antialias: true,
             preserveDrawingBuffer: true
         });
-        this.renderer.setSize(this.moduleConfigs.scene.renderer.size.width, this.moduleConfigs.scene.renderer.size.height);
+        this.renderer.autoClear = false;
 
-        this.renderer.shadowMap.enabled = true;
-        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        // this.renderer.setSize(this.moduleConfigs.scene.renderer.size.width, this.moduleConfigs.scene.renderer.size.height);
+        
+        const supersampleFactor = 2; // Change this factor to control the level of supersampling (2x, 4x, etc.)
+
+        this.renderer.setSize(
+            this.moduleConfigs.scene.renderer.size.width * supersampleFactor,
+            this.moduleConfigs.scene.renderer.size.height * supersampleFactor,
+            false  // The 'false' flag keeps the canvas size unchanged
+        );
+
+        this.renderer.domElement.style.width = `${this.moduleConfigs.scene.renderer.size.width}px`;
+        this.renderer.domElement.style.height = `${this.moduleConfigs.scene.renderer.size.height}px`;
+
+        this.cameras.primary.aspect = this.moduleConfigs.scene.renderer.size.width / this.moduleConfigs.scene.renderer.size.height;
+        this.cameras.primary.updateProjectionMatrix();
+
+
+        // this.renderer.shadowMap.enabled = true;
+        // this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.renderer.localClippingEnabled = true;
+        // this.renderer.setPixelRatio(window.devicePixelRatio);
 
         this.createComposer();
 
@@ -130,19 +148,32 @@ class Scene {
         
         this.cameras.primary.position.y = 5;
         this.cameras.primary.position.z = 5;
+
+        this.white = new THREE.Color(0xffffff);     // White
+        this.red = new THREE.Color(0xff0000);       // Red
+        this.green = new THREE.Color(0x00ff00);     // Green
+        this.blue = new THREE.Color(0x00ccff);      // Bright Blue
+        this.yellow = new THREE.Color(0xffff00);    // Yellow
+        this.purple = new THREE.Color(0xcc00ff);    // Bright Purple
+        this.orange = new THREE.Color(0xffa500);    // Orange
+
+        this.colorQueue = [];
+        this.glowCycleDuration = 3000;
+        this.edgeStrengthFactor = 6;
+
+        this.currentGlowIndex = 0;
+
+        this.glowingMeshes = [];
         
         const animate = () => {
             requestAnimationFrame(animate);
-            this.renderer.autoClear = false;
-            this.renderer.clear();
-            if(this.moduleConfigs.scene.background !== null) {
-                this.renderer.render(this.backgroundScene, this.cameras.primary);
-            }
 
             this.renderer.render(this.scene, this.cameras.primary);
             this.labelRenderer.render(this.scene, this.cameras.primary);
 
-            // this.composer.render();
+            this.cycleGlowColors();
+            
+            this.composer.render();
 
             this.scene.traverse((object3d) => {
                 if (object3d.isObject3D && object3d.name == 'hvac') {
@@ -165,6 +196,53 @@ class Scene {
         this.addEventListeners();
     }
 
+    cycleGlowColors() {
+        // Get the current time and normalize it to a [0, 1] range for the full cycle duration
+        const time = (Date.now() % this.glowCycleDuration) / this.glowCycleDuration;
+    
+        this.glowingMeshes.forEach((mesh) => {
+            const meshColorQueue = mesh.userData.colorQueue || defaultColorQueue;
+            
+            if (meshColorQueue.length === 0) {
+                return;  // Skip if no color queue is defined
+            }
+    
+            // Number of colors in the queue
+            const numColors = meshColorQueue.length;
+    
+            // Compute the phase duration based on the number of colors
+            const phaseDuration = 1 / numColors;  // Each color transition takes an equal portion of the cycle
+    
+            // Calculate which phase we're in
+            const phaseIndex = Math.floor(time / phaseDuration);  // Determine the index of the current phase
+            const phaseTime = (time - phaseIndex * phaseDuration) / phaseDuration;  // Normalize time within the phase
+    
+            // Get the current and next colors for interpolation
+            const currentColorIndex = phaseIndex % numColors;  // Index of the current color
+            const nextColorIndex = (currentColorIndex + 1) % numColors;  // Index of the next color
+    
+            // Interpolate between the current and next color
+            const currentColor = meshColorQueue[currentColorIndex].clone();
+            const nextColor = meshColorQueue[nextColorIndex];
+            
+            // Smoothly transition between the two colors
+            currentColor.lerp(nextColor, phaseTime);
+    
+            // Adjust edge strength for a fade-in/fade-out effect
+            let edgeStrength = Math.abs(1 - 2 * phaseTime);  // Edge strength will fade between 1 and 0
+    
+            // Ensure the glow color stays consistent across all edges of the mesh
+            if (mesh.userData.outlinePass) {
+                // Force consistent color by clamping or rounding the final color to avoid inconsistent edges
+                const finalColor = currentColor.clone();
+                
+                // Set the color and ensure no blending artifacts
+                mesh.userData.outlinePass.visibleEdgeColor.set(finalColor);
+                mesh.userData.outlinePass.edgeStrength = edgeStrength * 3;  // Adjust as needed
+            }
+        });
+    }           
+
     createComposer() {
         this.composer = new EffectComposer(this.renderer);
 
@@ -172,15 +250,17 @@ class Scene {
         const renderPass = new RenderPass(this.scene, this.cameras.primary);
         this.composer.addPass(renderPass);
 
-        this.outlinePassColors = ['#FF0000', '#FFFF00', '#FFA500'];
-        this.outlinePasses = {};        
-        for(const color of this.outlinePassColors) {
-            this.outlinePasses[color] = new OutlinePass(new THREE.Vector2(
-                this.moduleConfigs.scene.renderer.size.width, 
-                this.moduleConfigs.scene.renderer.size.height
-            ), this.scene, this.cameras.primary);
-            this.composer.addPass(this.outlinePasses[color]);
-        }
+        this.outlinePass = new OutlinePass(new THREE.Vector2(
+            1 / this.moduleConfigs.scene.renderer.size.width, 
+            1 / this.moduleConfigs.scene.renderer.size.height
+        ), this.scene, this.cameras.primary);
+        this.composer.addPass(this.outlinePass); 
+
+        // this.outlinePassColors = ['#FF0000', '#FFFF00', '#FFA500'];
+        // this.outlinePasses = {};        
+        // for(const color of this.outlinePassColors) {            
+                       
+        // }
 
         // Optional: FXAA pass for anti-aliasing (improves the visual quality)
         const fxaaPass = new ShaderPass(FXAAShader);
@@ -189,6 +269,7 @@ class Scene {
             1 / this.moduleConfigs.scene.renderer.size.height
         );
         this.composer.addPass(fxaaPass);
+
     }
 
     updateTextOrientation(textMesh, camera) {
@@ -291,7 +372,7 @@ class Scene {
         const tooltipElement = tooltipDiv.firstElementChild;
     
         // Update the tooltip content
-        tooltipElement.querySelector('.tooltip-header').textContent = meshComponentData.componentName || 'Mesh';
+        tooltipElement.querySelector('.tooltip-header').textContent = (meshComponentData.componentId.split("::")[1]) || 'Mesh';
     
         const attrKeys = Object.keys(meshAttributes);
         const attrKeyDiv = tooltipElement.querySelector('.tooltip-key');

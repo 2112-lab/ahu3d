@@ -12,14 +12,14 @@
                 "type": "hemisphere",
                 "skyColor": "#ffffff",
                 "groundColor": "#333333",
-                "intensity": 0.1,
+                "intensity": 1,
                 "castShadow": false,
                 "shadow": false
             },
             "ambientLight": {
                 "type": "ambient",
-                "color": "#bbbbbb",
-                "intensity": 0.4,
+                "color": "#ffffff",
+                "intensity": 2,
                 "castShadow": false,
                 "shadow": false
             },
