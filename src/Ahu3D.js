@@ -28,10 +28,10 @@
  */
 
 import Scene from "./sceneHelper/Scene.js"
-import Import from "./core/Import.js"
-import Object3DLoader from "./core/Object3DLoader.js"
-import Arithmetics from "./core/Arithmetics.js"
-import Utils from "./core/Utils.js"
+import Import from "./Core/Import.js"
+import Object3DLoader from "./Core/Object3DLoader.js"
+import Arithmetics from "./Core/Arithmetics.js"
+import Utils from "./Core/Utils.js"
 import moduleDefaults from './assets/module_defaults.json';
 import _ from 'lodash';  // You can use lodash for deep merge
 
