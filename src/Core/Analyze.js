@@ -36,7 +36,7 @@ class Analyze {
         let currentDuct = primaryDuct;
         
         // Align the primary duct with its adjacent duct so that the end value of the primary duct equals the start value of the previous duct.
-        this.alignPrimaryDuct(xetoDictionary.ductsList, currentDuct);
+        // this.alignPrimaryDuct(xetoDictionary.ductsList, currentDuct);
 
         // Recursively traverse the tree of ducts.
         // Align the secondary ducts so that the start value of each duct equals the end value of the previous duct.

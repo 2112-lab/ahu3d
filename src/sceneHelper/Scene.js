@@ -107,7 +107,7 @@ class Scene {
 
         // this.renderer.shadowMap.enabled = true;
         // this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        this.renderer.localClippingEnabled = true;
+        // this.renderer.localClippingEnabled = true;
         // this.renderer.setPixelRatio(window.devicePixelRatio);
 
         this.createComposer();
@@ -149,19 +149,7 @@ class Scene {
         this.cameras.primary.position.y = 5;
         this.cameras.primary.position.z = 5;
 
-        this.white = new THREE.Color(0xffffff);     // White
-        this.red = new THREE.Color(0xff0000);       // Red
-        this.green = new THREE.Color(0x00ff00);     // Green
-        this.blue = new THREE.Color(0x00ccff);      // Bright Blue
-        this.yellow = new THREE.Color(0xffff00);    // Yellow
-        this.purple = new THREE.Color(0xcc00ff);    // Bright Purple
-        this.orange = new THREE.Color(0xffa500);    // Orange
-
-        this.colorQueue = [];
         this.glowCycleDuration = 3000;
-        this.edgeStrengthFactor = 6;
-
-        this.currentGlowIndex = 0;
 
         this.glowingMeshes = [];
         
@@ -197,51 +185,49 @@ class Scene {
     }
 
     cycleGlowColors() {
-        // Get the current time and normalize it to a [0, 1] range for the full cycle duration
+        // Normalize time to [0, 1] based on the full glow cycle duration
         const time = (Date.now() % this.glowCycleDuration) / this.glowCycleDuration;
     
+        // Reusable color object to avoid creating new ones each frame
+        const currentColor = new THREE.Color();
+    
         this.glowingMeshes.forEach((mesh) => {
-            const meshColorQueue = mesh.userData.colorQueue || defaultColorQueue;
-            
-            if (meshColorQueue.length === 0) {
-                return;  // Skip if no color queue is defined
+            const colorQueue = mesh.userData.colorQueue;
+    
+            // If no colors are defined, set the edge strength to zero and skip
+            if (!colorQueue || colorQueue.length === 0) {
+                mesh.userData.outlinePass.edgeStrength = 0;
+                return;
             }
     
-            // Number of colors in the queue
-            const numColors = meshColorQueue.length;
+            // Ensure there are at least two colors for interpolation
+            const numColors = colorQueue.length === 1 ? 2 : colorQueue.length;
+            const colors = colorQueue.length === 1 ? [colorQueue[0], colorQueue[0]] : colorQueue;
     
-            // Compute the phase duration based on the number of colors
-            const phaseDuration = 1 / numColors;  // Each color transition takes an equal portion of the cycle
+            // Calculate phase duration and current phase index
+            const phaseDuration = 1 / numColors;
+            const phaseIndex = Math.floor(time / phaseDuration);
+            const phaseTime = (time - phaseIndex * phaseDuration) / phaseDuration;
     
-            // Calculate which phase we're in
-            const phaseIndex = Math.floor(time / phaseDuration);  // Determine the index of the current phase
-            const phaseTime = (time - phaseIndex * phaseDuration) / phaseDuration;  // Normalize time within the phase
+            // Get the current and next colors
+            const startColor = colors[phaseIndex % numColors];
+            const endColor = colors[(phaseIndex + 1) % numColors];
     
-            // Get the current and next colors for interpolation
-            const currentColorIndex = phaseIndex % numColors;  // Index of the current color
-            const nextColorIndex = (currentColorIndex + 1) % numColors;  // Index of the next color
+            // Manual color interpolation (linear interpolation)
+            currentColor.r = startColor.r + (endColor.r - startColor.r) * phaseTime;
+            currentColor.g = startColor.g + (endColor.g - startColor.g) * phaseTime;
+            currentColor.b = startColor.b + (endColor.b - startColor.b) * phaseTime;
     
-            // Interpolate between the current and next color
-            const currentColor = meshColorQueue[currentColorIndex].clone();
-            const nextColor = meshColorQueue[nextColorIndex];
-            
-            // Smoothly transition between the two colors
-            currentColor.lerp(nextColor, phaseTime);
+            // Calculate the edge strength (fades in and out)
+            const edgeStrength = Math.abs(1 - 2 * phaseTime) * mesh.userData.edgeStrengthFactor;
     
-            // Adjust edge strength for a fade-in/fade-out effect
-            let edgeStrength = Math.abs(1 - 2 * phaseTime);  // Edge strength will fade between 1 and 0
-    
-            // Ensure the glow color stays consistent across all edges of the mesh
+            // Apply the color and edge strength to the mesh's outline pass
             if (mesh.userData.outlinePass) {
-                // Force consistent color by clamping or rounding the final color to avoid inconsistent edges
-                const finalColor = currentColor.clone();
-                
-                // Set the color and ensure no blending artifacts
-                mesh.userData.outlinePass.visibleEdgeColor.set(finalColor);
-                mesh.userData.outlinePass.edgeStrength = edgeStrength * 3;  // Adjust as needed
+                mesh.userData.outlinePass.visibleEdgeColor.set(currentColor.multiplyScalar(0.5));
+                mesh.userData.outlinePass.edgeStrength = edgeStrength;
             }
         });
-    }           
+    }       
 
     createComposer() {
         this.composer = new EffectComposer(this.renderer);
@@ -571,6 +557,7 @@ class Scene {
         sceneIndicators.forEach((child) => {
             this.scene.remove(child);
         });
+        this.glowingMeshes = [];
     }
 
     rendererToBlob(callback) {

@@ -416,6 +416,9 @@ export default class Arithmetics {
         }
 
         if(segmentOrientation === "west") {
+            if(indicatorKey == 'arrow') {
+                object.rotation.y += THREE.MathUtils.degToRad(180); 
+            }
 
             if(intersectionKey === "start") {
                 object.position.x += segment.segment.duct.userData.component.object.boundingBox.dimensions.x / 2;
@@ -680,12 +683,11 @@ export default class Arithmetics {
                     this.translateAssemblySegment(segment.segment, 'x', length); // Translate the segment along the x-axis.
                 }
 
-            } else {          
+            } else {       
+                this.orientAssemblySegment(segment.segment, segmentOrientation); // Orient the segment based on its orientation.   
                 if (segmentOrientation == 'north') {
-                    this.orientAssemblySegment(segment.segment, segmentOrientation); // Orient the segment based on its orientation.
                     this.translateAssemblySegment(segment.segment, 'z', (segment.segment.duct.userData.component.attributes.length.value / 2 * 1) + 530); // Translate the segment along the z-axis.
                 } else if (segmentOrientation == 'south') {
-                    this.orientAssemblySegment(segment.segment, segmentOrientation); // Orient the segment based on its orientation.
                     this.translateAssemblySegment(segment.segment, 'z', (segment.segment.duct.userData.component.attributes.length.value / 2 * -1) - 530); // Translate the segment along the z-axis.
                 } else if (segmentOrientation == 'east') {
                     let length = ((segment.segment.duct.userData.component.attributes.length.value / 2) * 1) + 530;
@@ -1088,7 +1090,7 @@ export default class Arithmetics {
                 let originalPosZ = component.userData.component.object.position.x - assemblySegment.duct.userData.component.object.position.x; // Calculate the original position.
                 let originalPosX = component.userData.component.object.position.z - assemblySegment.duct.userData.component.object.position.z; // Calculate the original position.
                 component.userData.component.object.position = new THREE.Vector3(); // Reset the component's position.
-                component.userData.component.object.rotation.z = THREE.MathUtils.degToRad(0); // Set the component's rotation to 0 degrees.
+                component.userData.component.object.rotation.z = THREE.MathUtils.degToRad(180); // Set the component's rotation to 0 degrees.
                 component.userData.component.object.position.x = originalPosZ; // Set the component's z-position to its original x-position.
                 component.userData.component.object.position.z = originalPosX; // Set the component's z-position to its original x-position.
                 component.userData.component.object.position.z += 530; // Adjust the component's z-position.

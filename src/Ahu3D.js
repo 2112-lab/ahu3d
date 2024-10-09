@@ -36,11 +36,7 @@ import moduleDefaults from './assets/module_defaults.json';
 import _ from 'lodash';  // You can use lodash for deep merge
 
 import * as THREE from 'three';
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
-import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
-import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js';
 
 class Ahu3D {
 
@@ -64,19 +60,49 @@ class Ahu3D {
         this.isLibraryLoaded = false;
         this.components = {};  // This object holds loaded assembly components
     }
-
+    
+    /**
+     * Sets a glowing effect on a specific component within the 3D scene.
+     * This glow effect is created using the OutlinePass shader and cycles through the specified colors.
+     * 
+     * @param {string} componentId - The identifier of the component to apply the glow effect (e.g., "Fan-0", "Filter-2").
+     * @param {Array<string>} [colors=['white']] - An array of colors (as strings) that the glow will cycle through.
+     * @param {number} [edgeGlow=1] - The intensity of the glow around the edges (range: 0 to 1).
+     * @param {number} [edgeThickness=4] - The thickness of the glowing edges (range: 1 to 4).
+     * @param {number} [edgeStrengthFactor=6] - A multiplier for the strength of the glowing edges (greater values produce stronger effects).
+     * 
+     * @example
+     * const ahu3d = new Ahu3D();
+     * ahu3d.setGlow("Fan-1", ["red", "#00ff00"]); // Colors can be defined as either names or hex values.
+     */
     setGlow(componentId, colors = ['white'], edgeGlow = 1, edgeThickness = 4, edgeStrengthFactor = 6) {       
         const component = this.components[componentId];
         if (component != undefined) {
+
+            // If the component is already in the glowingMeshes array, remove it from the array.
+            const index = this.sceneHelper.glowingMeshes.indexOf(component);
+            if (index !== -1) {
+                this.glowingMeshes.splice(index, 1);
+            }
+
+            // If the component already has an outlinePass, remove it.
+            if (component.userData.outlinePass) {
+                this.composer.removePass(component.userData.outlinePass);
+                delete component.userData.outlinePass; // Remove reference
+            }
+
             // Assign the colors to the mesh's colorQueue
             component.userData.colorQueue = [];
             for (const color of colors) {
-                component.userData.colorQueue.push(this.sceneHelper[color]);
+                component.userData.colorQueue.push(new THREE.Color(color));
             }
     
             // Create a new OutlinePass specifically for this component
             const newOutlinePass = new OutlinePass(
-                new THREE.Vector2(window.innerWidth, window.innerHeight),
+                new THREE.Vector2(
+                    1 / this.moduleConfigs.scene.renderer.size.width, 
+                    1 / this.moduleConfigs.scene.renderer.size.height
+                ),
                 this.sceneHelper.scene,
                 this.sceneHelper.cameras.primary
             );
@@ -99,6 +125,15 @@ class Ahu3D {
         }
     }
     
+    /**
+     * Sets the duration for the glow cycle effect across all glowing components in the scene.
+     * 
+     * @param {number} duration - The total duration (in milliseconds) for the glow cycle to complete.
+     * 
+     * @example
+     * const ahu3d = new Ahu3D();
+     * ahu3d.setGlowCycleDuration(3000);
+     */
     setGlowCycleDuration(duration) {
         // The duration unit is in ms.
         this.sceneHelper.glowCycleDuration = duration;
