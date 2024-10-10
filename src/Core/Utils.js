@@ -102,6 +102,8 @@ export default class Utils {
     ahuComponent.setAnimation = function(value){
       this.userData.component.attributes.setAnimation.value = value;
       this.sceneHelper.updateTooltip();
+
+      // this.sceneHelper.cacheAnimationTargets();
     };
     ahuComponent.setTargetTransforms = function(value){
       const attribute = this.userData.component.attributes.setTargetTransforms;
@@ -160,6 +162,7 @@ export default class Utils {
         }
       }
     };
+    this.sceneHelper.cacheAnimationTargets();
   }
 
   /**
@@ -336,7 +339,7 @@ export default class Utils {
       const textGeo = new TextGeometry(textValue, {
           font: font,
           size: 100,
-          height: 0.05,
+          depth: 0.05,
           curveSegments: 12,
           bevelEnabled: true,
           bevelThickness: 10,

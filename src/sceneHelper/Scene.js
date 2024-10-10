@@ -108,7 +108,7 @@ class Scene {
         // this.renderer.shadowMap.enabled = true;
         // this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         // this.renderer.localClippingEnabled = true;
-        // this.renderer.setPixelRatio(window.devicePixelRatio);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1));
 
         this.createComposer();
 
@@ -138,7 +138,6 @@ class Scene {
             this.backgroundScene.add(this.gradientBackground);
         }
         
-
         // Add a grid to the scene
         this.grid = this.createGrid();
         this.grid.rotation.x = 90 * Math.PI/180;
@@ -150,38 +149,77 @@ class Scene {
         this.cameras.primary.position.z = 5;
 
         this.glowCycleDuration = 3000;
-
         this.glowingMeshes = [];
+
+        // Handle WebGL context loss and restoration
+        const canvas = this.renderer.domElement;
         
-        const animate = () => {
+        canvas.addEventListener('webglcontextlost', (event) => {
+            event.preventDefault();
+            console.error('WebGL context lost');
+        });
+
+        canvas.addEventListener('webglcontextrestored', (event) => {
+            console.log('WebGL context restored');
+            this.init(); // Reinitialize the scene when context is restored
+        });
+
+        let lastUpdate = 0;
+        const updateInterval = 40; // Units in ms
+        
+        const animate = (time) => {
             requestAnimationFrame(animate);
 
             this.renderer.render(this.scene, this.cameras.primary);
-            this.labelRenderer.render(this.scene, this.cameras.primary);
 
-            this.cycleGlowColors();
+            if (time - lastUpdate > updateInterval) {
+                this.updateComposerAndTooltip();
+
+                // Animate only the cached objects
+                this.animateCachedTargets();
+
+                lastUpdate = time;
+            }
             
-            this.composer.render();
-
-            this.scene.traverse((object3d) => {
-                if (object3d.isObject3D && object3d.name == 'hvac') {
-
-                    const attributeKeys = Object.keys(object3d.userData.component.attributes)
-                    if(attributeKeys.includes("setAnimation")) {
-                        const attributeTargets = object3d.userData.component.attributes.setAnimation.targets[0];
-                        const targetMeshes = object3d.children.filter(child => attributeTargets.includes(child.name));
-                        for(const targetMesh of targetMeshes) {
-                            this.animateMesh(targetMesh);
-                        }
-                    }
-                }
-            });            
         }
         
-        animate();
+        requestAnimationFrame(animate);
 
         this.addOrbitControl();
         this.addEventListeners();
+    }
+
+    // Step 1: Cache objects needing animation during initialization
+    cacheAnimationTargets() {
+        this.animatedObjects = []; // Store all objects that need animation
+
+        this.scene.traverse((object3d) => {
+            if (object3d.isObject3D && object3d.name === 'hvac') {
+                const attributes = object3d.userData.component?.attributes;
+                if (attributes && attributes.setAnimation) {
+                    // Cache the object and its target meshes for animation
+                    const attributeTargets = attributes.setAnimation.targets[0];
+                    const targetMeshes = object3d.children.filter(child => attributeTargets.includes(child.name));
+                    this.animatedObjects.push({ object3d, targetMeshes });
+                }
+            }
+        });
+    }
+
+    animateCachedTargets() {
+        for (const entry of this.animatedObjects) {
+            const { object3d, targetMeshes } = entry;
+            for (const targetMesh of targetMeshes) {
+                this.animateMesh(targetMesh); // Apply the animation to the target meshes
+            }
+        }
+    }
+
+    updateComposerAndTooltip(){
+        this.labelRenderer.render(this.scene, this.cameras.primary);
+
+        this.cycleGlowColors();
+        this.composer.render();
     }
 
     cycleGlowColors() {
@@ -546,19 +584,30 @@ class Scene {
     clearScene() {
         console.log("clearScene started:");
         const sceneChildren = this.scene.children.filter(
-            (child) => child.name == 'hvac' && child.isObject3D && child.visible
+          (child) => child.name == 'hvac' && child.isObject3D && child.visible
         );
+      
         sceneChildren.forEach((child) => {
-            this.scene.remove(child);
+          child.traverse((object) => {
+            if (object.geometry) object.geometry.dispose();
+            if (object.material) {
+              if (object.material.map) object.material.map.dispose();
+              object.material.dispose();
+            }
+          });
+          this.scene.remove(child);
         });
+      
         const sceneIndicators = this.scene.children.filter(
-            (child) => child.name == 'arrowClone' && child.visible || child.name == 'textMesh' && child.visible
+          (child) => child.name == 'arrowClone' && child.visible || child.name == 'textMesh' && child.visible
         );
         sceneIndicators.forEach((child) => {
-            this.scene.remove(child);
+          this.scene.remove(child);
         });
+        
         this.glowingMeshes = [];
     }
+      
 
     rendererToBlob(callback) {
         console.log("rendering perspective camera");
