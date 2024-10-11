@@ -124,8 +124,8 @@ class Ahu3D {
                 translateValue = Math.min(translateValue * -1, componentPairPadding) * -1;
                 component.position[axis] += translateValue;
 
-                component.userData.xeto.blockStyle.componentPadding.startSpace -= translateValue;
-                component.userData.xeto.blockStyle.componentPadding.endSpace += translateValue;
+                component.userData.xeto.blockStyle.componentPadding.startSpace += translateValue;
+                component.userData.xeto.blockStyle.componentPadding.endSpace -= translateValue;
             }
 
             return translateValue;
