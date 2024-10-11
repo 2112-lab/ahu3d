@@ -121,8 +121,8 @@ class Ahu3D {
                 const componentSpace = component.userData.xeto.blockStyle.componentPadding.startSpace;
 
                 const componentPairPadding = componentSpace + adjacentSpace;
-                translateValue = Math.min(translateValue * -1, componentPairPadding);
-                component.position[axis] -= translateValue;
+                translateValue = Math.min(translateValue * -1, componentPairPadding) * -1;
+                component.position[axis] += translateValue;
 
                 component.userData.xeto.blockStyle.componentPadding.startSpace -= translateValue;
                 component.userData.xeto.blockStyle.componentPadding.endSpace += translateValue;
