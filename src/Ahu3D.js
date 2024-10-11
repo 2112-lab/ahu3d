@@ -59,6 +59,79 @@ class Ahu3D {
         this.libraryLoadInitiated = false;
         this.isLibraryLoaded = false;
         this.components = {};  // This object holds loaded assembly components
+        this.loadedXeto = [];  // This object holds xeto
+    }
+
+    translate(componentId, translateValue) {
+        const component = this.components[componentId];
+        if (component != undefined) {
+
+            let ductOfComponent = null;
+            outerLoop:
+            for(const block of this.loadedXeto) {
+                if(block.components) {
+                    for(const component of block.components) {
+                        if(component.includes(componentId)) {
+                            ductOfComponent = block;
+                            break outerLoop;
+                        }
+                    }
+                }
+            }
+
+            for(const i in ductOfComponent.components) {
+                ductOfComponent.components[i] = ductOfComponent.components[i].split("::")[1] || ductOfComponent.components[i];
+            }
+
+            const componentIndex = ductOfComponent.components.indexOf(componentId);
+
+            const orientation = this.utils.getOrientation(ductOfComponent.graphicLocation.start, ductOfComponent.graphicLocation.end);
+
+            const axis = orientation == 'east' || orientation == 'west' ? 'x' : 'z';
+
+            if(translateValue === 0) {
+                return 0;
+            }
+            else if(translateValue > 0) {
+                const adjacentComponentIndex = componentIndex - 1;
+                console.log("translate() componentIndex:", componentIndex);
+                console.log("translate() ductOfComponent:", ductOfComponent);
+                const adjacentComponentId = ductOfComponent.components[adjacentComponentIndex];
+                const adjacentComponent = this.components[adjacentComponentId];
+                console.log("translate() adjacentComponent:", adjacentComponent);
+
+                const adjacentSpace = adjacentComponent ? adjacentComponent.userData.xeto.blockStyle.componentPadding.startSpace : 0;
+                const componentSpace = component.userData.xeto.blockStyle.componentPadding.endSpace;
+
+                const componentPairPadding = componentSpace + adjacentSpace;
+                translateValue = Math.min(translateValue, componentPairPadding);
+                component.position[axis] += translateValue;
+
+                component.userData.xeto.blockStyle.componentPadding.startSpace += translateValue;
+                component.userData.xeto.blockStyle.componentPadding.endSpace -= translateValue;
+            }
+            else if(translateValue < 0) {
+                const adjacentComponentIndex = componentIndex + 1;
+                console.log("translate() componentIndex:", componentIndex);
+                const adjacentComponentId = ductOfComponent.components[adjacentComponentIndex];
+                let adjacentComponent = this.components[adjacentComponentId];
+                console.log("translate() adjacentComponent:", adjacentComponent);
+
+                const adjacentSpace = adjacentComponent ? adjacentComponent.userData.xeto.blockStyle.componentPadding.endSpace : 0;
+                const componentSpace = component.userData.xeto.blockStyle.componentPadding.startSpace;
+
+                const componentPairPadding = componentSpace + adjacentSpace;
+                translateValue = Math.min(translateValue * -1, componentPairPadding);
+                component.position[axis] -= translateValue;
+
+                component.userData.xeto.blockStyle.componentPadding.startSpace -= translateValue;
+                component.userData.xeto.blockStyle.componentPadding.endSpace += translateValue;
+            }
+
+            return translateValue;
+        }
+
+        return 0;
     }
     
     /**
@@ -222,6 +295,8 @@ class Ahu3D {
         }        
 
         const cleanedXeto = this.imports.preprocessXeto(xeto);
+
+        this.loadedXeto = cleanedXeto;
 
         if(!cleanedXeto) {
             return;

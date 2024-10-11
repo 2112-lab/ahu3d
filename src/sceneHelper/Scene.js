@@ -152,50 +152,51 @@ class Scene {
         this.glowingMeshes = [];
 
         // Handle WebGL context loss and restoration
-        const canvas = this.renderer.domElement;
+        // const canvas = this.renderer.domElement;
         
-        canvas.addEventListener('webglcontextlost', (event) => {
-            event.preventDefault();
-            console.error('WebGL context lost');
-        });
+        // canvas.addEventListener('webglcontextlost', (event) => {
+        //     event.preventDefault();
+        //     console.error('WebGL context lost');
+        // });
 
-        canvas.addEventListener('webglcontextrestored', (event) => {
-            console.log('WebGL context restored');
-            this.init(); // Reinitialize the scene when context is restored
-        });
+        // canvas.addEventListener('webglcontextrestored', (event) => {
+        //     console.log('WebGL context restored');
+        //     this.init(); // Reinitialize the scene when context is restored
+        // });
 
         let lastUpdate = 0;
         const updateInterval = 40; // Units in ms
+
+        this.cacheAnimationTargets();
         
-        const animate = (time) => {
+        const animate = () => {
             requestAnimationFrame(animate);
 
             this.renderer.render(this.scene, this.cameras.primary);
 
-            if (time - lastUpdate > updateInterval) {
+            // if (time - lastUpdate > updateInterval) {
                 this.updateComposerAndTooltip();
 
                 // Animate only the cached objects
                 this.animateCachedTargets();
 
-                lastUpdate = time;
-            }
+            //     lastUpdate = time;
+            // }
             
         }
         
-        requestAnimationFrame(animate);
+        animate();
 
         this.addOrbitControl();
         this.addEventListeners();
     }
 
-    // Step 1: Cache objects needing animation during initialization
     cacheAnimationTargets() {
         this.animatedObjects = []; // Store all objects that need animation
 
         this.scene.traverse((object3d) => {
             if (object3d.isObject3D && object3d.name === 'hvac') {
-                const attributes = object3d.userData.component?.attributes;
+                const attributes = object3d.userData.component.attributes;
                 if (attributes && attributes.setAnimation) {
                     // Cache the object and its target meshes for animation
                     const attributeTargets = attributes.setAnimation.targets[0];
@@ -208,7 +209,7 @@ class Scene {
 
     animateCachedTargets() {
         for (const entry of this.animatedObjects) {
-            const { object3d, targetMeshes } = entry;
+            const targetMeshes = entry.targetMeshes;
             for (const targetMesh of targetMeshes) {
                 this.animateMesh(targetMesh); // Apply the animation to the target meshes
             }

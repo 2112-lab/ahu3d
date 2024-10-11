@@ -376,4 +376,49 @@ export default class Utils {
       textMesh.visible = true;
     });
   }
+
+  /**
+   * getOrientation
+   * 
+   * Determines the orientation of a segment based on the start and end graphic locations.
+   * 
+   * Functions Invoked:
+   * - getRow
+   * 
+   * @param {String} start - The start location of the segment.
+   * @param {String} end - The end location of the segment.
+   * @returns {String} The orientation of the segment (e.g., "north", "south", "east", "west").
+   */
+  getOrientation(start, end) {
+    let orientation = "east";
+    if(this.getRow(end) > this.getRow(start)) {
+        orientation = "south";
+    }
+    else if(this.getRow(end) < this.getRow(start)) {
+        orientation = "north";
+    }
+    else if(end[0] > start[0]) {
+        orientation = "east";
+    }
+    else if(end[0] < start[0]) {
+        orientation = "west";
+    }
+    return orientation;
+  }
+
+  /**
+   * getRow
+   * 
+   * Extracts the row number from a location string.
+   * 
+   * Functions Invoked:
+   * - None
+   * 
+   * @param {String} location - The location string (e.g., "A5").
+   * @returns {Number} The row number extracted from the location.
+   */
+  getRow(location) {
+    return parseInt(location.slice(1, location.length)); // Parse and return the row number from the location string.
+  }
+
 }
