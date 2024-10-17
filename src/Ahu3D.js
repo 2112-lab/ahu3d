@@ -75,25 +75,16 @@ class Ahu3D {
     translateY(componentId, translateValue) {
         const component = this.components[componentId];
         if (component != undefined) {
-            if(component.position.y + translateValue <= 0 && component.position.y + translateValue >= -2000) {
-                component.position.y += translateValue;
+            if(translateValue <= 0 && translateValue >= -2000) {
+                component.position.y = translateValue;
                 return translateValue;
             }
         }
         return 0;
     }
 
-    /**
-     * Translates the position of a component along the X or Z axis, depending on its orientation.
-     * 
-     * @param {string} componentId - The ID of the component to translate (e.g., "Fan-0", "Filter-2").
-     * @param {number} translateValue - The amount of translation to apply along the X or Z axis.
-     * @returns {number} The actual translation value applied (can be less than or equal to the requested value, depending on constraints).
-     * 
-     * @example
-     * ahu3d.translateXZ("Fan-0", 250);
-     */
-    translateXZ(componentId, translateValue) {
+    // Private method for XZ translation
+    #translateXZ(componentId, translateValue) {
         const component = this.components[componentId];
         if (component != undefined) {
 
