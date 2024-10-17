@@ -62,7 +62,38 @@ class Ahu3D {
         this.loadedXeto = [];  // This object holds xeto
     }
 
-    translate(componentId, translateValue) {
+    /**
+     * Translates the position of a component along the Y-axis.
+     * 
+     * @param {string} componentId - The ID of the component to translate (e.g., "Fan-0", "Filter-2").
+     * @param {number} translateValue - The amount of translation to apply along the Y-axis.
+     * @returns {number} The actual translation value applied (can be less than or equal to the requested value, depending on constraints).
+     * 
+     * @example
+     * ahu3d.translateY("Filter-2", 1000);
+     */
+    translateY(componentId, translateValue) {
+        const component = this.components[componentId];
+        if (component != undefined) {
+            if(component.position.y + translateValue <= 0 && component.position.y + translateValue >= -2000) {
+                component.position.y += translateValue;
+                return translateValue;
+            }
+        }
+        return 0;
+    }
+
+    /**
+     * Translates the position of a component along the X or Z axis, depending on its orientation.
+     * 
+     * @param {string} componentId - The ID of the component to translate (e.g., "Fan-0", "Filter-2").
+     * @param {number} translateValue - The amount of translation to apply along the X or Z axis.
+     * @returns {number} The actual translation value applied (can be less than or equal to the requested value, depending on constraints).
+     * 
+     * @example
+     * ahu3d.translateXZ("Fan-0", 250);
+     */
+    translateXZ(componentId, translateValue) {
         const component = this.components[componentId];
         if (component != undefined) {
 

@@ -1,6 +1,6 @@
 {
   "name": "@musashi/ahu3d",
-  "version": "1.0.78",
+  "version": "1.0.79",
   "description": "",
   "main": "dist/bundle.js",
   "files": [
