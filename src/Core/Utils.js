@@ -197,6 +197,151 @@ export default class Utils {
     await Promise.all(loadPromises);
   
     this.instanceSet = instanceSet;
+    console.log("this.instanceSet:", this.instanceSet);
+  }
+
+  createDuct(segment, type = "duct") {
+
+    console.log("segment createDuct:", segment);
+
+    const userData = segment.segment.duct.userData;
+    const name = segment.xetoDuct.id;
+
+    const size = segment.xetoDuct.graphicLocation.size;
+
+    const innerDim = { // inner-dimensions
+        small: 500,
+        medium: 1000,
+        large: 1500
+    }
+
+    const wt = 30; // wall-thickness
+
+    // Create the geometries with the specified dimensions
+    const ceilingGeometry = new THREE.BoxGeometry(
+        innerDim[size], 
+        innerDim[size] + wt, 
+        wt
+    );
+    const backWallGeometry = new THREE.BoxGeometry(
+        innerDim[size], 
+        wt, 
+        innerDim[size]
+    );
+    const floorGeometry = new THREE.BoxGeometry(
+        innerDim[size], 
+        innerDim[size] + wt, 
+        wt
+    );
+
+    // Create materials (using a basic color for now)
+    const material1 = new THREE.MeshStandardMaterial({ color: 0xff0000, wireframe: false });
+    const material2 = new THREE.MeshStandardMaterial({ color: 0x00ff00, wireframe: false });
+    const material3 = new THREE.MeshStandardMaterial({ color: 0x0000ff, wireframe: false });
+    const whiteMaterial = new THREE.MeshStandardMaterial({ color: 0xAEB9C2, wireframe: false });
+
+    // Create the meshes
+    const ceiling = new THREE.Mesh(ceilingGeometry, whiteMaterial);
+    const backWall = new THREE.Mesh(backWallGeometry, whiteMaterial);
+    const floor = new THREE.Mesh(floorGeometry, whiteMaterial);
+
+    // Position the cubes to make them appear joined
+    ceiling.position.set(
+        0,
+        0,
+        (innerDim[size] / 2) * 1
+    );
+    backWall.position.set(
+        0,
+        innerDim[size]/2,
+        0
+    );
+    floor.position.set(
+        0,
+        0,
+        (innerDim[size] / 2) * -1
+    );        
+
+    // Create an empty Object3D container (works as an empty mesh or group)
+    const parentObject = new THREE.Object3D();
+
+    let leftWall = null;
+    let rightWall = null;
+
+    if(type.includes("joint")) {
+        const leftWallGeometry = new THREE.BoxGeometry(
+            wt, 
+            innerDim[size], 
+            innerDim[size]
+        );
+        const rightWallGeometry = new THREE.BoxGeometry(
+            wt, 
+            innerDim[size], 
+            innerDim[size]
+        );
+        leftWall = new THREE.Mesh(leftWallGeometry, whiteMaterial);
+        rightWall = new THREE.Mesh(rightWallGeometry, whiteMaterial);
+        leftWall.position.set(
+            innerDim[size]/-2 - 15,
+            0,
+            (innerDim[size]/-2) + 500
+        );
+        rightWall.position.set(
+            innerDim[size]/ 2 + 15,
+            0,
+            (innerDim[size]/-2) + 500
+        );
+        
+    }
+
+    // Add the cubes to the parent object
+    if(type != ("l-joint")) {
+        parentObject.add(ceiling);
+    }
+    parentObject.add(backWall);
+    parentObject.add(floor);
+    if(type.includes("joint")) {
+        parentObject.add(leftWall);
+        parentObject.add(rightWall); 
+    }   
+
+    parentObject.userData = userData; // Copy user data to the cloned instance
+
+    // Apply position transformations to the cloned instance
+    parentObject.position.x = userData.component.object.position.x;
+    parentObject.position.y = userData.component.object.position.y;
+    parentObject.position.z = userData.component.object.position.z;
+
+    // Apply rotation transformations to the cloned instance
+    parentObject.rotation.z = userData.component.object.rotation.z;
+    parentObject.rotation.y = userData.component.object.rotation.y;
+
+    // Apply scale transformations to the cloned instance
+    parentObject.scale.x = userData.component.object.scale.x;
+
+    // Assign the component's name to the cloned instance
+    parentObject.userData.component.componentName = name;
+
+    parentObject.name = "hvac";
+
+    // Clone the materials of all children of the cloned instance
+    parentObject.traverse(child => {
+        if (child.isMesh && child.material) {  // Ensure child is a mesh and has a material
+            child.material = child.material.clone(); // Clone the material
+        }
+    });
+
+    parentObject.sceneHelper = this.sceneHelper;
+
+    // this.extendObject3D(parentObject); 
+
+    // Add the cloned instance to the scene and make it visible
+    // parentObject.visible = true;
+
+    // Add the cubes to the scene
+    this.sceneHelper.addToScene(parentObject);
+
+    return parentObject;
   }
 
   async renderAssembly(assembly) {
@@ -214,10 +359,10 @@ export default class Utils {
       }
   
       // Clone and position joints
-      for (const joint of segment.segment.joints) {
-        const instance = this.instanceSet[joint.userData.component.componentName];
-        clonePromises.push(this.cloneInstance(joint.userData, instance, joint.userData.component.componentName));
-      }
+      // for (const joint of segment.segment.joints) {
+      //   const instance = this.instanceSet[joint.userData.component.componentName];
+      //   clonePromises.push(this.cloneInstance(joint.userData, instance, joint.userData.component.componentName));
+      // }
   
       // Clone and position ends
       for (const end of segment.segment.ends) {
@@ -225,9 +370,9 @@ export default class Utils {
         clonePromises.push(this.cloneInstance(end.userData, instance, end.userData.component.componentName));
       }
   
-      // Clone and position duct
-      const instance = this.instanceSet[segment.segment.duct.userData.component.componentName];
-      clonePromises.push(this.cloneInstance(segment.segment.duct.userData, instance, segment.xetoDuct.id));
+      // Create position a parametric duct
+      const instance = this.createDuct(segment, "duct");
+      clonePromises.push(instance);
   
       // Wait for all clones in the current segment to complete
       const clonedInstances = await Promise.all(clonePromises);
@@ -249,7 +394,6 @@ export default class Utils {
     return renderedAssembly;
   }
   
-
   /**
    * cloneInstance
    * 

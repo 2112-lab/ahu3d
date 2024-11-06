@@ -42,7 +42,7 @@ class Analyze {
         // Align the secondary ducts so that the start value of each duct equals the end value of the previous duct.
         this.alignSecondaryDucts(xetoDictionary.ductsList, currentDuct);
         
-        this.consolidateRedundantDucts(xetoDictionary.ductsList);
+        // this.consolidateRedundantDucts(xetoDictionary.ductsList);
 
         for(const duct of xetoDictionary.ductsList) {
             if(duct.delete == true) {
@@ -58,7 +58,142 @@ class Analyze {
 
         xetoDictionary.ductsList = xetoDictionary.ductsList.filter(obj => obj.delete == undefined);
 
+        this.determineOrientations(xetoDictionary.ductsList);
+
+        this.determineConnections(xetoDictionary.ductsList);
+
+        xetoDictionary.ductsDictionary = this.determineIntersectionDucts(xetoDictionary.ductsList);
+
+        // this.getRelativePosition(xetoDictionary.ductsDictionary);
+
+        console.log("xetoDictionary:", xetoDictionary);
+
         return xetoDictionary
+    }
+
+    getRelativePosition(ductsDictionary) {
+        const traversedDucts = new Set();
+        for (const key in ductsDictionary) {
+            for (const duct of ductsDictionary[key]) {
+                if (!traversedDucts.has(duct.id)) {
+                    console.log("getRelativePosition duct:", duct.id.split("::")[1]);
+                    traversedDucts.add(duct.id); // Mark duct as logged
+                }
+            }
+        }
+    }
+
+    determineIntersectionDucts(ductsList) {
+
+        const ductsDictionary = ductsList.reduce((acc, duct) => {
+            const { start, end } = duct.graphicLocation;
+          
+            // Ensure an array exists for the 'start' location
+            if (!acc[start]) {
+              acc[start] = [];
+            }
+            acc[start].push(duct);
+          
+            // Ensure an array exists for the 'end' location
+            if (!acc[end]) {
+              acc[end] = [];
+            }
+            acc[end].push(duct);
+          
+            return acc;
+          }, {});
+          
+          console.log(ductsDictionary);
+
+        // const graphicLocations = [...new Set(ductsList.flatMap(item => [item.graphicLocation.start, item.graphicLocation.end]))].sort();
+        // console.log("determineIntersectionDucts graphicLocations:", graphicLocations);
+
+        return ductsDictionary;
+    }
+
+    determineConnections(ductsList) {
+        console.log("determineConnections ductsList:", ductsList);
+
+        const northDucts = ductsList.filter(child => 
+            child.orientation === "north"
+        )
+        const southDucts = ductsList.filter(child => 
+            child.orientation === "south"
+        )
+        const eastDucts = ductsList.filter(child => 
+            child.orientation === "east"
+        )
+        const westDucts = ductsList.filter(child => 
+            child.orientation === "west"
+        )
+    
+        for (const duct of ductsList) {
+            duct.connections = {
+                top: {},
+                bottom: {},
+                left: {},
+                right: {}
+            };
+        }
+        for (const duct of northDucts) {
+            duct.connections.top = ductsList.filter(child => 
+                (
+                    duct.graphicLocation.end === child.graphicLocation.start ||
+                    duct.graphicLocation.end === child.graphicLocation.end 
+                ) 
+                    &&
+                duct != child
+            ).map(child => child.id.split("::")[1]);
+
+            duct.connections.bottom = ductsList.filter(child => 
+                (
+                    duct.graphicLocation.start === child.graphicLocation.start ||
+                    duct.graphicLocation.start === child.graphicLocation.end 
+                ) 
+                    &&
+                duct != child
+            ).map(child => child.id.split("::")[1]);
+        }
+        for (const duct of southDucts) {
+            duct.connections.top = ductsList.filter(child => 
+                (
+                    duct.graphicLocation.start === child.graphicLocation.start ||
+                    duct.graphicLocation.start === child.graphicLocation.end 
+                ) 
+                    &&
+                duct != child
+            ).map(child => child.id.split("::")[1]);
+
+            duct.connections.bottom = ductsList.filter(child => 
+                (
+                    duct.graphicLocation.end === child.graphicLocation.start ||
+                    duct.graphicLocation.end === child.graphicLocation.end 
+                ) 
+                    &&
+                duct != child
+            ).map(child => child.id.split("::")[1]);
+        }
+
+        for (const duct of ductsList) {
+            // Logging for debugging
+            console.log(`determineConnections ${duct.id.split("::")[1]} top:\n` + JSON.stringify(duct.connections.top, null, 2));
+            console.log(`determineConnections ${duct.id.split("::")[1]} bottom:\n` + JSON.stringify(duct.connections.bottom, null, 2));
+        }
+    }
+
+    determineOrientations(ductsList) {
+        for(const duct of ductsList) {
+            duct.orientation = this.getOrientation(
+                duct.graphicLocation.start, 
+                duct.graphicLocation.end
+            );
+            if(duct.orientation === "north" || duct.orientation === "south") {
+                duct.isVertical = true;
+            }
+            else {
+                duct.isVertical = false;
+            }
+        }
     }
 
     /**

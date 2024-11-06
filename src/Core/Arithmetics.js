@@ -48,9 +48,6 @@ export default class Arithmetics {
      * Initializes the Arithmetics class with the component library entries and cleaned assembly data.
      * Precalculates the assembly segments and returns them.
      * 
-     * Functions Invoked:
-     * - calculateAssembly
-     * 
      * @param {Object} componentLibEntries - The library entries for the HVAC components.
      * @returns {Array} The precalculated assembly segments.
      */
@@ -67,6 +64,18 @@ export default class Arithmetics {
         this.assemblySegments = []; // Initialize an empty array to store assembly segments.
         this.assemblyDimensions = { width: 0, height: 0 }; // Initialize assembly dimensions.
 
+        this.innerDim = {
+            small: 500,
+            medium: 1000,
+            large: 1500
+        }
+
+        this.componentScales = {
+            small: 0.5,
+            medium: 1,
+            large: 1.5
+        }     
+
         // const assemblySegments = this.calculateAssembly(); // Precalculate the assembly segments.
 
         // return assemblySegments; // Return the precalculated segments.
@@ -78,28 +87,28 @@ export default class Arithmetics {
      * Precalculates the assembly by processing ducts, building segments, creating duct ends,
      * placing segments in the scene, and calculating assembly dimensions.
      * 
-     * Functions Invoked:
-     * - getPrimaryDuct
-     * - buildAssembly
-     * - createDuctEnds
-     * - placeSegments
-     * - getAssemblyDimensions
-     * - translateAssemblySegment
-     * 
      * @param {Object} cleanedXeto - The cleaned HVAC assembly data.
      * @returns {Array} The calculated assembly segments.
      */
     async calculateAssembly(cleanedXeto) {
+
+        console.log("calculateAssembly cleanedXeto:", cleanedXeto);
+
+        this.ductsDictionary = cleanedXeto[0];
+
+        delete cleanedXeto[0]
 
         this.cleanedXeto = cleanedXeto; // Store the cleaned assembly data.
         this.assemblyGridBounds = cleanedXeto.filter(child => child.spec.includes('AhuGroup'))[0].graphicLocation; // Get the grid bounds for the AHU group.
 
         const ductsList = this.cleanedXeto.filter(child => child.spec.includes('DuctEdge')); // Filter the ducts from the cleaned assembly.
 
-        let primarySegment = this.getPrimaryDuct(ductsList); // Get the primary duct segment.
+        // let primarySegment = this.getPrimaryDuct(ductsList); // Get the primary duct segment.
         let xetoDuctKeys = this.cleanedXeto.filter(child => child.spec.includes('AhuGroup'))[0].ducts; // Retrieve the list of duct keys.
 
         this.assemblySegments = []; // Initialize the assembly segments array.
+
+        console.log("calculateAssembly this.ductsDictionary:", this.ductsDictionary);
 
         for (const i in xetoDuctKeys) { // Iterate over each duct key.
             const duct = {
@@ -112,36 +121,139 @@ export default class Arithmetics {
 
             let xetoDuct = this.cleanedXeto.filter(child => child.id.includes(xetoDuctKey))[0]; // Find the corresponding duct in the assembly.
             
-            const segment = await this.buildAssembly(duct, xetoDuct.components); // Build the assembly segment for the duct.
+            const segment = await this.buildAssembly(duct, xetoDuct); // Build the assembly segment for the duct.
 
             this.assemblySegments.push({ xetoDuct: xetoDuct, segment: segment }); // Add the segment to the assembly segments array.
         }
 
         this.createDuctEnds(); // Create the ends for the ducts.
 
-        this.assemblySegments = await this.placeSegments(primarySegment); // Place the segments in the correct positions.
+        const primaryKey = this.getPrimaryKey();
+
+        this.assemblySegments = await this.placeSegments(primaryKey); // Place the segments in the correct positions.
 
         this.assemblyDimensions = this.getAssemblyDimensions(this.assemblyGridBounds); // Calculate the dimensions of the assembly.
 
         for (const segment of this.assemblySegments) { // Iterate over each segment.
             this.translateAssemblySegment(segment.segment, 'x', ((this.assemblyDimensions.width / 2) - 50)); // Translate the segment on the x-axis.
             this.translateAssemblySegment(segment.segment, 'z', this.assemblyDimensions.height + 200); // Translate the segment on the z-axis.
+
+            this.setGuideline(segment);
         }
 
         this.determineFlowDirections(this.assemblySegments); // Determine and adjust flow directions for ducts
 
         this.createFlowIndicators(); // Create arrows for the ducts with open ends.
 
+        // this.locateDuctCorners();
+
         return this.assemblySegments; // Return the assembly segments.
+    }
+
+    getPrimaryKey() {
+        for(const key in this.ductsDictionary) {
+            if(this.ductsDictionary[key].length == 1) {
+                return key;
+            }
+        }
+    }
+
+    setGuideline(segmentBlock) {
+        const pos = segmentBlock.segment.duct.userData.component.object.position;
+        const length = segmentBlock.segment.duct.userData.component.object.boundingBox.dimensions.x;
+
+        segmentBlock.segment.duct.guideline = null;
+        
+        if(segmentBlock.segment.duct.isVertical == false) {
+            segmentBlock.segment.duct.guideline = {
+                start: {
+                    x: pos.x - length/2,
+                    z: pos.z
+                },
+                end: {
+                    x: pos.x + length/2,
+                    z: pos.z
+                }
+            }
+        }
+        else {
+            segmentBlock.segment.duct.guideline = {
+                start: {
+                    x: pos.x,
+                    z: pos.z - (length/2)
+                },
+                end: {
+                    x: pos.x,
+                    z: pos.z + (length/2)
+                }
+            }
+        }
+    }
+
+    computeIntersection(line1, line2) {
+        // down part of intersection point formula
+        let p1 = line1.start
+        let p2 = line1.end
+        let p3 = line2.start
+        let p4 = line2.end
+    
+        var d1 = (p1.x - p2.x) * (p3.y - p4.y); // (x1 - x2) * (y3 - y4)
+        var d2 = (p1.y - p2.y) * (p3.x - p4.x); // (y1 - y2) * (x3 - x4)
+        var d = d1 - d2;
+    
+        if (d == 0) {
+          return this.status = "zero_or_infinity";
+        }
+    
+        // upper part of intersection point formula
+        var u1 = p1.x * p2.y - p1.y * p2.x; // (x1 * y2 - y1 * x2)
+        var u4 = p3.x * p4.y - p3.y * p4.x; // (x3 * y4 - y3 * x4)
+    
+        var u2x = p3.x - p4.x; // (x3 - x4)
+        var u3x = p1.x - p2.x; // (x1 - x2)
+        var u2y = p3.y - p4.y; // (y3 - y4)
+        var u3y = p1.y - p2.y; // (y1 - y2)
+    
+        // intersection point formula
+        var px = (u1 * u2x - u3x * u4) / d;
+        var py = (u1 * u2y - u3y * u4) / d;
+    
+        var p = { x: px, y: py };
+        this.xPoint.setXY(Number(Number(px).toFixed(2)), Number(Number(py).toFixed(2)))
+    
+        this.lines.push(line1)
+        this.lines.push(line2)
+    
+        const isIntersection = this.checkLineIntersection(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y, p4.x, p4.y);
+    
+        if (!isIntersection) {
+          return this.status = "no_intersection";
+        }
+    
+        this.status = "computed";
+    
+        return p;
+    }
+    
+    checkLineIntersection(p1x, p1y, p2x, p2y, p3x, p3y, p4x, p4y) {
+        var denominator = (p4y - p3y) * (p2x - p1x) - (p4x - p3x) * (p2y - p1y);
+        if (denominator == 0) {
+            return false;
+        }
+    
+        var ua = ((p4x - p3x) * (p1y - p3y) - (p4y - p3y) * (p1x - p3x)) / denominator;
+        var ub = ((p2x - p1x) * (p1y - p3y) - (p2y - p1y) * (p1x - p3x)) / denominator;
+    
+        if (ua >= 0 && ua <= 1 && ub >= 0 && ub <= 1) {
+            return true;
+        }
+        return false;
     }
 
     /**
      * getPrimaryDuct
      * 
      * Identifies the primary duct in a list of ducts based on intersection analysis.
-     * 
-     * Functions Invoked:
-     * - ductsList.filter
      * 
      * @param {Array} ductsList - List of all ducts in the assembly.
      * @returns {Object} The primary duct.
@@ -174,9 +286,6 @@ export default class Arithmetics {
      * 
      * Creates the necessary duct ends based on the segment's orientation and style,
      * and positions them correctly within the assembly.
-     * 
-     * Functions Invoked:
-     * - getOrientation
      */
     createDuctEnds() {
         console.log("createDuctEnds started");
@@ -216,7 +325,9 @@ export default class Arithmetics {
                         console.log("Arithmetic createDuctEnds segment:", segment);
                     }
 
-                    let segmentOrientation = this.getOrientation(segment.xetoDuct.graphicLocation.start, segment.xetoDuct.graphicLocation.end); // Determine the segment's orientation.
+                    // let segmentOrientation = this.getOrientation(segment.xetoDuct.graphicLocation.start, segment.xetoDuct.graphicLocation.end); // Determine the segment's orientation.
+                    let segmentOrientation = segment.xetoDuct.orientation // Determine the segment's orientation.
+                    
                     let translationVector = -1; // Initialize the translation vector.
 
                     if (segmentOrientation == 'west') { // If the segment is oriented west.
@@ -254,7 +365,9 @@ export default class Arithmetics {
                         });
                     }
 
-                    let segmentOrientation = this.getOrientation(segment.xetoDuct.graphicLocation.start, segment.xetoDuct.graphicLocation.end); // Determine the segment's orientation.
+                    // let segmentOrientation = this.getOrientation(segment.xetoDuct.graphicLocation.start, segment.xetoDuct.graphicLocation.end); // Determine the segment's orientation.
+                    let segmentOrientation = segment.xetoDuct.orientation // Determine the segment's orientation.
+                    
                     let translationVector = -1; // Initialize the translation vector.
 
                     if (segmentOrientation == 'west') { // If the segment is oriented west.
@@ -392,7 +505,9 @@ export default class Arithmetics {
             }
         }
 
-        let segmentOrientation = this.getOrientation(segment.xetoDuct.graphicLocation.start, segment.xetoDuct.graphicLocation.end);
+        // let segmentOrientation = this.getOrientation(segment.xetoDuct.graphicLocation.start, segment.xetoDuct.graphicLocation.end);
+        let segmentOrientation = segment.xetoDuct.orientation;        
+        
         console.log("createFlowIndicators segmentOrientation:", segmentOrientation);
 
         if(segmentOrientation === "east") {
@@ -491,15 +606,23 @@ export default class Arithmetics {
      * Builds an assembly segment by loading component meshes, positioning them, and 
      * calculating the required duct length and positioning of components within the duct.
      * 
-     * Functions Invoked:
-     * - loadAssemblyMeshes
-     * 
      * @param {Object} duct - The duct to build the assembly within.
      * @param {Array} components - The components to be included in the assembly.
      * @returns {Object} The built assembly segment containing the duct and its components.
      */
-    async buildAssembly(duct, components) {
+    async buildAssembly(duct, xetoDuct) {
         console.log("buildAssembly started");
+
+        const components = xetoDuct.components
+
+        console.log("xetoDuct:", xetoDuct);
+
+        // const size = this.innerDim[xetoDuct.graphicLocation.size];
+        const size = 1000;
+
+        duct.userData.component.object.boundingBox.dimensions.x = size;
+        duct.userData.component.object.boundingBox.dimensions.y = size + 30;
+        duct.userData.component.object.boundingBox.dimensions.z = size + 60;
 
         const ductDimensions = {
             x: duct.userData.component.object.boundingBox.dimensions.x, // Get the duct's x-dimension.
@@ -510,10 +633,23 @@ export default class Arithmetics {
         try {
             const meshes = await this.loadAssemblyMeshes(components); // Load the component meshes for the assembly.
 
-            for (const i in meshes) { // Iterate over each mesh.
-                meshes[i].userData.component.object.position.z = ductDimensions.z / 2; // Position the mesh along the z-axis.
-                meshes[i].userData.component.object.position.x = 0; // Reset the x-position of the mesh.
-                meshes[i].userData.component.object.position.y = 0; // Reset the y-position of the mesh.
+            if(meshes.length > 0) {
+                for (const i in meshes) { // Iterate over each mesh.
+                    meshes[i].userData.component.object.position.z = ductDimensions.z / 2; // Position the mesh along the z-axis.
+                    meshes[i].userData.component.object.position.x = 0; // Reset the x-position of the mesh.
+                    meshes[i].userData.component.object.position.y = 0; // Reset the y-position of the mesh.
+                }
+            }
+            
+            const componentScale = this.componentScales[xetoDuct.graphicLocation.size];
+            for (const mesh of meshes) {
+                mesh.userData.component.object.scale.x *= componentScale;
+                mesh.userData.component.object.scale.y *= componentScale;
+                mesh.userData.component.object.scale.z *= componentScale;
+
+                mesh.userData.component.object.boundingBox.dimensions.x *= componentScale;
+                mesh.userData.component.object.boundingBox.dimensions.y *= componentScale;
+                mesh.userData.component.object.boundingBox.dimensions.z *= componentScale;
             }
 
             let component_span = 0; // Initialize the component span.
@@ -525,15 +661,46 @@ export default class Arithmetics {
 
             let attributes = duct.userData.component.attributes; // Get the attributes of the duct.
             attributes.length.value = Math.max(component_span, duct.userData.component.object.boundingBox.dimensions.x); // Set the length of the duct based on the component span.
-            duct.userData.component.object.scale.x = attributes.length.value / 1000; // Scale the duct's x-dimension.
+            console.log("arithmetic duct:", duct);
+
+            if(xetoDuct.graphicLocation.size == undefined) {
+                xetoDuct.graphicLocation.size = "medium"
+            }
+
+            const innerDimension = this.innerDim[xetoDuct.graphicLocation.size];
+            if(innerDimension == null) {
+                alert(`Duct ${xetoDuct.id}'s size (${xetoDuct.graphicLocation.size}) is not valid.`)
+            }
+            let ductSize = innerDimension;  
+
+            duct.userData.component.object.scale.x = attributes.length.value / ductSize; // Scale the duct's x-dimension.
             duct.userData.component.object.boundingBox.dimensions.x = attributes.length.value; // Update the duct's bounding box x-dimension.
 
+            duct.userData.component.object.innerDimensions = xetoDuct.isVertical ? 
+                {
+                    x: (duct.userData.component.object.boundingBox.dimensions.z - 60) * componentScale, 
+                    y: duct.userData.component.object.boundingBox.dimensions.y, 
+                    z: (duct.userData.component.object.boundingBox.dimensions.x + 30)
+                } 
+                    :
+                {
+                    x: (duct.userData.component.object.boundingBox.dimensions.x + 30), 
+                    y: duct.userData.component.object.boundingBox.dimensions.y, 
+                    z: (duct.userData.component.object.boundingBox.dimensions.z - 60) * componentScale
+                };
+            
             const ductPosX = duct.userData.component.object.position.x; // Get the duct's current x-position.
             const ductWidth = duct.userData.component.object.boundingBox.dimensions.x; // Get the duct's width.
 
-            const primaryComponentStartSpace = meshes[0].userData.xeto.blockStyle.componentPadding.startSpace; // Get the start padding of the primary component.
-            const primaryComponentWidth = meshes[0].userData.component.object.boundingBox.dimensions.x; // Get the width of the primary component.
-            const primaryComponentPosition = ductPosX - (ductWidth / 2) + (primaryComponentWidth / 2) + primaryComponentStartSpace; // Calculate the primary component's position.
+            let primaryComponentStartSpace = 0; // Get the start padding of the primary component.
+            let primaryComponentWidth = 0; // Get the width of the primary component.
+            let primaryComponentPosition = 0; // Calculate the primary component's position.
+            if(meshes.length > 0) {
+                primaryComponentStartSpace = meshes[0].userData.xeto.blockStyle.componentPadding.startSpace;
+                primaryComponentWidth = meshes[0].userData.component.object.boundingBox.dimensions.x;
+                primaryComponentPosition = ductPosX - (ductWidth / 2) + (primaryComponentWidth / 2) + primaryComponentStartSpace;
+            }
+            
 
             for (const mesh of meshes) { // Iterate over each mesh.
                 mesh.userData.component.object.position.x = primaryComponentPosition; // Set the x-position of the component.
@@ -571,6 +738,8 @@ export default class Arithmetics {
                 
             }
 
+            // console.log("buildAssembly duct:", duct.userData.component.object.position.z);
+
             return { duct: duct, meshes: meshes, joints: [], ends: [], arrows: [], textMeshes: [] }; // Return the built assembly segment.
         } 
         catch (error) {
@@ -583,9 +752,6 @@ export default class Arithmetics {
      * loadAssemblyMeshes
      * 
      * Loads the component meshes for the given components and returns them.
-     * 
-     * Functions Invoked:
-     * - Promise.all
      * 
      * @param {Array} components - The components to load meshes for.
      * @returns {Promise<Array>} A promise that resolves to the loaded meshes.
@@ -614,154 +780,646 @@ export default class Arithmetics {
     }
 
     /**
+     * locateDuctCorners
+     * 
+     * Identifies the four corners of a duct based on its position and dimensions.
+     * 
+     * @param {Object} duct - The duct object containing position and size information.
+     * @returns {Array} An array of corner positions for the duct.
+     */
+    locateDuctCorners() {
+        console.log("locateDuctCorners this.assemblySegments:", this.assemblySegments);
+    
+        for (const duct of this.assemblySegments) {
+            const ductObject = duct.segment.duct.userData.component.object;
+            let { x, y, z } = ductObject.innerDimensions;
+            const pos = ductObject.position;
+        
+            // Calculate the half-dimensions based on the (potentially swapped) orientation
+            const halfWidth = x / 2;
+            const halfDepth = y / 2;
+            const halfHeight = z / 2;
+        
+            // Define the eight corners based on the center position and dimensions
+            duct.boundaryCorners = [
+                { x: (pos.x - halfWidth), y: pos.y - halfDepth, z: pos.z - halfHeight },
+                { x: (pos.x + halfWidth), y: pos.y - halfDepth, z: pos.z - halfHeight },
+                { x: (pos.x - halfWidth), y: pos.y + halfDepth, z: pos.z - halfHeight },
+                { x: (pos.x + halfWidth), y: pos.y + halfDepth, z: pos.z - halfHeight },
+                { x: (pos.x - halfWidth), y: pos.y - halfDepth, z: pos.z + halfHeight },
+                { x: (pos.x + halfWidth), y: pos.y - halfDepth, z: pos.z + halfHeight },
+                { x: (pos.x - halfWidth), y: pos.y + halfDepth, z: pos.z + halfHeight },
+                { x: (pos.x + halfWidth), y: pos.y + halfDepth, z: pos.z + halfHeight }
+            ];
+        
+            // console.log("locateDuctCorners duct.boundaryCorners:", duct.boundaryCorners);
+        }
+
+        this.indicateCorners(this.assemblySegments[0].boundaryCorners);
+        this.indicateCorners(this.assemblySegments[1].boundaryCorners);
+        this.indicateCorners(this.assemblySegments[2].boundaryCorners);
+        this.indicateCorners(this.assemblySegments[3].boundaryCorners);     
+
+        const closestEdges1 = this.findclosestEdges(this.assemblySegments[0].boundaryCorners, this.assemblySegments[1].boundaryCorners);
+        this.indicateEdge(closestEdges1.duct1Edge);
+        this.indicateEdge(closestEdges1.duct2Edge);
+
+        const closestEdges2 = this.findclosestEdges(this.assemblySegments[1].boundaryCorners, this.assemblySegments[2].boundaryCorners);
+        this.indicateEdge(closestEdges2.duct1Edge);
+        this.indicateEdge(closestEdges2.duct2Edge);
+
+        const closestEdges3 = this.findclosestEdges(this.assemblySegments[2].boundaryCorners, this.assemblySegments[3].boundaryCorners);
+        this.indicateEdge(closestEdges3.duct1Edge);
+        this.indicateEdge(closestEdges3.duct2Edge);
+
+        const closestEdges4 = this.findclosestEdges(this.assemblySegments[3].boundaryCorners, this.assemblySegments[0].boundaryCorners);
+        this.indicateEdge(closestEdges4.duct1Edge);
+        this.indicateEdge(closestEdges4.duct2Edge);
+
+        console.log("locateDuctCorners closestEdges1:", JSON.stringify(closestEdges1, null, 2));
+        console.log("locateDuctCorners closestEdges2:", JSON.stringify(closestEdges2, null, 2));
+        console.log("locateDuctCorners closestEdges3:", JSON.stringify(closestEdges3, null, 2));
+        console.log("locateDuctCorners closestEdges4:", JSON.stringify(closestEdges4, null, 2));
+
+        const closestEdgeCollection = [closestEdges1, closestEdges2, closestEdges3, closestEdges4];
+        const jointCorners = this.getJointCorners(closestEdgeCollection);
+    }
+
+    /**
+     * getJointCorners
+     * 
+     * Computes the corner positions for a given joint, considering its placement and orientation.
+     * 
+     * @param {Object} joint - The joint object containing position and orientation details.
+     * @returns {Array} An array of corner positions for the joint.
+     */
+    getJointCorners(closestEdgeCollection) {
+        console.log("getJointCorners this.assemblySegments:", this.assemblySegments);
+        console.log("getJointCorners closestEdgeCollection:", closestEdgeCollection);
+        let i = 0;
+        let j = 1;
+        for(const edgePair of closestEdgeCollection) {
+            const material1 = new THREE.MeshStandardMaterial({ color: 0x00ff00, wireframe: false });
+            const material2 = new THREE.MeshStandardMaterial({ color: 0xff00ff, wireframe: false });
+            const material3 = new THREE.MeshStandardMaterial({ color: 0x00ffff, wireframe: false });
+            const material4 = new THREE.MeshStandardMaterial({ color: 0xffff00, wireframe: false });
+            
+            const cubeGeometry1 = new THREE.BoxGeometry(
+                60, 60, 60
+            );
+            const cube1 = new THREE.Mesh(cubeGeometry1, material1);
+            cube1.position.x = edgePair.duct1Edge.x;
+            cube1.position.y = this.innerDim[this.assemblySegments[i].xetoDuct.graphicLocation.size]/2;
+            cube1.position.z = edgePair.duct1Edge.z;
+            this.sceneHelper.addToScene(cube1);
+
+            const cubeGeometry2 = new THREE.BoxGeometry(
+                60, 60, 60
+            );
+            const cube2 = new THREE.Mesh(cubeGeometry2, material2);
+            cube2.position.x = edgePair.duct2Edge.x;
+            cube2.position.y = this.innerDim[this.assemblySegments[j].xetoDuct.graphicLocation.size]/2;
+            cube2.position.z = edgePair.duct2Edge.z;
+            this.sceneHelper.addToScene(cube2);
+            
+            const cubeGeometry3 = new THREE.BoxGeometry(
+                60, 60, 60
+            );
+            const cube3 = new THREE.Mesh(cubeGeometry3, material3);
+            cube3.position.x = edgePair.duct1Edge.x;
+            cube3.position.y = this.innerDim[this.assemblySegments[i].xetoDuct.graphicLocation.size]/-2;
+            cube3.position.z = edgePair.duct1Edge.z;
+            this.sceneHelper.addToScene(cube3);
+
+            const cubeGeometry4 = new THREE.BoxGeometry(
+                60, 60, 60
+            );
+            const cube4 = new THREE.Mesh(cubeGeometry4, material4);
+            cube4.position.x = edgePair.duct2Edge.x;
+            cube4.position.y = this.innerDim[this.assemblySegments[j].xetoDuct.graphicLocation.size]/-2;
+            cube4.position.z = edgePair.duct2Edge.z;
+            this.sceneHelper.addToScene(cube4);
+
+            i++;
+            j++;
+            if(j == 4) {
+                j = 0;
+            }
+        }
+    }
+
+    /**
+     * indicateEdge
+     * 
+     * Highlights or marks a specific edge of a segment for visual representation or further processing.
+     * 
+     * @param {Object} segment - The segment object containing edge information.
+     * @param {String} edge - The specific edge to indicate (e.g., "left", "right").
+     */
+    indicateEdge(ductCorner) {
+        // const cubeGeometry = new THREE.BoxGeometry(
+        //     60, 60, 60
+        // );
+        // const material = new THREE.MeshStandardMaterial({ color: 0x0000ff, wireframe: false });
+        // const cube = new THREE.Mesh(cubeGeometry, material);
+        // cube.position.x = ductCorner.x;
+        // cube.position.z = ductCorner.z;
+        // this.sceneHelper.addToScene(cube);
+    }
+
+    /**
+     * indicateCorners
+     * 
+     * Marks or highlights the corners of a segment for visual representation or debugging.
+     * 
+     * @param {Object} segment - The segment object containing corner positions.
+     */
+    indicateCorners(boundaryCorners) {
+        for(const corner of boundaryCorners) {
+            const cubeGeometry = new THREE.BoxGeometry(
+                60, 60, 60
+            );
+            const material = new THREE.MeshStandardMaterial({ color: 0xff0000, wireframe: false });
+            const cube = new THREE.Mesh(cubeGeometry, material);
+            cube.position.x = corner.x;
+            cube.position.z = corner.z;
+            // this.sceneHelper.addToScene(cube);
+        }
+    }
+
+    /**
+     * findClosestEdges
+     * 
+     * Finds and returns the edges of a segment that are closest to a given reference point or segment.
+     * 
+     * @param {Object} segment - The segment to analyze for closest edges.
+     * @param {Object} reference - The reference point or segment for comparison.
+     * @returns {Array} An array of the closest edge positions.
+     */
+    findclosestEdges(duct1, duct2) {
+        let minDistance = Infinity;
+        let closestPair = {};
+    
+        duct1.forEach(corner1 => {
+            duct2.forEach(corner2 => {
+                // Calculate the Euclidean distance between corner1 and corner2
+                const distance = Math.sqrt(
+                    Math.pow(corner1.x - corner2.x, 2) +
+                    Math.pow(corner1.y - corner2.y, 2) +
+                    Math.pow(corner1.z - corner2.z, 2)
+                );
+    
+                // Check if this is the smallest distance found so far
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestPair = { duct1Edge: corner1, duct2Edge: corner2 };
+                }
+            });
+        });
+    
+        return closestPair;
+    }
+
+    /**
+     * relativePlacement
+     * 
+     * Determines the relative placement of one segment with respect to another, 
+     * indicating if it is to the left, right, above, or below.
+     * 
+     * @param {Object} segmentA - The first segment.
+     * @param {Object} segmentB - The second segment for comparison.
+     * @returns {String} The relative placement (e.g., "left", "right", "above", "below").
+     */
+    relativePlacement(diffPoint, xetoDuct) {
+        console.log("relativePlacement diffPoint:", diffPoint);
+        console.log("relativePlacement xetoDuct:", xetoDuct);
+    }
+
+    /**
+     * getSegmentDirection
+     * 
+     * Determines the direction of a segment based on its start and end positions.
+     * 
+     * @param {Object} segment - The segment object containing start and end positions.
+     * @returns {String} The direction of the segment (e.g., "north", "south", "east", "west").
+     */
+    getSegmentDirection(queriedSegment, key) {
+        let joiningLocation;
+        let secondaryLocation;
+        if(queriedSegment.xetoDuct.graphicLocation.start == key) {
+            joiningLocation = queriedSegment.xetoDuct.graphicLocation.start;
+            secondaryLocation = queriedSegment.xetoDuct.graphicLocation.end;
+        }
+        else {
+            joiningLocation = queriedSegment.xetoDuct.graphicLocation.end;
+            secondaryLocation = queriedSegment.xetoDuct.graphicLocation.start;
+        }
+
+        let relativePosition = "none";
+        if(secondaryLocation[0] < joiningLocation[0]) {
+            relativePosition = "left";
+        }
+        else if(secondaryLocation[0] > joiningLocation[0]) {
+            relativePosition = "right";
+        }
+        else if(secondaryLocation[1] > joiningLocation[1]) {
+            relativePosition = "down";
+        }
+        else if(secondaryLocation[1] < joiningLocation[1]) {
+            relativePosition = "up";
+        }
+
+        queriedSegment.relativePosition = relativePosition;
+    }
+
+    /**
+     * getNextSegment
+     * 
+     * Retrieves the next segment in a sequence based on the current segment's direction and placement.
+     * 
+     * @param {Object} currentSegment - The current segment in the sequence.
+     * @returns {Object} The next segment in the sequence.
+     */
+    getNextSegment(currentSegmentXeto, currentKey) {
+        console.log("getNextSegment currentKey:", currentKey);
+
+        const graphicLocation = currentSegmentXeto.graphicLocation;
+        let nextKey = currentKey == graphicLocation.start ? graphicLocation.end : graphicLocation.start;
+        console.log("getNextSegment nextKey:", nextKey);
+
+        if(this.ductsDictionary[nextKey].length > 1) {
+            for(const adjacentSegmentXeto of this.ductsDictionary[nextKey]) {
+                if(adjacentSegmentXeto != currentSegmentXeto) {
+                    if(adjacentSegmentXeto.isPositioned != true) {
+                        this.placeIntersection(nextKey);
+                    }
+                    this.getNextSegment(adjacentSegmentXeto, nextKey);
+                }
+            }
+        }
+        
+    }
+
+    /**
+     * placeIntersection
+     * 
+     * Places an intersection component at the point where two segments intersect, adjusting for orientation.
+     * 
+     * @param {Object} segmentA - The first intersecting segment.
+     * @param {Object} segmentB - The second intersecting segment.
+     * @returns {Object} The intersection component placed at the intersection point.
+     */
+    placeIntersection(key) {
+        console.log("placeIntersection started");
+
+        if(this.ductsDictionary[key].length == 4) {
+            console.log("placeIntersection 4*");
+
+            let currentSegments = this.assemblySegments.filter(child => 
+                child.xetoDuct.id === this.ductsDictionary[key][0].id ||
+                child.xetoDuct.id === this.ductsDictionary[key][1].id ||
+                child.xetoDuct.id === this.ductsDictionary[key][2].id ||
+                child.xetoDuct.id === this.ductsDictionary[key][3].id
+            );
+            
+            let adjacentSegment = null;
+            for(const i in currentSegments) {
+                
+                if(currentSegments[i].xetoDuct.isPositioned) {
+                    adjacentSegment = currentSegments[i];
+                    currentSegments.splice(i, 1);
+                    break;
+                }
+            }
+            this.getSegmentDirection(adjacentSegment, key);
+            console.log("placeIntersection 4* adjacentSegment:", adjacentSegment);
+
+            let intersectSegments = {
+                up: null, 
+                down: null,
+                left: null, 
+                right: null
+            }
+
+            for(const currentSegment of currentSegments) {
+                this.getSegmentDirection(currentSegment, key);
+                console.log("placeIntersection 4* currentSegment:", currentSegment);
+            }
+
+            this.seperateByDirections(intersectSegments, adjacentSegment, currentSegments);
+            console.log("placeIntersection 4* intersectSegments:", intersectSegments);
+
+            if(intersectSegments.up.xetoDuct.isPositioned != true) {
+                let currentSegmentOrientation = intersectSegments.up.xetoDuct.orientation;
+                this.orientAssemblySegment(intersectSegments.up.segment, currentSegmentOrientation);
+            }
+            if(intersectSegments.down.xetoDuct.isPositioned != true) {
+                let currentSegmentOrientation = intersectSegments.down.xetoDuct.orientation;
+                this.orientAssemblySegment(intersectSegments.down.segment, currentSegmentOrientation);
+            }
+
+            for(const currentSegment of currentSegments) {
+                console.log("placeIntersection 4* currentSegment:", currentSegment);
+                let lengthToAdjacent = 0;
+                lengthToAdjacent = adjacentSegment.segment.duct.userData.component.object.position.x - currentSegment.segment.duct.userData.component.object.position.x;
+                this.translateAssemblySegment(currentSegment.segment, 'x', lengthToAdjacent);
+                lengthToAdjacent = adjacentSegment.segment.duct.userData.component.object.position.z - currentSegment.segment.duct.userData.component.object.position.z;
+                this.translateAssemblySegment(currentSegment.segment, 'z', lengthToAdjacent);
+            }
+
+            let maxHalfWidth = this.innerDim[intersectSegments.up.xetoDuct.graphicLocation.size] > this.innerDim[intersectSegments.down.xetoDuct.graphicLocation.size] ? this.innerDim[intersectSegments.up.xetoDuct.graphicLocation.size] / 2 : this.innerDim[intersectSegments.down.xetoDuct.graphicLocation.size] / 2;
+            if(intersectSegments.left != adjacentSegment) {
+                length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2) + maxHalfWidth + 15;
+                this.translateAssemblySegment(intersectSegments.left.segment, "x", (length * -1));
+            }
+            if(intersectSegments.right != adjacentSegment) {
+                length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2) + maxHalfWidth + 15;
+                this.translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
+            }
+
+            let maxHalfHeight = this.innerDim[intersectSegments.left.xetoDuct.graphicLocation.size] > this.innerDim[intersectSegments.right.xetoDuct.graphicLocation.size] ? this.innerDim[intersectSegments.left.xetoDuct.graphicLocation.size] / 2 : this.innerDim[intersectSegments.right.xetoDuct.graphicLocation.size] / 2;
+            if(intersectSegments.up != adjacentSegment) {
+                length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2) + maxHalfHeight + 15;
+                this.translateAssemblySegment(intersectSegments.up.segment, "z", (length * 1));
+            }
+            if(intersectSegments.down != adjacentSegment) {
+                length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2) + maxHalfHeight + 15;
+                this.translateAssemblySegment(intersectSegments.down.segment, "z", (length * -1));
+            }
+
+            if(adjacentSegment.relativePosition == "up") {
+                length = ((adjacentSegment.segment.duct.userData.component.attributes.length.value) / 2) + maxHalfHeight + 15;
+                this.translateAssemblySegment(intersectSegments.down.segment, "z", (length * -1));
+                this.translateAssemblySegment(intersectSegments.left.segment, "z", (length * -1));
+                this.translateAssemblySegment(intersectSegments.right.segment, "z", (length * -1));
+            }
+            else if(adjacentSegment.relativePosition == "down") {
+                length = ((adjacentSegment.segment.duct.userData.component.attributes.length.value) / 2) + maxHalfHeight + 15;
+                this.translateAssemblySegment(intersectSegments.down.segment, "z", (length * 1));
+                this.translateAssemblySegment(intersectSegments.left.segment, "z", (length * 1));
+                this.translateAssemblySegment(intersectSegments.right.segment, "z", (length * 1));
+            }
+            else if(adjacentSegment.relativePosition == "left") {
+                length = ((adjacentSegment.segment.duct.userData.component.attributes.length.value) / 2) + maxHalfHeight + 15;
+                this.translateAssemblySegment(intersectSegments.down.segment, "x", (length * 1));
+                this.translateAssemblySegment(intersectSegments.left.segment, "x", (length * 1));
+                this.translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
+            }
+            else if(adjacentSegment.relativePosition == "right") {
+                length = ((adjacentSegment.segment.duct.userData.component.attributes.length.value) / 2) + maxHalfHeight + 15;
+                this.translateAssemblySegment(intersectSegments.down.segment, "x", (length * -1));
+                this.translateAssemblySegment(intersectSegments.left.segment, "x", (length * -1));
+                this.translateAssemblySegment(intersectSegments.right.segment, "x", (length * -1));
+            }
+        }
+        else if (this.ductsDictionary[key].length == 3) {
+            console.log("placeIntersection length 3");
+    
+            let currentSegments = this.assemblySegments.filter(child => 
+                child.xetoDuct.id === this.ductsDictionary[key][0].id ||
+                child.xetoDuct.id === this.ductsDictionary[key][1].id ||
+                child.xetoDuct.id === this.ductsDictionary[key][2].id
+            );
+    
+            let adjacentSegment = null;
+            for (const i in currentSegments) {
+                if (currentSegments[i].xetoDuct.isPositioned) {
+                    adjacentSegment = currentSegments[i];
+                    currentSegments.splice(i, 1);
+                    break;
+                }
+            }
+            this.getSegmentDirection(adjacentSegment, key);
+            console.log("placeIntersection 3* adjacentSegment:", adjacentSegment);
+    
+            let intersectSegments = {
+                up: null,
+                down: null,
+                left: null,
+                right: null
+            };
+    
+            for (const currentSegment of currentSegments) {
+                this.getSegmentDirection(currentSegment, key);
+                console.log("placeIntersection 3* currentSegment:", currentSegment);
+            }
+    
+            this.seperateByDirections(intersectSegments, adjacentSegment, currentSegments);
+            console.log("placeIntersection 3* intersectSegments:", intersectSegments);
+
+            let currentSegmentOrientation = intersectSegments.up.xetoDuct.orientation;
+            this.orientAssemblySegment(intersectSegments.up.segment, currentSegmentOrientation);
+
+            currentSegmentOrientation = intersectSegments.down.xetoDuct.orientation;
+            this.orientAssemblySegment(intersectSegments.down.segment, currentSegmentOrientation);
+    
+            for (const currentSegment of currentSegments) {
+                let lengthToAdjacent = 0;
+                lengthToAdjacent = adjacentSegment.segment.duct.userData.component.object.position.x - currentSegment.segment.duct.userData.component.object.position.x;
+                this.translateAssemblySegment(currentSegment.segment, 'x', lengthToAdjacent);
+                lengthToAdjacent = adjacentSegment.segment.duct.userData.component.object.position.z - currentSegment.segment.duct.userData.component.object.position.z;
+                this.translateAssemblySegment(currentSegment.segment, 'z', lengthToAdjacent);
+            }
+
+            const upSize = intersectSegments.up ? intersectSegments.up.xetoDuct.graphicLocation.size : intersectSegments.down.xetoDuct.graphicLocation.size;
+            const downSize = intersectSegments.down ? intersectSegments.down.xetoDuct.graphicLocation.size : intersectSegments.up.xetoDuct.graphicLocation.size;
+
+            let maxHalfWidth = this.innerDim[upSize] > this.innerDim[downSize] ? this.innerDim[upSize] / 2 : this.innerDim[downSize] / 2;
+            console.log("placeIntersection 3* maxHalfWidth:", maxHalfWidth);
+            if(intersectSegments.left != adjacentSegment && intersectSegments.left != null) {
+                console.log("placeIntersection 3* 1");
+                length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2) + maxHalfWidth + 15;
+                this.translateAssemblySegment(intersectSegments.left.segment, "x", (length * -1));
+            }
+            if(intersectSegments.right != adjacentSegment && intersectSegments.right != null) {
+                console.log("placeIntersection 3* 2");
+                length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2) + maxHalfWidth + 15;
+                this.translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
+            }
+
+            const leftSize = intersectSegments.left ? intersectSegments.left.xetoDuct.graphicLocation.size : intersectSegments.right.xetoDuct.graphicLocation.size;
+            const rightSize = intersectSegments.right ? intersectSegments.right.xetoDuct.graphicLocation.size : intersectSegments.left.xetoDuct.graphicLocation.size
+
+            let maxHalfHeight = this.innerDim[leftSize] > this.innerDim[rightSize] ? this.innerDim[leftSize] / 2 : this.innerDim[rightSize] / 2;
+            console.log("placeIntersection 3* maxHalfHeight:", maxHalfHeight);
+            if(intersectSegments.up != adjacentSegment && intersectSegments.up != null) {
+                console.log("placeIntersection 3* 3");
+                length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2) + maxHalfHeight + 15;
+                this.translateAssemblySegment(intersectSegments.up.segment, "z", (length * 1));
+
+                length = ((adjacentSegment.segment.duct.userData.component.attributes.length.value) / 2) + maxHalfWidth + 15;
+                this.translateAssemblySegment(intersectSegments.up.segment, "x", (length * 1));
+            }
+            if(intersectSegments.down != adjacentSegment && intersectSegments.down != null) {
+                console.log("placeIntersection 3* 4");
+                length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2) + maxHalfHeight + 15;
+                this.translateAssemblySegment(intersectSegments.down.segment, "z", (length * -1));
+
+                length = ((adjacentSegment.segment.duct.userData.component.attributes.length.value) / 2) + maxHalfWidth + 15;
+                this.translateAssemblySegment(intersectSegments.down.segment, "x", (length * 1));
+            }
+    
+        }
+        else if(this.ductsDictionary[key].length == 2) {
+            console.log("placeIntersection 2*");
+
+            let currentSegments = this.assemblySegments.filter(child => 
+                child.xetoDuct.id === this.ductsDictionary[key][0].id ||
+                child.xetoDuct.id === this.ductsDictionary[key][1].id
+            );
+            
+            let adjacentSegment = null;
+            for(const i in currentSegments) {
+                
+                if(currentSegments[i].xetoDuct.isPositioned) {
+                    adjacentSegment = currentSegments[i];
+                    currentSegments.splice(i, 1);
+                    break;
+                }
+            }
+            this.getSegmentDirection(adjacentSegment, key);
+            console.log("placeIntersection 2* adjacentSegment:", adjacentSegment);
+
+            let intersectSegments = {
+                up: null, 
+                down: null,
+                left: null, 
+                right: null
+            }
+
+            let currentSegment = currentSegments[0];
+            this.getSegmentDirection(currentSegment, key);
+
+            this.seperateByDirections(intersectSegments, adjacentSegment, currentSegments);
+
+            if(intersectSegments.up) {
+                let currentSegmentOrientation = currentSegment.xetoDuct.orientation;
+                this.orientAssemblySegment(currentSegment.segment, currentSegmentOrientation);
+            }
+            else if(intersectSegments.down) {
+                let currentSegmentOrientation = currentSegment.xetoDuct.orientation;
+                this.orientAssemblySegment(currentSegment.segment, currentSegmentOrientation);
+            }            
+
+            let lengthToAdjacent = 0;
+            lengthToAdjacent = adjacentSegment.segment.duct.userData.component.object.position.x - currentSegment.segment.duct.userData.component.object.position.x;
+            this.translateAssemblySegment(currentSegment.segment, 'x', lengthToAdjacent);
+            lengthToAdjacent = adjacentSegment.segment.duct.userData.component.object.position.z - currentSegment.segment.duct.userData.component.object.position.z;
+            this.translateAssemblySegment(currentSegment.segment, 'z', lengthToAdjacent);
+
+            if(adjacentSegment.xetoDuct.isVertical == currentSegment.xetoDuct.isVertical) {
+                if(currentSegment.relativePosition == "right") {
+                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + ((adjacentSegment.segment.duct.userData.component.attributes.length.value) / 2);
+                    this.translateAssemblySegment(currentSegment.segment, 'x', length * 1);
+                }
+                else if(currentSegment.relativePosition == "left") {
+                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + ((adjacentSegment.segment.duct.userData.component.attributes.length.value) / 2);
+                    this.translateAssemblySegment(currentSegment.segment, 'x', length * -1);
+                }
+                else if(currentSegment.relativePosition == "up") {
+                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + ((adjacentSegment.segment.duct.userData.component.attributes.length.value) / 2);
+                    this.translateAssemblySegment(currentSegment.segment, 'z', (length * 1));
+                }
+                else if(currentSegment.relativePosition == "down") {
+                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + ((adjacentSegment.segment.duct.userData.component.attributes.length.value) / 2);
+                    this.translateAssemblySegment(currentSegment.segment, 'z', (length * -1));
+                }
+            }
+            else if(adjacentSegment.xetoDuct.isVertical != currentSegment.xetoDuct.isVertical) {
+                if(adjacentSegment.relativePosition == "left") {
+                    length = ((adjacentSegment.segment.duct.userData.component.attributes.length.value) / 2) + this.innerDim[currentSegment.xetoDuct.graphicLocation.size] / 2;
+                    this.translateAssemblySegment(currentSegment.segment, "x", (length * 1) + 15);
+                }
+                else if(adjacentSegment.relativePosition == "right") {
+                    length = ((adjacentSegment.segment.duct.userData.component.attributes.length.value) / 2) + this.innerDim[currentSegment.xetoDuct.graphicLocation.size] / 2;
+                    this.translateAssemblySegment(currentSegment.segment, "x", (length * -1) - 15);
+                }
+                if(adjacentSegment.relativePosition == "up") {
+                    length = ((adjacentSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDim[currentSegment.xetoDuct.graphicLocation.size] / 2);
+                    this.translateAssemblySegment(currentSegment.segment, 'z', (length * -1) - 15);
+                }
+                else if(adjacentSegment.relativePosition == "down") {
+                    length = ((adjacentSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDim[currentSegment.xetoDuct.graphicLocation.size] / 2);
+                    this.translateAssemblySegment(currentSegment.segment, 'z', (length * 1) + 15);
+                }
+
+                if(currentSegment.relativePosition == "up") {
+                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDim[adjacentSegment.xetoDuct.graphicLocation.size] / 2);
+                    this.translateAssemblySegment(currentSegment.segment, 'z', (length * 1) + 15);
+                }
+                else if(currentSegment.relativePosition == "down") {
+                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDim[adjacentSegment.xetoDuct.graphicLocation.size] / 2);
+                    this.translateAssemblySegment(currentSegment.segment, 'z', (length * -1) - 15);
+                }
+                else if(currentSegment.relativePosition == "left") {
+                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDim[adjacentSegment.xetoDuct.graphicLocation.size] / 2);
+                    this.translateAssemblySegment(currentSegment.segment, 'x', (length * -1) - 15);
+                }
+                else if(currentSegment.relativePosition == "right") {
+                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDim[adjacentSegment.xetoDuct.graphicLocation.size] / 2);
+                    this.translateAssemblySegment(currentSegment.segment, 'x', (length * 1) + 15);
+                }
+            }
+        }
+
+        for(const traversedSegmentXeto of this.ductsDictionary[key]) {
+            if(traversedSegmentXeto.isPositioned != true) {
+                console.log("placeIntersection traversedSegmentXeto.id", traversedSegmentXeto.id);
+            }
+            traversedSegmentXeto.isPositioned = true;
+        }
+        
+    }
+
+    /**
+     * seperateByDirections
+     * 
+     * Separates a list of segments into groups based on their direction (e.g., "north", "south", "east", "west").
+     * 
+     * @param {Array} segments - The array of segments to separate.
+     * @returns {Object} An object grouping segments by their directions.
+     */
+    seperateByDirections(intersectSegments, adjacentSegment, currentSegments) {
+        for(const currentSegment of currentSegments) {
+            intersectSegments[currentSegment.relativePosition] = currentSegment;
+        }
+        intersectSegments[adjacentSegment.relativePosition] = adjacentSegment;
+    }
+
+    /**
      * placeSegments
      * 
      * Places assembly segments in the correct position and orientation based on their relationship 
      * to the primary segment and other segments in the assembly.
      * 
-     * Functions Invoked:
-     * - getOrientation
-     * - orientAssemblySegment
-     * - translateAssemblySegment
-     * - spawnJoint
-     * - getJointEntry
-     * 
-     * @param {Object} primarySegmentXeto - The primary segment to align other segments to.
      * @returns {Array} The placed assembly segments.
      */
-    async placeSegments(primarySegmentXeto) {
-        for (const segment of this.assemblySegments) { // Iterate over each segment.
-            const start = segment.xetoDuct.graphicLocation.start; // Get the start location of the segment.
-            const end = segment.xetoDuct.graphicLocation.end; // Get the end location of the segment.
+    async placeSegments(primaryKey) {
+        console.log("placeSegments this.assemblySegments:", this.assemblySegments);
+        console.log("placeSegments this.ductsDictionary:", this.ductsDictionary);
 
-            let segmentOrientation = this.getOrientation(start, end); // Determine the orientation of the segment.
+        const primarySegmentXeto = this.ductsDictionary[primaryKey][0];
 
-            if (segment.xetoDuct != primarySegmentXeto) { // If the segment is not the primary segment.
-                this.orientAssemblySegment(segment.segment, segmentOrientation); // Orient the segment based on its orientation.
+        let primarySegment = this.assemblySegments.filter(child => 
+            child.xetoDuct.id === primarySegmentXeto.id
+        )[0];
 
-                let preSegments = this.assemblySegments.filter(child => 
-                    child.xetoDuct.graphicLocation.end === start         
-                ); // Find preceding segments that intersect with the start of the current segment.
+        console.log("placeSegments primaryKey:", primaryKey);
+        console.log("placeSegments primarySegment:", primarySegment);
 
-                while (preSegments.length > 0) { // While there are preceding segments.
-                    let preSegment = preSegments[0]; // Get the first preceding segment.
-                    let preStart = preSegment.xetoDuct.graphicLocation.start; // Get the start location of the preceding segment.
-                    let preEnd = preSegment.xetoDuct.graphicLocation.end; // Get the end location of the preceding segment.
+        let primarySegmentOrientation = primarySegment.xetoDuct.orientation;
+        this.orientAssemblySegment(primarySegment.segment, primarySegmentOrientation);
+        primarySegmentXeto.isPositioned = true;
 
-                    let preSegmentOrientation = this.getOrientation(preStart, preEnd); // Determine the orientation of the preceding segment.
+        this.getNextSegment(primarySegmentXeto, primaryKey);     
 
-                    if (preSegmentOrientation == 'east') {  
-                        let length = (preSegment.segment.duct.userData.component.attributes.length.value * 1) + 1060;  
-                        this.translateAssemblySegment(segment.segment, 'x', length); // Translate the segment along the x-axis.
-                    } else if (preSegmentOrientation == 'west') {
-                        let length = (preSegment.segment.duct.userData.component.attributes.length.value * -1) - 1030; 
-                        this.translateAssemblySegment(segment.segment, 'x', length); // Translate the segment along the x-axis.
-                    } else if (preSegmentOrientation == 'south') {
-                        let length = (preSegment.segment.duct.userData.component.attributes.length.value * -1) - 1060;
-                        this.translateAssemblySegment(segment.segment, 'z', length); // Translate the segment along the z-axis.
-                    } else if (preSegmentOrientation == 'north') {
-                        let length = (preSegment.segment.duct.userData.component.attributes.length.value * 1) + 1060;
-                        this.translateAssemblySegment(segment.segment, 'z', length); // Translate the segment along the z-axis.
-                    }
-
-                    preSegments = this.assemblySegments.filter(child => 
-                        child.xetoDuct.graphicLocation.end === preSegment.xetoDuct.graphicLocation.start
-                    ); // Find the next preceding segments.
-                }
-
-                if (segmentOrientation == 'north') { // If the segment is oriented north.
-                    let length = ((segment.segment.duct.userData.component.attributes.length.value) / 2) + 530;
-                    this.translateAssemblySegment(segment.segment, 'z', length); // Translate the segment along the z-axis.
-                } else if (segmentOrientation == 'south') {
-                    let length = ((segment.segment.duct.userData.component.attributes.length.value * -1) / 2) - 530;
-                    this.translateAssemblySegment(segment.segment, 'z', length); // Translate the segment along the z-axis.
-                } else if (segmentOrientation == 'east') {
-                    let length = ((segment.segment.duct.userData.component.attributes.length.value) / 2) + 530;
-                    this.translateAssemblySegment(segment.segment, 'x', length); // Translate the segment along the x-axis.
-                } else if (segmentOrientation == 'west') {
-                    let length = ((segment.segment.duct.userData.component.attributes.length.value * -1) / 2) - 530;
-                    this.translateAssemblySegment(segment.segment, 'x', length); // Translate the segment along the x-axis.
-                }
-
-            } else {       
-                this.orientAssemblySegment(segment.segment, segmentOrientation); // Orient the segment based on its orientation.   
-                if (segmentOrientation == 'north') {
-                    this.translateAssemblySegment(segment.segment, 'z', (segment.segment.duct.userData.component.attributes.length.value / 2 * 1) + 530); // Translate the segment along the z-axis.
-                } else if (segmentOrientation == 'south') {
-                    this.translateAssemblySegment(segment.segment, 'z', (segment.segment.duct.userData.component.attributes.length.value / 2 * -1) - 530); // Translate the segment along the z-axis.
-                } else if (segmentOrientation == 'east') {
-                    let length = ((segment.segment.duct.userData.component.attributes.length.value / 2) * 1) + 530;
-                    this.translateAssemblySegment(segment.segment, 'x', length); // Translate the segment along the x-axis.
-
-                    if (segment.segment.ends !== undefined) { // If the segment has ends defined.
-                        for (const end of segment.segment.ends) { // Adjust the position of each end.
-                            end.userData.component.object.position.x += length - 530;
-                        }
-                    }
-                } else if (segmentOrientation == 'west') {
-                    let length = ((segment.segment.duct.userData.component.attributes.length.value / 2) * -1) - 530;
-                    this.translateAssemblySegment(segment.segment, 'x', length); // Translate the segment along the x-axis.
-
-                    if (segment.segment.ends !== undefined) { // If the segment has ends defined.
-                        for (const end of segment.segment.ends) { // Adjust the position of each end.
-                            end.userData.component.object.position.x += length + 530;
-                        }
-                    }
-                }
-            }
-
-            if (segmentOrientation == 'north') {  
-                let topIntersections = this.assemblySegments.filter(child => 
-                    child.xetoDuct.graphicLocation.end === end &&
-                    child.xetoDuct.graphicLocation.start !== start ||
-                    child.xetoDuct.graphicLocation.start === end
-                ); // Find segments that intersect with the top of the current segment.
-
-                let bottomIntersections = this.assemblySegments.filter(child => 
-                    child.xetoDuct.graphicLocation.end === start ||
-                    child.xetoDuct.graphicLocation.start === start &&
-                    child.xetoDuct.graphicLocation.end !== end
-                ); // Find segments that intersect with the bottom of the current segment.
-
-                if (bottomIntersections.length > 0) { // If there are bottom intersections.
-                    this.spawnJoint(JSON.parse(JSON.stringify(segment)), this.getJointEntry(bottomIntersections), false, bottomIntersections, segment); // Spawn a joint at the bottom intersections.
-                }
-
-                if (topIntersections.length > 0) { // If there are top intersections.
-                    this.spawnJoint(JSON.parse(JSON.stringify(segment)), this.getJointEntry(topIntersections), true, topIntersections, segment); // Spawn a joint at the top intersections.
-                }
-            } else if (segmentOrientation == 'south') {  
-                let topIntersections = this.assemblySegments.filter(child => 
-                    child.xetoDuct.graphicLocation.end === start ||
-                    child.xetoDuct.graphicLocation.start === start &&
-                    child.xetoDuct.graphicLocation.end !== end
-                ); // Find segments that intersect with the top of the current segment.
-
-                let bottomIntersections = this.assemblySegments.filter(child => 
-                    child.xetoDuct.graphicLocation.end === end &&
-                    child.xetoDuct.graphicLocation.start !== start ||
-                    child.xetoDuct.graphicLocation.start === end
-                ); // Find segments that intersect with the bottom of the current segment.
-
-                if (bottomIntersections.length > 0) { // If there are bottom intersections.
-                    this.spawnJoint(JSON.parse(JSON.stringify(segment)), this.getJointEntry(bottomIntersections), false, bottomIntersections, segment); // Spawn a joint at the bottom intersections.
-                }
-
-                if (topIntersections.length > 0) { // If there are top intersections.
-                    this.spawnJoint(JSON.parse(JSON.stringify(segment)), this.getJointEntry(topIntersections), true, topIntersections, segment); // Spawn a joint at the top intersections.
-                }
-            }
-        }
-        return this.assemblySegments; // Return the placed assembly segments.
+        return this.assemblySegments; // Return the placed assembly segments.  
     }
 
     /**
      * getAssemblyDimensions
      * 
      * Calculates the width and height of the entire assembly based on the positions of segments.
-     * 
-     * Functions Invoked:
-     * - getRow
      * 
      * @returns {Object} The dimensions of the assembly (width and height).
      */
@@ -818,9 +1476,6 @@ export default class Arithmetics {
      * 
      * Extracts the row number from a location string.
      * 
-     * Functions Invoked:
-     * - None
-     * 
      * @param {String} location - The location string (e.g., "A5").
      * @returns {Number} The row number extracted from the location.
      */
@@ -832,9 +1487,6 @@ export default class Arithmetics {
      * getJointEntry
      * 
      * Determines the appropriate joint entry based on the number of intersections.
-     * 
-     * Functions Invoked:
-     * - None
      * 
      * @param {Array} intersections - The list of intersecting segments.
      * @returns {Object} The joint entry for the intersections.
@@ -857,10 +1509,6 @@ export default class Arithmetics {
      * 
      * Spawns a joint at the intersection of segments, placing it in the correct position 
      * and orientation based on the segment's orientation.
-     * 
-     * Functions Invoked:
-     * - getRelativePosition
-     * - getJointEntry
      * 
      * @param {Object} segmentCopy - A copy of the current segment.
      * @param {Object} JointEntry - The joint entry to use.
@@ -939,9 +1587,6 @@ export default class Arithmetics {
      * Determines the relative position (left, right, top, bottom) of an intersecting segment 
      * relative to the current segment.
      * 
-     * Functions Invoked:
-     * - getRow
-     * 
      * @param {Object} segment - The current segment.
      * @param {Object} intersection - The intersecting segment.
      * @returns {String} The relative position of the intersection.
@@ -979,9 +1624,6 @@ export default class Arithmetics {
      * 
      * Determines the orientation of a segment based on the start and end graphic locations.
      * 
-     * Functions Invoked:
-     * - getRow
-     * 
      * @param {String} start - The start location of the segment.
      * @param {String} end - The end location of the segment.
      * @returns {String} The orientation of the segment (e.g., "north", "south", "east", "west").
@@ -1004,9 +1646,6 @@ export default class Arithmetics {
      * translateAssemblySegment
      * 
      * Translates an assembly segment by a specified value along a specified axis (x, z).
-     * 
-     * Functions Invoked:
-     * - None
      * 
      * @param {Object} assemblySegment - The assembly segment to translate.
      * @param {String} translationKey - The axis to translate along ('x' or 'z').
@@ -1034,9 +1673,6 @@ export default class Arithmetics {
      * 
      * Orients an assembly segment to match a specified orientation (north, south, east, west).
      * Adjusts the rotation and position of components and duct ends as needed.
-     * 
-     * Functions Invoked:
-     * - THREE.MathUtils.degToRad
      * 
      * @param {Object} assemblySegment - The assembly segment to orient.
      * @param {String} orientation - The orientation to apply ('north', 'south', 'east', 'west').
@@ -1123,9 +1759,6 @@ export default class Arithmetics {
      * 
      * Determines the flow direction of various components in the assembly.
      * Flips components and ducts if their flow direction is 'endToStart'.
-     * 
-     * Functions Invoked:
-     * - flipMesh
      */
     determineFlowDirections(assemblySegments) {
         // Flip any component that has a flow-direction value of endToStart
@@ -1142,9 +1775,6 @@ export default class Arithmetics {
        * flipMesh
        * 
        * Flips a given mesh by rotating it 180 degrees around the Z-axis.
-       * 
-       * Functions Invoked:
-       * - THREE.MathUtils.degToRad
        * 
        * @param {Object} mesh - The 3D mesh to be flipped
        */

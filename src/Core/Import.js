@@ -108,9 +108,10 @@ class Import {
         this.validator.propogateBlockStyle(xetoDictionary);
 
         const cleanedXeto = [
+            xetoDictionary.ductsDictionary,
             ...xetoDictionary.ahuGroup,
             ...xetoDictionary.ductsList,
-            ...xetoDictionary.componentsList
+            ...xetoDictionary.componentsList,
         ];
 
         return cleanedXeto;

@@ -62,6 +62,110 @@ class Ahu3D {
         this.loadedXeto = [];  // This object holds xeto
     }
 
+    createDuct(size, type = "duct") {
+
+        const id = { // inner-dimensions
+            small: 500,
+            medium: 1000,
+            large: 1500
+        }
+
+        const wt = 30; // wall-thickness
+
+        // Create the geometries with the specified dimensions
+        const ceilingGeometry = new THREE.BoxGeometry(
+            id[size], 
+            id[size] + wt, 
+            wt
+        );
+        const backWallGeometry = new THREE.BoxGeometry(
+            id[size], 
+            wt, 
+            id[size]
+        );
+        const floorGeometry = new THREE.BoxGeometry(
+            id[size], 
+            id[size] + wt, 
+            wt
+        );
+
+        // Create materials (using a basic color for now)
+        const material1 = new THREE.MeshStandardMaterial({ color: 0xff0000, wireframe: false });
+        const material2 = new THREE.MeshStandardMaterial({ color: 0x00ff00, wireframe: false });
+        const material3 = new THREE.MeshStandardMaterial({ color: 0x0000ff, wireframe: false });
+        const whiteMaterial = new THREE.MeshStandardMaterial({ color: 0xAEB9C2, wireframe: false });
+
+        // Create the meshes
+        const ceiling = new THREE.Mesh(ceilingGeometry, whiteMaterial);
+        const backWall = new THREE.Mesh(backWallGeometry, whiteMaterial);
+        const floor = new THREE.Mesh(floorGeometry, whiteMaterial);
+
+        // Position the cubes to make them appear joined
+        ceiling.position.set(
+            0,
+            0,
+            wt/2
+        );
+        backWall.position.set(
+            0,
+            id[size]/2,
+            id[size]/-2
+        );
+        floor.position.set(
+            0,
+            0,
+            id[size]*-1 -15
+        );        
+
+        // Create an empty Object3D container (works as an empty mesh or group)
+        const parentObject = new THREE.Object3D();
+
+        let leftWall = null;
+        let rightWall = null;
+
+        if(type.includes("joint")) {
+            const leftWallGeometry = new THREE.BoxGeometry(
+                wt, 
+                id[size], 
+                id[size]
+            );
+            const rightWallGeometry = new THREE.BoxGeometry(
+                wt, 
+                id[size], 
+                id[size]
+            );
+            leftWall = new THREE.Mesh(leftWallGeometry, whiteMaterial);
+            rightWall = new THREE.Mesh(rightWallGeometry, whiteMaterial);
+            leftWall.position.set(
+                id[size]/-2 - 15,
+                0,
+                id[size]/-2
+            );
+            rightWall.position.set(
+                id[size]/ 2 + 15,
+                0,
+                id[size]/-2
+            );
+            
+        }
+
+        // Add the cubes to the parent object
+        if(type != ("l-joint")) {
+            parentObject.add(ceiling);
+        }
+        parentObject.add(backWall);
+        parentObject.add(floor);
+        if(type.includes("joint")) {
+            parentObject.add(leftWall);
+            parentObject.add(rightWall); 
+        }   
+
+        parentObject.position.z += id[size];
+
+        // Add the cubes to the scene
+        this.sceneHelper.addToScene(parentObject);
+    }
+
     /**
      * Translates the position of a component along the Y-axis.
      * 
