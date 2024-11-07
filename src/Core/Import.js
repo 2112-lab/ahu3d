@@ -100,8 +100,16 @@ class Import {
 
         let xetoDictionary = {};
         xetoDictionary.ahuGroup = xeto.filter(child => child.spec.includes('AhuGroup'));
-        xetoDictionary.ductsList = xeto.filter(child => child.spec.includes('DuctEdge'));
+        console.log("xetoDictionary.ahuGroup[0]:", xetoDictionary.ahuGroup[0]);
+        xetoDictionary.ductsList = xeto.filter(
+            child => child.spec.includes('DuctEdge') && xetoDictionary.ahuGroup[0].ducts.includes(child.id)
+        );
+        console.log("xetoDictionary.ductsList:", xetoDictionary.ductsList);
         xetoDictionary.componentsList = xeto.filter(child => child.spec.includes('Component'));
+
+        for(const duct of xetoDictionary.ductsList) {
+
+        }
 
         this.analyzer.analyzeAndTransform(xetoDictionary);
 

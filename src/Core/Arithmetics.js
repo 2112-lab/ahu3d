@@ -1082,17 +1082,17 @@ export default class Arithmetics {
                 child.xetoDuct.id === this.ductsDictionary[key][3].id
             );
             
-            let adjacentSegment = null;
+            let fixedSegment = null;
             for(const i in currentSegments) {
                 
                 if(currentSegments[i].xetoDuct.isPositioned) {
-                    adjacentSegment = currentSegments[i];
+                    fixedSegment = currentSegments[i];
                     currentSegments.splice(i, 1);
                     break;
                 }
             }
-            this.getSegmentDirection(adjacentSegment, key);
-            console.log("placeIntersection 4* adjacentSegment:", adjacentSegment);
+            this.getSegmentDirection(fixedSegment, key);
+            console.log("placeIntersection 4* fixedSegment:", fixedSegment);
 
             let intersectSegments = {
                 up: null, 
@@ -1106,7 +1106,7 @@ export default class Arithmetics {
                 console.log("placeIntersection 4* currentSegment:", currentSegment);
             }
 
-            this.seperateByDirections(intersectSegments, adjacentSegment, currentSegments);
+            this.seperateByDirections(intersectSegments, fixedSegment, currentSegments);
             console.log("placeIntersection 4* intersectSegments:", intersectSegments);
 
             if(intersectSegments.up.xetoDuct.isPositioned != true) {
@@ -1121,55 +1121,106 @@ export default class Arithmetics {
             for(const currentSegment of currentSegments) {
                 console.log("placeIntersection 4* currentSegment:", currentSegment);
                 let lengthToAdjacent = 0;
-                lengthToAdjacent = adjacentSegment.segment.duct.userData.component.object.position.x - currentSegment.segment.duct.userData.component.object.position.x;
+                lengthToAdjacent = fixedSegment.segment.duct.userData.component.object.position.x - currentSegment.segment.duct.userData.component.object.position.x;
                 this.translateAssemblySegment(currentSegment.segment, 'x', lengthToAdjacent);
-                lengthToAdjacent = adjacentSegment.segment.duct.userData.component.object.position.z - currentSegment.segment.duct.userData.component.object.position.z;
+                lengthToAdjacent = fixedSegment.segment.duct.userData.component.object.position.z - currentSegment.segment.duct.userData.component.object.position.z;
                 this.translateAssemblySegment(currentSegment.segment, 'z', lengthToAdjacent);
             }
 
-            let maxHalfWidth = this.innerDim[intersectSegments.up.xetoDuct.graphicLocation.size] > this.innerDim[intersectSegments.down.xetoDuct.graphicLocation.size] ? this.innerDim[intersectSegments.up.xetoDuct.graphicLocation.size] / 2 : this.innerDim[intersectSegments.down.xetoDuct.graphicLocation.size] / 2;
-            if(intersectSegments.left != adjacentSegment) {
-                length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2) + maxHalfWidth + 15;
-                this.translateAssemblySegment(intersectSegments.left.segment, "x", (length * -1));
-            }
-            if(intersectSegments.right != adjacentSegment) {
-                length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2) + maxHalfWidth + 15;
-                this.translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
-            }
+            const upSize = intersectSegments.up.xetoDuct.graphicLocation.size;
+            const downSize = intersectSegments.down.xetoDuct.graphicLocation.size;
+            const leftSize = intersectSegments.left.xetoDuct.graphicLocation.size;
+            const rightSize = intersectSegments.right.xetoDuct.graphicLocation.size;
+            let maxHalfWidth = this.innerDim[upSize] > this.innerDim[downSize] ? this.innerDim[upSize] / 2 : this.innerDim[downSize] / 2;
+            let maxHalfHeight = this.innerDim[rightSize] > this.innerDim[leftSize] ? this.innerDim[rightSize] / 2 : this.innerDim[leftSize] / 2;
 
-            let maxHalfHeight = this.innerDim[intersectSegments.left.xetoDuct.graphicLocation.size] > this.innerDim[intersectSegments.right.xetoDuct.graphicLocation.size] ? this.innerDim[intersectSegments.left.xetoDuct.graphicLocation.size] / 2 : this.innerDim[intersectSegments.right.xetoDuct.graphicLocation.size] / 2;
-            if(intersectSegments.up != adjacentSegment) {
-                length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2) + maxHalfHeight + 15;
+            if(intersectSegments.left == fixedSegment) {
+                length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
+                length += maxHalfWidth + 15;
+                this.translateAssemblySegment(intersectSegments.up.segment, "x", (length * 1));
+
+                length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
+                length += maxHalfHeight + 15;
                 this.translateAssemblySegment(intersectSegments.up.segment, "z", (length * 1));
-            }
-            if(intersectSegments.down != adjacentSegment) {
-                length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2) + maxHalfHeight + 15;
-                this.translateAssemblySegment(intersectSegments.down.segment, "z", (length * -1));
-            }
 
-            if(adjacentSegment.relativePosition == "up") {
-                length = ((adjacentSegment.segment.duct.userData.component.attributes.length.value) / 2) + maxHalfHeight + 15;
-                this.translateAssemblySegment(intersectSegments.down.segment, "z", (length * -1));
-                this.translateAssemblySegment(intersectSegments.left.segment, "z", (length * -1));
-                this.translateAssemblySegment(intersectSegments.right.segment, "z", (length * -1));
-            }
-            else if(adjacentSegment.relativePosition == "down") {
-                length = ((adjacentSegment.segment.duct.userData.component.attributes.length.value) / 2) + maxHalfHeight + 15;
-                this.translateAssemblySegment(intersectSegments.down.segment, "z", (length * 1));
-                this.translateAssemblySegment(intersectSegments.left.segment, "z", (length * 1));
-                this.translateAssemblySegment(intersectSegments.right.segment, "z", (length * 1));
-            }
-            else if(adjacentSegment.relativePosition == "left") {
-                length = ((adjacentSegment.segment.duct.userData.component.attributes.length.value) / 2) + maxHalfHeight + 15;
+                length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
+                length += maxHalfWidth + 15;
                 this.translateAssemblySegment(intersectSegments.down.segment, "x", (length * 1));
-                this.translateAssemblySegment(intersectSegments.left.segment, "x", (length * 1));
+
+                length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+                length += maxHalfHeight + 15;
+                this.translateAssemblySegment(intersectSegments.down.segment, "z", (length * -1));
+
+                length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
+                length += ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                length += maxHalfWidth * 2 + 30;
                 this.translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
             }
-            else if(adjacentSegment.relativePosition == "right") {
-                length = ((adjacentSegment.segment.duct.userData.component.attributes.length.value) / 2) + maxHalfHeight + 15;
+            else if(intersectSegments.right == fixedSegment) {
+                length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                length += maxHalfWidth + 15;
+                this.translateAssemblySegment(intersectSegments.up.segment, "x", (length * -1));
+
+                length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
+                length += maxHalfHeight + 15;
+                this.translateAssemblySegment(intersectSegments.up.segment, "z", (length * 1));
+
+                length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                length += maxHalfWidth + 15;
                 this.translateAssemblySegment(intersectSegments.down.segment, "x", (length * -1));
+
+                length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+                length += maxHalfHeight + 15;
+                this.translateAssemblySegment(intersectSegments.down.segment, "z", (length * -1));
+
+                length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                length += ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
+                length += maxHalfWidth * 2 + 30;
                 this.translateAssemblySegment(intersectSegments.left.segment, "x", (length * -1));
-                this.translateAssemblySegment(intersectSegments.right.segment, "x", (length * -1));
+            }
+            else if(intersectSegments.up == fixedSegment) {
+                length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
+                length += ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+                length += maxHalfHeight * 2 + 30;
+                this.translateAssemblySegment(intersectSegments.down.segment, "z", (length * -1));
+
+                length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
+                length += maxHalfHeight + 15;
+                this.translateAssemblySegment(intersectSegments.left.segment, "z", (length * -1));
+
+                length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
+                length += maxHalfWidth + 15;
+                this.translateAssemblySegment(intersectSegments.left.segment, "x", (length * -1));
+
+                length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
+                length += maxHalfHeight + 15;
+                this.translateAssemblySegment(intersectSegments.right.segment, "z", (length * -1));
+
+                length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                length += maxHalfWidth + 15;
+                this.translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
+            }
+            else if(intersectSegments.down == fixedSegment) {
+                length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
+                length += ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+                length += maxHalfHeight * 2 + 30;
+                this.translateAssemblySegment(intersectSegments.up.segment, "z", (length * 1));
+
+                length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+                length += maxHalfHeight + 15;
+                this.translateAssemblySegment(intersectSegments.left.segment, "z", (length * 1));
+
+                length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
+                length += maxHalfWidth + 15;
+                this.translateAssemblySegment(intersectSegments.left.segment, "x", (length * -1));
+
+                length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+                length += maxHalfHeight + 15;
+                this.translateAssemblySegment(intersectSegments.right.segment, "z", (length * 1));
+
+                length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                length += maxHalfWidth + 15;
+                this.translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
             }
         }
         else if (this.ductsDictionary[key].length == 3) {
@@ -1181,16 +1232,16 @@ export default class Arithmetics {
                 child.xetoDuct.id === this.ductsDictionary[key][2].id
             );
     
-            let adjacentSegment = null;
+            let fixedSegment = null;
             for (const i in currentSegments) {
                 if (currentSegments[i].xetoDuct.isPositioned) {
-                    adjacentSegment = currentSegments[i];
+                    fixedSegment = currentSegments[i];
                     currentSegments.splice(i, 1);
                     break;
                 }
             }
-            this.getSegmentDirection(adjacentSegment, key);
-            console.log("placeIntersection 3* adjacentSegment:", adjacentSegment);
+            this.getSegmentDirection(fixedSegment, key);
+            console.log("placeIntersection 3* fixedSegment:", fixedSegment);
     
             let intersectSegments = {
                 up: null,
@@ -1204,59 +1255,247 @@ export default class Arithmetics {
                 console.log("placeIntersection 3* currentSegment:", currentSegment);
             }
     
-            this.seperateByDirections(intersectSegments, adjacentSegment, currentSegments);
+            this.seperateByDirections(intersectSegments, fixedSegment, currentSegments);
             console.log("placeIntersection 3* intersectSegments:", intersectSegments);
 
-            let currentSegmentOrientation = intersectSegments.up.xetoDuct.orientation;
-            this.orientAssemblySegment(intersectSegments.up.segment, currentSegmentOrientation);
+            if(intersectSegments.up != null && intersectSegments.up.xetoDuct.isPositioned != true) {
+                let currentSegmentOrientation = intersectSegments.up.xetoDuct.orientation;
+                this.orientAssemblySegment(intersectSegments.up.segment, currentSegmentOrientation);
+            }            
 
-            currentSegmentOrientation = intersectSegments.down.xetoDuct.orientation;
-            this.orientAssemblySegment(intersectSegments.down.segment, currentSegmentOrientation);
+            if(intersectSegments.down != null && intersectSegments.down.xetoDuct.isPositioned != true) {
+                let currentSegmentOrientation = intersectSegments.down.xetoDuct.orientation;
+                this.orientAssemblySegment(intersectSegments.down.segment, currentSegmentOrientation);
+            }
+            
     
             for (const currentSegment of currentSegments) {
                 let lengthToAdjacent = 0;
-                lengthToAdjacent = adjacentSegment.segment.duct.userData.component.object.position.x - currentSegment.segment.duct.userData.component.object.position.x;
+                lengthToAdjacent = fixedSegment.segment.duct.userData.component.object.position.x - currentSegment.segment.duct.userData.component.object.position.x;
                 this.translateAssemblySegment(currentSegment.segment, 'x', lengthToAdjacent);
-                lengthToAdjacent = adjacentSegment.segment.duct.userData.component.object.position.z - currentSegment.segment.duct.userData.component.object.position.z;
+                lengthToAdjacent = fixedSegment.segment.duct.userData.component.object.position.z - currentSegment.segment.duct.userData.component.object.position.z;
                 this.translateAssemblySegment(currentSegment.segment, 'z', lengthToAdjacent);
             }
 
-            const upSize = intersectSegments.up ? intersectSegments.up.xetoDuct.graphicLocation.size : intersectSegments.down.xetoDuct.graphicLocation.size;
-            const downSize = intersectSegments.down ? intersectSegments.down.xetoDuct.graphicLocation.size : intersectSegments.up.xetoDuct.graphicLocation.size;
-
-            let maxHalfWidth = this.innerDim[upSize] > this.innerDim[downSize] ? this.innerDim[upSize] / 2 : this.innerDim[downSize] / 2;
-            console.log("placeIntersection 3* maxHalfWidth:", maxHalfWidth);
-            if(intersectSegments.left != adjacentSegment && intersectSegments.left != null) {
-                console.log("placeIntersection 3* 1");
-                length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2) + maxHalfWidth + 15;
-                this.translateAssemblySegment(intersectSegments.left.segment, "x", (length * -1));
+            let upSize = 0;
+            if(intersectSegments.up != null) {
+                upSize = intersectSegments.up.xetoDuct.graphicLocation.size
             }
-            if(intersectSegments.right != adjacentSegment && intersectSegments.right != null) {
-                console.log("placeIntersection 3* 2");
-                length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2) + maxHalfWidth + 15;
+            else {
+                upSize = intersectSegments.down.xetoDuct.graphicLocation.size
+            }
+
+            let downSize = 0;
+            if(intersectSegments.down != null) {
+                downSize = intersectSegments.down.xetoDuct.graphicLocation.size
+            }
+            else {
+                downSize = intersectSegments.up.xetoDuct.graphicLocation.size
+            }           
+
+            if(intersectSegments.left == null) {
+                const upSize = intersectSegments.up.xetoDuct.graphicLocation.size;
+                const downSize = intersectSegments.down.xetoDuct.graphicLocation.size;
+                const rightSize = intersectSegments.right.xetoDuct.graphicLocation.size;
+                let maxHalfWidth = this.innerDim[upSize] > this.innerDim[downSize] ? this.innerDim[upSize] / 2 : this.innerDim[downSize] / 2;
+                let maxHalfHeight = this.innerDim[rightSize] / 2;
+
+                if(intersectSegments.down != fixedSegment) {
+                    length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfHeight * 2 + 30;
+                    this.translateAssemblySegment(intersectSegments.down.segment, "z", (length * -1));
+
+                    length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfHeight + 15;
+                    this.translateAssemblySegment(intersectSegments.right.segment, "z", (length * -1));
+                }
+
+                if(intersectSegments.up != fixedSegment) {
+                    length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfHeight * 2 + 30;
+                    this.translateAssemblySegment(intersectSegments.up.segment, "z", (length * 1));
+
+                    length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfHeight + 15;
+                    this.translateAssemblySegment(intersectSegments.right.segment, "z", (length * 1));
+                }
+
+                length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                length += maxHalfWidth + 15;
                 this.translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
             }
 
-            const leftSize = intersectSegments.left ? intersectSegments.left.xetoDuct.graphicLocation.size : intersectSegments.right.xetoDuct.graphicLocation.size;
-            const rightSize = intersectSegments.right ? intersectSegments.right.xetoDuct.graphicLocation.size : intersectSegments.left.xetoDuct.graphicLocation.size
+            if(intersectSegments.right == null) {
+                const upSize = intersectSegments.up.xetoDuct.graphicLocation.size;
+                const downSize = intersectSegments.down.xetoDuct.graphicLocation.size;
+                const leftSize = intersectSegments.left.xetoDuct.graphicLocation.size;
 
-            let maxHalfHeight = this.innerDim[leftSize] > this.innerDim[rightSize] ? this.innerDim[leftSize] / 2 : this.innerDim[rightSize] / 2;
-            console.log("placeIntersection 3* maxHalfHeight:", maxHalfHeight);
-            if(intersectSegments.up != adjacentSegment && intersectSegments.up != null) {
-                console.log("placeIntersection 3* 3");
-                length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2) + maxHalfHeight + 15;
-                this.translateAssemblySegment(intersectSegments.up.segment, "z", (length * 1));
+                let maxHalfWidth = this.innerDim[upSize] > this.innerDim[downSize] ? this.innerDim[upSize] / 2 : this.innerDim[downSize] / 2;
+                let maxHalfHeight = this.innerDim[leftSize] / 2;
 
-                length = ((adjacentSegment.segment.duct.userData.component.attributes.length.value) / 2) + maxHalfWidth + 15;
-                this.translateAssemblySegment(intersectSegments.up.segment, "x", (length * 1));
+                if(fixedSegment == intersectSegments.left) {
+                    length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfHeight + 15;
+                    this.translateAssemblySegment(intersectSegments.down.segment, "z", (length * -1));
+
+                    length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfWidth + 15;
+                    this.translateAssemblySegment(intersectSegments.down.segment, "x", (length * 1));
+
+                    length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfHeight + 15;
+                    this.translateAssemblySegment(intersectSegments.up.segment, "z", (length * 1));
+
+                    length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfWidth + 15;
+                    this.translateAssemblySegment(intersectSegments.up.segment, "x", (length * 1));
+                }
+
+                if(fixedSegment == intersectSegments.up) {
+                    length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfHeight * 2 + 30;
+                    this.translateAssemblySegment(intersectSegments.down.segment, "z", (length * -1));
+
+                    length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfHeight + 15;
+                    this.translateAssemblySegment(intersectSegments.left.segment, "z", (length * -1));
+
+                    length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfWidth + 15;
+                    this.translateAssemblySegment(intersectSegments.left.segment, "x", (length * -1));
+                }
+
+                if(fixedSegment == intersectSegments.down) {
+                    length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfHeight * 2 + 30;
+                    this.translateAssemblySegment(intersectSegments.up.segment, "z", (length * 1));
+
+                    length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfHeight + 15;
+                    this.translateAssemblySegment(intersectSegments.left.segment, "z", (length * 1));
+
+                    length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfWidth + 15;
+                    this.translateAssemblySegment(intersectSegments.left.segment, "x", (length * -1));
+                }
             }
-            if(intersectSegments.down != adjacentSegment && intersectSegments.down != null) {
-                console.log("placeIntersection 3* 4");
-                length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2) + maxHalfHeight + 15;
-                this.translateAssemblySegment(intersectSegments.down.segment, "z", (length * -1));
 
-                length = ((adjacentSegment.segment.duct.userData.component.attributes.length.value) / 2) + maxHalfWidth + 15;
-                this.translateAssemblySegment(intersectSegments.down.segment, "x", (length * 1));
+            if(intersectSegments.down == null) {
+                const upSize = intersectSegments.up.xetoDuct.graphicLocation.size;
+                const leftSize = intersectSegments.left.xetoDuct.graphicLocation.size;
+                const rightSize = intersectSegments.right.xetoDuct.graphicLocation.size;
+                
+                let maxHalfWidth = this.innerDim[upSize] / 2;
+                let maxHalfHeight = this.innerDim[leftSize] > this.innerDim[rightSize] ? this.innerDim[leftSize] / 2 : this.innerDim[rightSize] / 2;
+
+                if(fixedSegment == intersectSegments.left) {
+                    length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfHeight + 15;
+                    this.translateAssemblySegment(intersectSegments.up.segment, "z", (length * 1));
+
+                    length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfWidth + 15;
+                    this.translateAssemblySegment(intersectSegments.up.segment, "x", (length * 1));
+
+                    length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfWidth * 2 + 30;
+                    this.translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
+                }
+
+                if(fixedSegment == intersectSegments.right) {
+                    length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfHeight + 15;
+                    this.translateAssemblySegment(intersectSegments.up.segment, "z", (length * 1));
+
+                    length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfWidth + 15;
+                    this.translateAssemblySegment(intersectSegments.up.segment, "x", (length * -1));
+
+                    length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfWidth * 2 + 30;
+                    this.translateAssemblySegment(intersectSegments.left.segment, "x", (length * -1));
+                }
+
+                if(fixedSegment == intersectSegments.up) {
+                    length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfHeight + 15;
+                    this.translateAssemblySegment(intersectSegments.left.segment, "x", (length * -1));
+
+                    length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfWidth + 15;
+                    this.translateAssemblySegment(intersectSegments.left.segment, "z", (length * -1));
+
+                    length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfHeight + 15;
+                    this.translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
+
+                    length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfWidth + 15;
+                    this.translateAssemblySegment(intersectSegments.right.segment, "z", (length * -1));
+                }
+            }
+
+            if(intersectSegments.up == null) {
+                const downSize = intersectSegments.down.xetoDuct.graphicLocation.size;
+                const leftSize = intersectSegments.left.xetoDuct.graphicLocation.size;
+                const rightSize = intersectSegments.right.xetoDuct.graphicLocation.size;
+                
+                let maxHalfWidth = this.innerDim[downSize] / 2;
+                let maxHalfHeight = this.innerDim[leftSize] > this.innerDim[rightSize] ? this.innerDim[leftSize] / 2 : this.innerDim[rightSize] / 2;
+
+                if(fixedSegment == intersectSegments.left) {
+                    length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfHeight + 15;
+                    this.translateAssemblySegment(intersectSegments.down.segment, "z", (length * -1));
+
+                    length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfWidth + 15;
+                    this.translateAssemblySegment(intersectSegments.down.segment, "x", (length * 1));
+
+                    length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfWidth * 2 + 30;
+                    this.translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
+                }
+
+                if(fixedSegment == intersectSegments.right) {
+                    length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfHeight + 15;
+                    this.translateAssemblySegment(intersectSegments.down.segment, "z", (length * -1));
+
+                    length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfWidth + 15;
+                    this.translateAssemblySegment(intersectSegments.down.segment, "x", (length * -1));
+
+                    length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfWidth * 2 + 30;
+                    this.translateAssemblySegment(intersectSegments.left.segment, "x", (length * -1));
+                }
+
+                if(fixedSegment == intersectSegments.down) {
+                    length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfWidth + 15;
+                    this.translateAssemblySegment(intersectSegments.left.segment, "x", (length * -1));
+
+                    length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfHeight + 15;
+                    this.translateAssemblySegment(intersectSegments.left.segment, "z", (length * 1));
+
+                    length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfWidth + 15;
+                    this.translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
+
+                    length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfHeight + 15;
+                    this.translateAssemblySegment(intersectSegments.right.segment, "z", (length * 1));
+                }
             }
     
         }
