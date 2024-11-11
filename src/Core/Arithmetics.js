@@ -611,9 +611,13 @@ export default class Arithmetics {
      * @returns {Object} The built assembly segment containing the duct and its components.
      */
     async buildAssembly(duct, xetoDuct) {
-        console.log("buildAssembly started");
+        console.log("buildAssembly started:", duct, xetoDuct);
 
-        const components = xetoDuct.components
+        let components = xetoDuct.components; 
+
+        if (xetoDuct.blockStyle.flowDirection == 'endToStart') {
+            components.reverse();
+        }
 
         console.log("xetoDuct:", xetoDuct);
 
@@ -717,6 +721,11 @@ export default class Arithmetics {
             }
 
             for (let mesh of meshes) {
+
+                if (mesh.userData.xeto.blockStyle.flowDirection == 'endToStart') {
+                    this.flipMesh(mesh); // Flip the mesh by applying negative scale to the x-axis.
+                }
+
                 if(mesh.userData.xeto.blockStyle.componentPosition != undefined) {
                     const ductHalfHeight = duct.userData.component.object.boundingBox.dimensions.z / 2;
                     const componentQuarterHeight = mesh.userData.component.object.boundingBox.dimensions.z / 4;
@@ -1424,19 +1433,19 @@ export default class Arithmetics {
 
                 if(fixedSegment == intersectSegments.up) {
                     length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
-                    length += maxHalfHeight + 15;
+                    length += maxHalfWidth + 15;
                     this.translateAssemblySegment(intersectSegments.left.segment, "x", (length * -1));
 
                     length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
-                    length += maxHalfWidth + 15;
+                    length += maxHalfHeight + 15;
                     this.translateAssemblySegment(intersectSegments.left.segment, "z", (length * -1));
 
                     length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
-                    length += maxHalfHeight + 15;
+                    length += maxHalfWidth + 15;
                     this.translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
 
                     length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
-                    length += maxHalfWidth + 15;
+                    length += maxHalfHeight + 15;
                     this.translateAssemblySegment(intersectSegments.right.segment, "z", (length * -1));
                 }
             }
@@ -2001,13 +2010,13 @@ export default class Arithmetics {
      */
     determineFlowDirections(assemblySegments) {
         // Flip any component that has a flow-direction value of endToStart
-        for (const segment of assemblySegments) {
-          for (const mesh of segment.segment.meshes) {
-            if (mesh.userData.xeto.blockStyle.flowDirection == 'endToStart') {
-              this.flipMesh(mesh); // Flip the mesh by 180 degrees
-            }
-          }
-        }
+        // for (const segment of assemblySegments) {
+        //   for (const mesh of segment.segment.meshes) {
+        //     if (mesh.userData.xeto.blockStyle.flowDirection == 'endToStart') {
+        //       this.flipMesh(mesh); // Flip the mesh by applying negative scale to the x-axis.
+        //     }
+        //   }
+        // }
       }
   
       /**
@@ -2018,6 +2027,7 @@ export default class Arithmetics {
        * @param {Object} mesh - The 3D mesh to be flipped
        */
       flipMesh(mesh) {
-        mesh.userData.component.object.rotation.z += THREE.MathUtils.degToRad(180);
+        // mesh.userData.component.object.rotation.z += THREE.MathUtils.degToRad(180);
+        mesh.userData.component.object.scale.x *= -1;
       }
 }
