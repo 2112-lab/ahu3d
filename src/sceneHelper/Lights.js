@@ -27,6 +27,7 @@
  * 
  */
 import * as THREE from 'three';
+import moduleDefaults from '../assets/module_defaults.json';
 
 class Lights {
     constructor(lightConfigs) {

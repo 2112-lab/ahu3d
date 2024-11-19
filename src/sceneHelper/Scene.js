@@ -43,6 +43,7 @@ class Scene {
 
     constructor(moduleConfigs) {
         this.moduleConfigs = moduleConfigs;
+        this.isDisposed = false;
 
         this.boxHelpers = null;
 
@@ -169,26 +170,35 @@ class Scene {
 
         this.cacheAnimationTargets();
         
-        const animate = () => {
-            requestAnimationFrame(animate);
-
-            this.renderer.render(this.scene, this.cameras.primary);
-
-            // if (time - lastUpdate > updateInterval) {
-                this.updateComposerAndTooltip();
-
-                // Animate only the cached objects
-                this.animateCachedTargets();
-
-            //     lastUpdate = time;
-            // }
-            
-        }
-        
-        animate();
+        this.animate()
 
         this.addOrbitControl();
         this.addEventListeners();
+    }
+
+    animate() {
+        if (this.isDisposed) {
+            console.log("Animation loop stopped because the scene was disposed.");
+            return; // Exit the loop if the scene is disposed
+        }
+
+        requestAnimationFrame(() => this.animate());
+
+        if (this.renderer && this.scene && this.cameras && this.cameras.primary) {
+            this.renderer.render(this.scene, this.cameras.primary);
+        } else {
+            console.warn("Renderer or Scene is not available for rendering.");
+            return;
+        }
+
+        if (this.composer) {
+            this.composer.render();
+        } else {
+            console.warn("Composer is not initialized. Skipping post-processing.");
+        }
+
+        // this.updateComposerAndTooltip();
+        this.animateCachedTargets();
     }
 
     cacheAnimationTargets() {
@@ -600,7 +610,11 @@ class Scene {
         });
       
         const sceneIndicators = this.scene.children.filter(
-          (child) => child.name == 'arrowClone' && child.visible || child.name == 'textMesh' && child.visible
+          (child) => 
+            child.name == 'arrowClone' || 
+            child.name == 'textMesh' ||
+            child.name == 'jointIndicator' ||
+            child.name == 'joint'
         );
         sceneIndicators.forEach((child) => {
           this.scene.remove(child);
@@ -609,13 +623,41 @@ class Scene {
         this.glowingMeshes = [];
     }
       
-
     rendererToBlob(callback) {
         console.log("rendering perspective camera");
         this.controls.update();
         this.renderer.render(this.scene, this.cameras.primary);
     
         this.renderer.domElement.toBlob(callback, 'image/png')
+    }
+
+    dispose() {
+        console.log("Disposing Scene...");
+        this.isDisposed = true; // Stop the animation loop
+
+        if (this.renderer) {
+            this.renderer.dispose();
+        }
+
+        if (this.labelRenderer) {
+            document.body.removeChild(this.labelRenderer.domElement);
+            this.labelRenderer = null;
+        }
+
+        this.scene.traverse((object) => {
+            if (object.geometry) object.geometry.dispose();
+            if (object.material) {
+                if (object.material.map) object.material.map.dispose();
+                object.material.dispose();
+            }
+        });
+
+        this.scene.clear();
+
+        this.scene = null;
+        this.renderer = null;
+        this.composer = null;
+        console.log("Scene disposed successfully.");
     }
 }
 

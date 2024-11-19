@@ -234,16 +234,13 @@ export default class Utils {
         wt
     );
 
-    // Create materials (using a basic color for now)
-    const material1 = new THREE.MeshStandardMaterial({ color: 0xff0000, wireframe: false });
-    const material2 = new THREE.MeshStandardMaterial({ color: 0x00ff00, wireframe: false });
-    const material3 = new THREE.MeshStandardMaterial({ color: 0x0000ff, wireframe: false });
-    const whiteMaterial = new THREE.MeshStandardMaterial({ color: 0xAEB9C2, wireframe: false });
+    // Create materials
+    const ductMaterial = new THREE.MeshStandardMaterial({ color: 0xAEB9C2, wireframe: false });
 
     // Create the meshes
-    const ceiling = new THREE.Mesh(ceilingGeometry, whiteMaterial);
-    const backWall = new THREE.Mesh(backWallGeometry, whiteMaterial);
-    const floor = new THREE.Mesh(floorGeometry, whiteMaterial);
+    const ceiling = new THREE.Mesh(ceilingGeometry, ductMaterial);
+    const backWall = new THREE.Mesh(backWallGeometry, ductMaterial);
+    const floor = new THREE.Mesh(floorGeometry, ductMaterial);
 
     // Position the cubes to make them appear joined
     ceiling.position.set(
@@ -265,47 +262,12 @@ export default class Utils {
     // Create an empty Object3D container (works as an empty mesh or group)
     const parentObject = new THREE.Object3D();
 
-    let leftWall = null;
-    let rightWall = null;
-
-    if(type.includes("joint")) {
-        const leftWallGeometry = new THREE.BoxGeometry(
-            wt, 
-            innerDim[size], 
-            innerDim[size]
-        );
-        const rightWallGeometry = new THREE.BoxGeometry(
-            wt, 
-            innerDim[size], 
-            innerDim[size]
-        );
-        leftWall = new THREE.Mesh(leftWallGeometry, whiteMaterial);
-        rightWall = new THREE.Mesh(rightWallGeometry, whiteMaterial);
-        leftWall.position.set(
-            innerDim[size]/-2 - 15,
-            0,
-            (innerDim[size]/-2) + 500
-        );
-        rightWall.position.set(
-            innerDim[size]/ 2 + 15,
-            0,
-            (innerDim[size]/-2) + 500
-        );
-        
-    }
-
     // Add the cubes to the parent object
-    if(type != ("l-joint")) {
-        parentObject.add(ceiling);
-    }
+    parentObject.add(ceiling);
     parentObject.add(backWall);
-    parentObject.add(floor);
-    if(type.includes("joint")) {
-        parentObject.add(leftWall);
-        parentObject.add(rightWall); 
-    }   
+    parentObject.add(floor); 
 
-    parentObject.userData = userData; // Copy user data to the cloned instance
+    parentObject.userData = userData;
 
     // Apply position transformations to the cloned instance
     parentObject.position.x = userData.component.object.position.x;
@@ -334,9 +296,6 @@ export default class Utils {
     parentObject.sceneHelper = this.sceneHelper;
 
     // this.extendObject3D(parentObject); 
-
-    // Add the cloned instance to the scene and make it visible
-    // parentObject.visible = true;
 
     // Add the cubes to the scene
     this.sceneHelper.addToScene(parentObject);
@@ -563,6 +522,14 @@ export default class Utils {
    */
   getRow(location) {
     return parseInt(location.slice(1, location.length)); // Parse and return the row number from the location string.
+  }
+
+  setJointTransparency(value) {
+    this.scene.traverse((object3d) => {
+      if (object3d.isObject3D && object3d.name === 'joint') {
+        object3d.material.opacity = value;
+      }
+    });
   }
 
 }

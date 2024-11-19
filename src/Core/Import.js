@@ -115,6 +115,12 @@ class Import {
 
         this.validator.propogateBlockStyle(xetoDictionary);
 
+        console.log("Import.js xetoDictionary.ahuGroup:", xetoDictionary.ahuGroup[0].blockStyle);
+
+        if(xetoDictionary.ahuGroup[0].blockStyle.jointPadding == undefined) {
+            xetoDictionary.ahuGroup[0].blockStyle["jointPadding"] = 0;
+        }
+
         const cleanedXeto = [
             xetoDictionary.ductsDictionary,
             ...xetoDictionary.ahuGroup,

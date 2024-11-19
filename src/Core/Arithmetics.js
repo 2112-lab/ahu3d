@@ -99,7 +99,8 @@ export default class Arithmetics {
         delete cleanedXeto[0]
 
         this.cleanedXeto = cleanedXeto; // Store the cleaned assembly data.
-        this.assemblyGridBounds = cleanedXeto.filter(child => child.spec.includes('AhuGroup'))[0].graphicLocation; // Get the grid bounds for the AHU group.
+        this.ahuGroup = cleanedXeto.filter(child => child.spec.includes('AhuGroup'))[0];
+        this.assemblyGridBounds = this.ahuGroup.graphicLocation; // Get the grid bounds for the AHU group.
 
         const ductsList = this.cleanedXeto.filter(child => child.spec.includes('DuctEdge')); // Filter the ducts from the cleaned assembly.
 
@@ -134,12 +135,12 @@ export default class Arithmetics {
 
         this.assemblyDimensions = this.getAssemblyDimensions(this.assemblyGridBounds); // Calculate the dimensions of the assembly.
 
-        for (const segment of this.assemblySegments) { // Iterate over each segment.
-            this.translateAssemblySegment(segment.segment, 'x', ((this.assemblyDimensions.width / 2) - 50)); // Translate the segment on the x-axis.
-            this.translateAssemblySegment(segment.segment, 'z', this.assemblyDimensions.height + 200); // Translate the segment on the z-axis.
+        // for (const segment of this.assemblySegments) { // Iterate over each segment.
+        //     this.translateAssemblySegment(segment.segment, 'x', ((this.assemblyDimensions.width / 2) - 50)); // Translate the segment on the x-axis.
+        //     this.translateAssemblySegment(segment.segment, 'z', this.assemblyDimensions.height + 200); // Translate the segment on the z-axis.
 
-            this.setGuideline(segment);
-        }
+        //     this.setGuideline(segment);
+        // }
 
         this.determineFlowDirections(this.assemblySegments); // Determine and adjust flow directions for ducts
 
@@ -851,70 +852,76 @@ export default class Arithmetics {
         console.log("locateDuctCorners closestEdges4:", JSON.stringify(closestEdges4, null, 2));
 
         const closestEdgeCollection = [closestEdges1, closestEdges2, closestEdges3, closestEdges4];
-        const jointCorners = this.getJointCorners(closestEdgeCollection);
+        this.renderJointCorners(closestEdgeCollection, areHelpersOn);
     }
 
     /**
-     * getJointCorners
+     * renderJointCorners
      * 
      * Computes the corner positions for a given joint, considering its placement and orientation.
      * 
      * @param {Object} joint - The joint object containing position and orientation details.
      * @returns {Array} An array of corner positions for the joint.
      */
-    getJointCorners(closestEdgeCollection) {
-        console.log("getJointCorners this.assemblySegments:", this.assemblySegments);
-        console.log("getJointCorners closestEdgeCollection:", closestEdgeCollection);
-        let i = 0;
-        let j = 1;
-        for(const edgePair of closestEdgeCollection) {
-            const material1 = new THREE.MeshStandardMaterial({ color: 0x00ff00, wireframe: false });
-            const material2 = new THREE.MeshStandardMaterial({ color: 0xff00ff, wireframe: false });
-            const material3 = new THREE.MeshStandardMaterial({ color: 0x00ffff, wireframe: false });
-            const material4 = new THREE.MeshStandardMaterial({ color: 0xffff00, wireframe: false });
-            
-            const cubeGeometry1 = new THREE.BoxGeometry(
-                60, 60, 60
-            );
-            const cube1 = new THREE.Mesh(cubeGeometry1, material1);
-            cube1.position.x = edgePair.duct1Edge.x;
-            cube1.position.y = this.innerDim[this.assemblySegments[i].xetoDuct.graphicLocation.size]/2;
-            cube1.position.z = edgePair.duct1Edge.z;
-            this.sceneHelper.addToScene(cube1);
+    renderJointCorners(closestEdgeCollection, areHelpersOn) {
+        console.log("renderJointCorners started");
+        if(areHelpersOn) {
+            let i = 0;
+            let j = 1;
+            for(const edgePair of closestEdgeCollection) {
+                const material1 = new THREE.MeshStandardMaterial({ color: 0x00ff00, wireframe: false });
+                const material2 = new THREE.MeshStandardMaterial({ color: 0xff00ff, wireframe: false });
+                const material3 = new THREE.MeshStandardMaterial({ color: 0x00ffff, wireframe: false });
+                const material4 = new THREE.MeshStandardMaterial({ color: 0xffff00, wireframe: false });
+                
+                const cubeGeometry1 = new THREE.BoxGeometry(
+                    60, 60, 60
+                );
+                const cube1 = new THREE.Mesh(cubeGeometry1, material1);
+                cube1.position.x = edgePair.duct1Edge.x;
+                cube1.position.y = this.innerDim[this.assemblySegments[i].xetoDuct.graphicLocation.size]/2;
+                cube1.position.z = edgePair.duct1Edge.z;
+                cube1.name = "jointIndicator";
+                this.sceneHelper.addToScene(cube1);
 
-            const cubeGeometry2 = new THREE.BoxGeometry(
-                60, 60, 60
-            );
-            const cube2 = new THREE.Mesh(cubeGeometry2, material2);
-            cube2.position.x = edgePair.duct2Edge.x;
-            cube2.position.y = this.innerDim[this.assemblySegments[j].xetoDuct.graphicLocation.size]/2;
-            cube2.position.z = edgePair.duct2Edge.z;
-            this.sceneHelper.addToScene(cube2);
-            
-            const cubeGeometry3 = new THREE.BoxGeometry(
-                60, 60, 60
-            );
-            const cube3 = new THREE.Mesh(cubeGeometry3, material3);
-            cube3.position.x = edgePair.duct1Edge.x;
-            cube3.position.y = this.innerDim[this.assemblySegments[i].xetoDuct.graphicLocation.size]/-2;
-            cube3.position.z = edgePair.duct1Edge.z;
-            this.sceneHelper.addToScene(cube3);
+                const cubeGeometry2 = new THREE.BoxGeometry(
+                    60, 60, 60
+                );
+                const cube2 = new THREE.Mesh(cubeGeometry2, material2);
+                cube2.position.x = edgePair.duct2Edge.x;
+                cube2.position.y = this.innerDim[this.assemblySegments[j].xetoDuct.graphicLocation.size]/2;
+                cube2.position.z = edgePair.duct2Edge.z;
+                cube2.name = "jointIndicator";
+                this.sceneHelper.addToScene(cube2);
+                
+                const cubeGeometry3 = new THREE.BoxGeometry(
+                    60, 60, 60
+                );
+                const cube3 = new THREE.Mesh(cubeGeometry3, material3);
+                cube3.position.x = edgePair.duct1Edge.x;
+                cube3.position.y = this.innerDim[this.assemblySegments[i].xetoDuct.graphicLocation.size]/-2;
+                cube3.position.z = edgePair.duct1Edge.z;
+                cube3.name = "jointIndicator";
+                this.sceneHelper.addToScene(cube3);
 
-            const cubeGeometry4 = new THREE.BoxGeometry(
-                60, 60, 60
-            );
-            const cube4 = new THREE.Mesh(cubeGeometry4, material4);
-            cube4.position.x = edgePair.duct2Edge.x;
-            cube4.position.y = this.innerDim[this.assemblySegments[j].xetoDuct.graphicLocation.size]/-2;
-            cube4.position.z = edgePair.duct2Edge.z;
-            this.sceneHelper.addToScene(cube4);
+                const cubeGeometry4 = new THREE.BoxGeometry(
+                    60, 60, 60
+                );
+                const cube4 = new THREE.Mesh(cubeGeometry4, material4);
+                cube4.position.x = edgePair.duct2Edge.x;
+                cube4.position.y = this.innerDim[this.assemblySegments[j].xetoDuct.graphicLocation.size]/-2;
+                cube4.position.z = edgePair.duct2Edge.z;
+                cube4.name = "jointIndicator";
+                this.sceneHelper.addToScene(cube4);
 
-            i++;
-            j++;
-            if(j == 4) {
-                j = 0;
+                i++;
+                j++;
+                if(j == 4) {
+                    j = 0;
+                }
             }
         }
+        
     }
 
     /**
@@ -1042,6 +1049,51 @@ export default class Arithmetics {
     }
 
     /**
+     * seperateByDirections
+     * 
+     * Separates a list of segments into groups based on their direction (e.g., "north", "south", "east", "west").
+     * 
+     * @param {Array} segments - The array of segments to separate.
+     * @returns {Object} An object grouping segments by their directions.
+     */
+    seperateByDirections(intersectSegments, adjacentSegment, currentSegments) {
+        for(const currentSegment of currentSegments) {
+            intersectSegments[currentSegment.relativePosition] = currentSegment;
+        }
+        intersectSegments[adjacentSegment.relativePosition] = adjacentSegment;
+    }
+
+    /**
+     * placeSegments
+     * 
+     * Places assembly segments in the correct position and orientation based on their relationship 
+     * to the primary segment and other segments in the assembly.
+     * 
+     * @returns {Array} The placed assembly segments.
+     */
+    async placeSegments(primaryKey) {
+        console.log("placeSegments this.assemblySegments:", this.assemblySegments);
+        console.log("placeSegments this.ductsDictionary:", this.ductsDictionary);
+
+        const primarySegmentXeto = this.ductsDictionary[primaryKey][0];
+
+        let primarySegment = this.assemblySegments.filter(child => 
+            child.xetoDuct.id === primarySegmentXeto.id
+        )[0];
+
+        console.log("placeSegments primaryKey:", primaryKey);
+        console.log("placeSegments primarySegment:", primarySegment);
+
+        let primarySegmentOrientation = primarySegment.xetoDuct.orientation;
+        this.orientAssemblySegment(primarySegment.segment, primarySegmentOrientation);
+        primarySegmentXeto.isPositioned = true;
+
+        this.getNextSegment(primarySegmentXeto, primaryKey);     
+
+        return this.assemblySegments; // Return the placed assembly segments.  
+    }
+
+    /**
      * getNextSegment
      * 
      * Retrieves the next segment in a sequence based on the current segment's direction and placement.
@@ -1067,7 +1119,7 @@ export default class Arithmetics {
             }
         }
         
-    }
+    }  
 
     /**
      * placeIntersection
@@ -1080,6 +1132,8 @@ export default class Arithmetics {
      */
     placeIntersection(key) {
         console.log("placeIntersection started");
+
+        let jointPadding = this.ahuGroup.blockStyle.jointPadding;
 
         if(this.ductsDictionary[key].length == 4) {
             console.log("placeIntersection 4*");
@@ -1146,91 +1200,115 @@ export default class Arithmetics {
             if(intersectSegments.left == fixedSegment) {
                 length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfWidth + 15;
+                length += jointPadding;
                 this.translateAssemblySegment(intersectSegments.up.segment, "x", (length * 1));
 
                 length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfHeight + 15;
+                length += jointPadding;
                 this.translateAssemblySegment(intersectSegments.up.segment, "z", (length * 1));
 
                 length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfWidth + 15;
+                length += jointPadding;
                 this.translateAssemblySegment(intersectSegments.down.segment, "x", (length * 1));
 
                 length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfHeight + 15;
+                length += jointPadding;
                 this.translateAssemblySegment(intersectSegments.down.segment, "z", (length * -1));
 
                 length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
                 length += ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfWidth * 2 + 30;
+                length += jointPadding * 2;
                 this.translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
             }
             else if(intersectSegments.right == fixedSegment) {
                 length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfWidth + 15;
+                length += jointPadding;
                 this.translateAssemblySegment(intersectSegments.up.segment, "x", (length * -1));
 
                 length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfHeight + 15;
+                length += jointPadding;
                 this.translateAssemblySegment(intersectSegments.up.segment, "z", (length * 1));
 
                 length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfWidth + 15;
+                length += jointPadding;
                 this.translateAssemblySegment(intersectSegments.down.segment, "x", (length * -1));
 
                 length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfHeight + 15;
+                length += jointPadding;
                 this.translateAssemblySegment(intersectSegments.down.segment, "z", (length * -1));
 
                 length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
                 length += ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfWidth * 2 + 30;
+                length += jointPadding * 2;
                 this.translateAssemblySegment(intersectSegments.left.segment, "x", (length * -1));
             }
             else if(intersectSegments.up == fixedSegment) {
                 length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
                 length += ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfHeight * 2 + 30;
+                length += jointPadding * 2;
                 this.translateAssemblySegment(intersectSegments.down.segment, "z", (length * -1));
 
                 length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfHeight + 15;
+                length += jointPadding;
                 this.translateAssemblySegment(intersectSegments.left.segment, "z", (length * -1));
 
                 length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfWidth + 15;
+                length += jointPadding;
                 this.translateAssemblySegment(intersectSegments.left.segment, "x", (length * -1));
 
                 length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfHeight + 15;
+                length += jointPadding;
                 this.translateAssemblySegment(intersectSegments.right.segment, "z", (length * -1));
 
                 length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfWidth + 15;
+                length += jointPadding;
                 this.translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
             }
             else if(intersectSegments.down == fixedSegment) {
                 length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
                 length += ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfHeight * 2 + 30;
+                length += jointPadding * 2;
                 this.translateAssemblySegment(intersectSegments.up.segment, "z", (length * 1));
 
                 length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfHeight + 15;
+                length += jointPadding;
                 this.translateAssemblySegment(intersectSegments.left.segment, "z", (length * 1));
 
                 length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfWidth + 15;
+                length += jointPadding;
                 this.translateAssemblySegment(intersectSegments.left.segment, "x", (length * -1));
 
                 length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfHeight + 15;
+                length += jointPadding;
                 this.translateAssemblySegment(intersectSegments.right.segment, "z", (length * 1));
 
                 length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfWidth + 15;
+                length += jointPadding;
                 this.translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
             }
+              
+            this.createJointProxies(intersectSegments);
+            this.createOrthogonalCrossJoint(intersectSegments);
+
         }
         else if (this.ductsDictionary[key].length == 3) {
             console.log("placeIntersection length 3");
@@ -1313,10 +1391,12 @@ export default class Arithmetics {
                     length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
                     length += ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight * 2 + 30;
+                    length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.down.segment, "z", (length * -1));
 
                     length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight + 15;
+                    length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.right.segment, "z", (length * -1));
                 }
 
@@ -1324,15 +1404,18 @@ export default class Arithmetics {
                     length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
                     length += ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight * 2 + 30;
+                    length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.up.segment, "z", (length * 1));
 
                     length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight + 15;
+                    length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.right.segment, "z", (length * 1));
                 }
 
                 length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfWidth + 15;
+                length += jointPadding;
                 this.translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
             }
 
@@ -1347,18 +1430,22 @@ export default class Arithmetics {
                 if(fixedSegment == intersectSegments.left) {
                     length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight + 15;
+                    length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.down.segment, "z", (length * -1));
 
                     length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth + 15;
+                    length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.down.segment, "x", (length * 1));
 
                     length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight + 15;
+                    length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.up.segment, "z", (length * 1));
 
                     length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth + 15;
+                    length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.up.segment, "x", (length * 1));
                 }
 
@@ -1366,14 +1453,17 @@ export default class Arithmetics {
                     length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
                     length += ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight * 2 + 30;
+                    length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.down.segment, "z", (length * -1));
 
                     length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight + 15;
+                    length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.left.segment, "z", (length * -1));
 
                     length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth + 15;
+                    length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.left.segment, "x", (length * -1));
                 }
 
@@ -1381,14 +1471,17 @@ export default class Arithmetics {
                     length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
                     length += ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight * 2 + 30;
+                    length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.up.segment, "z", (length * 1));
 
                     length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight + 15;
+                    length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.left.segment, "z", (length * 1));
 
                     length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth + 15;
+                    length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.left.segment, "x", (length * -1));
                 }
             }
@@ -1404,48 +1497,58 @@ export default class Arithmetics {
                 if(fixedSegment == intersectSegments.left) {
                     length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight + 15;
+                    length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.up.segment, "z", (length * 1));
 
                     length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth + 15;
+                    length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.up.segment, "x", (length * 1));
 
                     length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
                     length += ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth * 2 + 30;
+                    length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
                 }
 
                 if(fixedSegment == intersectSegments.right) {
                     length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight + 15;
+                    length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.up.segment, "z", (length * 1));
 
                     length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth + 15;
+                    length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.up.segment, "x", (length * -1));
 
                     length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
                     length += ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth * 2 + 30;
+                    length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.left.segment, "x", (length * -1));
                 }
 
                 if(fixedSegment == intersectSegments.up) {
                     length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth + 15;
+                    length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.left.segment, "x", (length * -1));
 
                     length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight + 15;
+                    length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.left.segment, "z", (length * -1));
 
                     length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth + 15;
+                    length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
 
                     length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight + 15;
+                    length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.right.segment, "z", (length * -1));
                 }
             }
@@ -1461,51 +1564,64 @@ export default class Arithmetics {
                 if(fixedSegment == intersectSegments.left) {
                     length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight + 15;
+                    length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.down.segment, "z", (length * -1));
 
                     length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth + 15;
+                    length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.down.segment, "x", (length * 1));
 
                     length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
                     length += ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth * 2 + 30;
+                    length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
                 }
 
                 if(fixedSegment == intersectSegments.right) {
                     length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight + 15;
+                    length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.down.segment, "z", (length * -1));
 
                     length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth + 15;
+                    length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.down.segment, "x", (length * -1));
 
                     length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
                     length += ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth * 2 + 30;
+                    length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.left.segment, "x", (length * -1));
                 }
 
                 if(fixedSegment == intersectSegments.down) {
                     length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth + 15;
+                    length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.left.segment, "x", (length * -1));
 
                     length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight + 15;
+                    length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.left.segment, "z", (length * 1));
 
                     length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth + 15;
+                    length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
 
                     length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight + 15;
+                    length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.right.segment, "z", (length * 1));
                 }
             }
+
+            this.createJointProxies(intersectSegments);
+            this.createOrthogonalTJoint(intersectSegments);
     
         }
         else if(this.ductsDictionary[key].length == 2) {
@@ -1515,18 +1631,17 @@ export default class Arithmetics {
                 child.xetoDuct.id === this.ductsDictionary[key][0].id ||
                 child.xetoDuct.id === this.ductsDictionary[key][1].id
             );
-            
-            let adjacentSegment = null;
-            for(const i in currentSegments) {
-                
-                if(currentSegments[i].xetoDuct.isPositioned) {
-                    adjacentSegment = currentSegments[i];
+
+            let fixedSegment = null;
+            for (const i in currentSegments) {
+                if (currentSegments[i].xetoDuct.isPositioned) {
+                    fixedSegment = currentSegments[i];
                     currentSegments.splice(i, 1);
                     break;
                 }
             }
-            this.getSegmentDirection(adjacentSegment, key);
-            console.log("placeIntersection 2* adjacentSegment:", adjacentSegment);
+            this.getSegmentDirection(fixedSegment, key);
+            console.log("placeIntersection 2* fixedSegment:", fixedSegment);
 
             let intersectSegments = {
                 up: null, 
@@ -1538,7 +1653,7 @@ export default class Arithmetics {
             let currentSegment = currentSegments[0];
             this.getSegmentDirection(currentSegment, key);
 
-            this.seperateByDirections(intersectSegments, adjacentSegment, currentSegments);
+            this.seperateByDirections(intersectSegments, fixedSegment, currentSegments);
 
             if(intersectSegments.up) {
                 let currentSegmentOrientation = currentSegment.xetoDuct.orientation;
@@ -1550,64 +1665,95 @@ export default class Arithmetics {
             }            
 
             let lengthToAdjacent = 0;
-            lengthToAdjacent = adjacentSegment.segment.duct.userData.component.object.position.x - currentSegment.segment.duct.userData.component.object.position.x;
+            lengthToAdjacent = fixedSegment.segment.duct.userData.component.object.position.x - currentSegment.segment.duct.userData.component.object.position.x;
             this.translateAssemblySegment(currentSegment.segment, 'x', lengthToAdjacent);
-            lengthToAdjacent = adjacentSegment.segment.duct.userData.component.object.position.z - currentSegment.segment.duct.userData.component.object.position.z;
+            lengthToAdjacent = fixedSegment.segment.duct.userData.component.object.position.z - currentSegment.segment.duct.userData.component.object.position.z;
             this.translateAssemblySegment(currentSegment.segment, 'z', lengthToAdjacent);
 
-            if(adjacentSegment.xetoDuct.isVertical == currentSegment.xetoDuct.isVertical) {
+            let pairDirection = null;
+            if(intersectSegments.up != null && intersectSegments.down != null) {
+                pairDirection = "vertical";
+                jointPadding = 30;
+            }
+            if(intersectSegments.left != null && intersectSegments.right != null) {
+                pairDirection = "horizontal";
+                jointPadding = 30;
+            }
+
+            if(fixedSegment.xetoDuct.isVertical == currentSegment.xetoDuct.isVertical) {
                 if(currentSegment.relativePosition == "right") {
-                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + ((adjacentSegment.segment.duct.userData.component.attributes.length.value) / 2);
+                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + ((fixedSegment.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += jointPadding;
                     this.translateAssemblySegment(currentSegment.segment, 'x', length * 1);
                 }
                 else if(currentSegment.relativePosition == "left") {
-                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + ((adjacentSegment.segment.duct.userData.component.attributes.length.value) / 2);
+                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + ((fixedSegment.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += jointPadding;
                     this.translateAssemblySegment(currentSegment.segment, 'x', length * -1);
                 }
                 else if(currentSegment.relativePosition == "up") {
-                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + ((adjacentSegment.segment.duct.userData.component.attributes.length.value) / 2);
+                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + ((fixedSegment.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += jointPadding;
                     this.translateAssemblySegment(currentSegment.segment, 'z', (length * 1));
                 }
                 else if(currentSegment.relativePosition == "down") {
-                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + ((adjacentSegment.segment.duct.userData.component.attributes.length.value) / 2);
+                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + ((fixedSegment.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += jointPadding;
                     this.translateAssemblySegment(currentSegment.segment, 'z', (length * -1));
                 }
             }
-            else if(adjacentSegment.xetoDuct.isVertical != currentSegment.xetoDuct.isVertical) {
-                if(adjacentSegment.relativePosition == "left") {
-                    length = ((adjacentSegment.segment.duct.userData.component.attributes.length.value) / 2) + this.innerDim[currentSegment.xetoDuct.graphicLocation.size] / 2;
+            else if(fixedSegment.xetoDuct.isVertical != currentSegment.xetoDuct.isVertical) {
+                if(fixedSegment.relativePosition == "left") {
+                    length = ((fixedSegment.segment.duct.userData.component.attributes.length.value) / 2) + this.innerDim[currentSegment.xetoDuct.graphicLocation.size] / 2;
+                    length += jointPadding;
                     this.translateAssemblySegment(currentSegment.segment, "x", (length * 1) + 15);
                 }
-                else if(adjacentSegment.relativePosition == "right") {
-                    length = ((adjacentSegment.segment.duct.userData.component.attributes.length.value) / 2) + this.innerDim[currentSegment.xetoDuct.graphicLocation.size] / 2;
+                else if(fixedSegment.relativePosition == "right") {
+                    length = ((fixedSegment.segment.duct.userData.component.attributes.length.value) / 2) + this.innerDim[currentSegment.xetoDuct.graphicLocation.size] / 2;
+                    length += jointPadding;
                     this.translateAssemblySegment(currentSegment.segment, "x", (length * -1) - 15);
                 }
-                if(adjacentSegment.relativePosition == "up") {
-                    length = ((adjacentSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDim[currentSegment.xetoDuct.graphicLocation.size] / 2);
+                if(fixedSegment.relativePosition == "up") {
+                    length = ((fixedSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDim[currentSegment.xetoDuct.graphicLocation.size] / 2);
+                    length += jointPadding;
                     this.translateAssemblySegment(currentSegment.segment, 'z', (length * -1) - 15);
                 }
-                else if(adjacentSegment.relativePosition == "down") {
-                    length = ((adjacentSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDim[currentSegment.xetoDuct.graphicLocation.size] / 2);
+                else if(fixedSegment.relativePosition == "down") {
+                    length = ((fixedSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDim[currentSegment.xetoDuct.graphicLocation.size] / 2);
+                    length += jointPadding;
                     this.translateAssemblySegment(currentSegment.segment, 'z', (length * 1) + 15);
                 }
 
                 if(currentSegment.relativePosition == "up") {
-                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDim[adjacentSegment.xetoDuct.graphicLocation.size] / 2);
+                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDim[fixedSegment.xetoDuct.graphicLocation.size] / 2);
+                    length += jointPadding;
                     this.translateAssemblySegment(currentSegment.segment, 'z', (length * 1) + 15);
                 }
                 else if(currentSegment.relativePosition == "down") {
-                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDim[adjacentSegment.xetoDuct.graphicLocation.size] / 2);
+                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDim[fixedSegment.xetoDuct.graphicLocation.size] / 2);
+                    length += jointPadding;
                     this.translateAssemblySegment(currentSegment.segment, 'z', (length * -1) - 15);
                 }
                 else if(currentSegment.relativePosition == "left") {
-                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDim[adjacentSegment.xetoDuct.graphicLocation.size] / 2);
+                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDim[fixedSegment.xetoDuct.graphicLocation.size] / 2);
+                    length += jointPadding;
                     this.translateAssemblySegment(currentSegment.segment, 'x', (length * -1) - 15);
                 }
                 else if(currentSegment.relativePosition == "right") {
-                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDim[adjacentSegment.xetoDuct.graphicLocation.size] / 2);
+                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDim[fixedSegment.xetoDuct.graphicLocation.size] / 2);
+                    length += jointPadding;
                     this.translateAssemblySegment(currentSegment.segment, 'x', (length * 1) + 15);
                 }
             }
+
+            this.createJointProxies(intersectSegments, pairDirection);
+            if(pairDirection) {
+                this.createParallelJoint(intersectSegments, pairDirection);
+            }
+            else {
+                this.createOrthogonalLJoint(intersectSegments);
+            }
+            
         }
 
         for(const traversedSegmentXeto of this.ductsDictionary[key]) {
@@ -1619,50 +1765,853 @@ export default class Arithmetics {
         
     }
 
-    /**
-     * seperateByDirections
-     * 
-     * Separates a list of segments into groups based on their direction (e.g., "north", "south", "east", "west").
-     * 
-     * @param {Array} segments - The array of segments to separate.
-     * @returns {Object} An object grouping segments by their directions.
-     */
-    seperateByDirections(intersectSegments, adjacentSegment, currentSegments) {
-        for(const currentSegment of currentSegments) {
-            intersectSegments[currentSegment.relativePosition] = currentSegment;
+    createOrthogonalLJoint(intersection) {
+        this.connectProxiesVertically(
+            intersection.right.segment.duct.userData.proxyMedianVertices, 
+            intersection.right.segment.duct.userData.proxy1Vertices
+        );
+        this.connectProxiesHorizontally(
+            intersection.up.segment.duct.userData.proxyMedianVertices,
+            intersection.right.segment.duct.userData.proxy2Vertices
+        );
+        this.connectProxiesVertically(
+            intersection.up.segment.duct.userData.proxy1Vertices, 
+            intersection.up.segment.duct.userData.proxyMedianVertices
+        );
+        this.connectProxiesHorizontally(
+            intersection.up.segment.duct.userData.proxy2Vertices,
+            intersection.right.segment.duct.userData.proxyMedianVertices
+        );
+
+        this.connectPoints(
+            intersection.right.segment.duct.userData.proxyMedianVertices[7],
+            intersection.right.segment.duct.userData.proxy2Vertices[6],
+            intersection.up.segment.duct.userData.proxyMedianVertices[5],
+            intersection.up.segment.duct.userData.proxy1Vertices[4]
+        );
+    }
+
+    createParallelJoint(intersection, pairDirection) {
+        if(pairDirection == "vertical") {
+            this.connectPoints(
+                intersection.up.segment.duct.userData.proxy1Vertices[1],
+                intersection.down.segment.duct.userData.proxy1Vertices[1],
+                intersection.down.segment.duct.userData.proxy1Vertices[5],
+                intersection.up.segment.duct.userData.proxy1Vertices[5]
+            );
+            this.connectPoints(
+                intersection.up.segment.duct.userData.proxy1Vertices[0],
+                intersection.down.segment.duct.userData.proxy1Vertices[0],
+                intersection.down.segment.duct.userData.proxy1Vertices[4],
+                intersection.up.segment.duct.userData.proxy1Vertices[4]
+            );
+            this.connectPoints(
+                intersection.up.segment.duct.userData.proxy1Vertices[0],
+                intersection.down.segment.duct.userData.proxy1Vertices[3],
+                intersection.down.segment.duct.userData.proxy1Vertices[2],
+                intersection.up.segment.duct.userData.proxy1Vertices[1]
+            );
+            this.connectPoints(
+                intersection.up.segment.duct.userData.proxy1Vertices[4],
+                intersection.down.segment.duct.userData.proxy1Vertices[4],
+                intersection.down.segment.duct.userData.proxy1Vertices[5],
+                intersection.up.segment.duct.userData.proxy1Vertices[5]
+            );
+
+            this.connectPoints(
+                intersection.up.segment.duct.userData.proxyOriginal1Vertices[7],
+                intersection.up.segment.duct.userData.proxyOriginal2Vertices[7],
+                intersection.up.segment.duct.userData.proxy2Vertices[7],
+                intersection.up.segment.duct.userData.proxy1Vertices[7]
+            );
+            this.connectPoints(
+                intersection.down.segment.duct.userData.proxyOriginal1Vertices[5],
+                intersection.down.segment.duct.userData.proxyOriginal2Vertices[5],
+                intersection.down.segment.duct.userData.proxy2Vertices[5],
+                intersection.down.segment.duct.userData.proxy1Vertices[5]
+            );
+            this.connectPoints(
+                intersection.down.segment.duct.userData.proxyOriginal1Vertices[4],
+                intersection.down.segment.duct.userData.proxyOriginal2Vertices[4],
+                intersection.down.segment.duct.userData.proxyOriginal2Vertices[5],
+                intersection.down.segment.duct.userData.proxyOriginal1Vertices[5]
+            );
+            this.connectPoints(
+                intersection.up.segment.duct.userData.proxy1Vertices[4],
+                intersection.down.segment.duct.userData.proxy2Vertices[4],
+                intersection.down.segment.duct.userData.proxy2Vertices[5],
+                intersection.up.segment.duct.userData.proxy1Vertices[5]
+            );
+
+            this.connectPoints(
+                intersection.up.segment.duct.userData.proxy2Vertices[1],
+                intersection.down.segment.duct.userData.proxy2Vertices[1],
+                intersection.down.segment.duct.userData.proxy2Vertices[5],
+                intersection.up.segment.duct.userData.proxy2Vertices[5]
+            );
+            this.connectPoints(
+                intersection.up.segment.duct.userData.proxy2Vertices[0],
+                intersection.down.segment.duct.userData.proxy2Vertices[0],
+                intersection.down.segment.duct.userData.proxy2Vertices[4],
+                intersection.up.segment.duct.userData.proxy2Vertices[4]
+            );
+            this.connectPoints(
+                intersection.up.segment.duct.userData.proxy2Vertices[0],
+                intersection.down.segment.duct.userData.proxy2Vertices[3],
+                intersection.down.segment.duct.userData.proxy2Vertices[2],
+                intersection.up.segment.duct.userData.proxy2Vertices[1]
+            );
+            this.connectPoints(
+                intersection.up.segment.duct.userData.proxy2Vertices[4],
+                intersection.down.segment.duct.userData.proxy2Vertices[4],
+                intersection.down.segment.duct.userData.proxy2Vertices[5],
+                intersection.up.segment.duct.userData.proxy2Vertices[5]
+            );
         }
-        intersectSegments[adjacentSegment.relativePosition] = adjacentSegment;
+        if(pairDirection == "horizontal") {
+            this.connectPoints(
+                intersection.left.segment.duct.userData.proxy1Vertices[2],
+                intersection.right.segment.duct.userData.proxy1Vertices[2],
+                intersection.right.segment.duct.userData.proxy1Vertices[6],
+                intersection.left.segment.duct.userData.proxy1Vertices[6]
+            );
+            this.connectPoints(
+                intersection.left.segment.duct.userData.proxy1Vertices[1],
+                intersection.right.segment.duct.userData.proxy1Vertices[1],
+                intersection.right.segment.duct.userData.proxy1Vertices[5],
+                intersection.left.segment.duct.userData.proxy1Vertices[5]
+            );
+            this.connectPoints(
+                intersection.left.segment.duct.userData.proxy1Vertices[1],
+                intersection.right.segment.duct.userData.proxy1Vertices[0],
+                intersection.right.segment.duct.userData.proxy1Vertices[3],
+                intersection.left.segment.duct.userData.proxy1Vertices[2]
+            );
+            this.connectPoints(
+                intersection.left.segment.duct.userData.proxy1Vertices[5],
+                intersection.right.segment.duct.userData.proxy1Vertices[5],
+                intersection.right.segment.duct.userData.proxy1Vertices[6],
+                intersection.left.segment.duct.userData.proxy1Vertices[6]
+            );
+
+            this.connectPoints(
+                intersection.right.segment.duct.userData.proxyOriginal1Vertices[5],
+                intersection.right.segment.duct.userData.proxyOriginal2Vertices[5],
+                intersection.right.segment.duct.userData.proxy2Vertices[5],
+                intersection.right.segment.duct.userData.proxy1Vertices[5]
+            );
+            this.connectPoints(
+                intersection.right.segment.duct.userData.proxyOriginal1Vertices[6],
+                intersection.right.segment.duct.userData.proxyOriginal2Vertices[6],
+                intersection.right.segment.duct.userData.proxy2Vertices[6],
+                intersection.right.segment.duct.userData.proxy1Vertices[6]
+            );
+            this.connectPoints(
+                intersection.right.segment.duct.userData.proxyOriginal1Vertices[5],
+                intersection.right.segment.duct.userData.proxyOriginal2Vertices[5],
+                intersection.right.segment.duct.userData.proxyOriginal2Vertices[6],
+                intersection.right.segment.duct.userData.proxyOriginal1Vertices[6]
+            );
+            this.connectPoints(
+                intersection.left.segment.duct.userData.proxy1Vertices[5],
+                intersection.right.segment.duct.userData.proxy2Vertices[5],
+                intersection.right.segment.duct.userData.proxy2Vertices[6],
+                intersection.left.segment.duct.userData.proxy1Vertices[6]
+            );
+
+            this.connectPoints(
+                intersection.left.segment.duct.userData.proxy2Vertices[2],
+                intersection.right.segment.duct.userData.proxy2Vertices[2],
+                intersection.right.segment.duct.userData.proxy2Vertices[6],
+                intersection.left.segment.duct.userData.proxy2Vertices[6]
+            );
+            this.connectPoints(
+                intersection.left.segment.duct.userData.proxy2Vertices[1],
+                intersection.right.segment.duct.userData.proxy2Vertices[1],
+                intersection.right.segment.duct.userData.proxy2Vertices[5],
+                intersection.left.segment.duct.userData.proxy2Vertices[5]
+            );
+            this.connectPoints(
+                intersection.left.segment.duct.userData.proxy2Vertices[1],
+                intersection.right.segment.duct.userData.proxy2Vertices[0],
+                intersection.right.segment.duct.userData.proxy2Vertices[3],
+                intersection.left.segment.duct.userData.proxy2Vertices[2]
+            );
+            this.connectPoints(
+                intersection.left.segment.duct.userData.proxy2Vertices[5],
+                intersection.right.segment.duct.userData.proxy2Vertices[5],
+                intersection.right.segment.duct.userData.proxy2Vertices[6],
+                intersection.left.segment.duct.userData.proxy2Vertices[6]
+            );
+        }
     }
 
-    /**
-     * placeSegments
-     * 
-     * Places assembly segments in the correct position and orientation based on their relationship 
-     * to the primary segment and other segments in the assembly.
-     * 
-     * @returns {Array} The placed assembly segments.
-     */
-    async placeSegments(primaryKey) {
-        console.log("placeSegments this.assemblySegments:", this.assemblySegments);
-        console.log("placeSegments this.ductsDictionary:", this.ductsDictionary);
+    createJointProxies(intersection, pairDirection = null) {
+        console.log("createTJointProxies started:", intersection);
+  
+        const wallThickness = 30;
+  
+        let largestSize = this.innerDim["small"];
+        for(const key in intersection) {
+            let duct = intersection[key];
+            if(duct != null) {
+                if(this.innerDim[duct.xetoDuct.graphicLocation.size] > largestSize) {
+                    largestSize = this.innerDim[duct.xetoDuct.graphicLocation.size];
+                }
+            }
+        }
+        
+        console.log("createTJointProxies largestSize:", largestSize);
 
-        const primarySegmentXeto = this.ductsDictionary[primaryKey][0];
+        const areHelpersOn = true;
 
-        let primarySegment = this.assemblySegments.filter(child => 
-            child.xetoDuct.id === primarySegmentXeto.id
-        )[0];
+        let material = new THREE.MeshStandardMaterial({ color: 0xAEB9C2 });
+        let material2 = new THREE.MeshStandardMaterial({ color: 0xAEB9C2 });
+        let material3 = new THREE.MeshStandardMaterial({ color: 0xAEB9C2 });
+        let material4 = new THREE.MeshStandardMaterial({ color: 0xAEB9C2 });
+        let material5 = new THREE.MeshStandardMaterial({ color: 0xAEB9C2 });
+        
+        if(areHelpersOn) {
+            material.color.setHex("0xFF0000");
+            material2.color.setHex("0x0000FF");
+            material3.color.setHex("0x00FF00");
+            material4.color.setHex("0xFF0000");
+            material5.color.setHex("0x0000FF");
 
-        console.log("placeSegments primaryKey:", primaryKey);
-        console.log("placeSegments primarySegment:", primarySegment);
+            // material.wireframe = true;
+            // material2.wireframe = true;
+            // material3.wireframe = true;
+            // material4.wireframe = true;
+            // material5.wireframe = true;
+        }          
+  
+        for(const key in intersection) {
+            let duct = intersection[key];
 
-        let primarySegmentOrientation = primarySegment.xetoDuct.orientation;
-        this.orientAssemblySegment(primarySegment.segment, primarySegmentOrientation);
-        primarySegmentXeto.isPositioned = true;
+            if(duct != null) {
+                const innerDimensions = duct.segment.duct.userData.component.object.innerDimensions;
+    
+                const proxy1Geometry = new THREE.BoxGeometry(
+                    wallThickness, 
+                    this.innerDim[duct.xetoDuct.graphicLocation.size] + 30, 
+                    wallThickness
+                );
+                const proxyOriginal1Geometry = proxy1Geometry.clone();
+                const proxyOriginal1 = new THREE.Mesh(proxyOriginal1Geometry, material4); 
 
-        this.getNextSegment(primarySegmentXeto, primaryKey);     
+                const ductDepth = this.innerDim[duct.xetoDuct.graphicLocation.size];
+                this.moveProxyVertices(proxy1Geometry, (largestSize - ductDepth) / 2);
 
-        return this.assemblySegments; // Return the placed assembly segments.  
+                const proxy1 = new THREE.Mesh(proxy1Geometry, material);
+                proxy1.position.copy(duct.segment.duct.userData.component.object.position);
+        
+                const proxy2Geometry = new THREE.BoxGeometry(
+                    wallThickness, 
+                    this.innerDim[duct.xetoDuct.graphicLocation.size] + 30, 
+                    wallThickness
+                );
+                const proxyOriginal2Geometry = proxy2Geometry.clone();
+                const proxyOriginal2 = new THREE.Mesh(proxyOriginal2Geometry, material5);
+
+                this.moveProxyVertices(proxy2Geometry, (largestSize - ductDepth) / 2);
+                const proxy2 = new THREE.Mesh(proxy2Geometry, material2);
+        
+                const proxyMedianGeometry = new THREE.BoxGeometry(
+                    wallThickness, 
+                    this.innerDim[duct.xetoDuct.graphicLocation.size] + 30,
+                    wallThickness
+                );
+                this.moveProxyVertices(proxyMedianGeometry, (largestSize - ductDepth) / 2);
+                const proxyMedian = new THREE.Mesh(proxyMedianGeometry, material3);
+
+                if(key == "up") {
+                    proxy1.position.x += (innerDimensions.x / -2);
+                    proxy1.position.z += (innerDimensions.z) / -2;
+        
+                    proxy2.position.copy(proxy1.position);
+                    proxy2.position.x += (innerDimensions.x);
+        
+                    proxyMedian.position.copy(proxy1.position);
+                }
+                else if(key == "down") {
+                    proxy1.position.x += (innerDimensions.x / -2);
+                    proxy1.position.z += (innerDimensions.z) / 2;
+        
+                    proxy2.position.copy(proxy1.position);
+                    proxy2.position.x += (innerDimensions.x);
+        
+                    proxyMedian.position.copy(proxy1.position);
+                }
+                else if(key == "left") {
+                    proxy1.position.x += (innerDimensions.x / 2);
+                    proxy1.position.z += (innerDimensions.z) / 2;
+        
+                    proxy2.position.copy(proxy1.position);
+                    proxy2.position.z += (innerDimensions.z * -1);
+        
+                    proxyMedian.position.copy(proxy1.position);
+                }
+                else if(key == "right") {
+                    proxy1.position.x += (innerDimensions.x / -2);
+                    proxy1.position.z += (innerDimensions.z) / 2;
+        
+                    proxy2.position.copy(proxy1.position);
+                    proxy2.position.z += (innerDimensions.z * -1);
+        
+                    proxyMedian.position.copy(proxy1.position);
+                }   
+
+                proxyOriginal1.position.copy(proxy1.position);
+                proxyOriginal2.position.copy(proxy2.position);
+                
+                const proxy1Vertices = this.mapProxyVertices(proxy1);
+                const proxy2Vertices = this.mapProxyVertices(proxy2);
+                const proxyOriginal1Vertices = this.mapProxyVertices(proxyOriginal1);
+                const proxyOriginal2Vertices = this.mapProxyVertices(proxyOriginal2);
+        
+                duct.segment.duct.userData.proxy1Vertices = proxy1Vertices;
+                duct.segment.duct.userData.proxy2Vertices = proxy2Vertices;
+                duct.segment.duct.userData.proxyOriginal1Vertices = proxyOriginal1Vertices;
+                duct.segment.duct.userData.proxyOriginal2Vertices = proxyOriginal2Vertices;
+        
+                proxy1.name = "jointIndicator";
+                proxy2.name = "jointIndicator";
+                proxyOriginal1.name = "jointIndicator";
+                proxyOriginal2.name = "jointIndicator";
+                proxyMedian.name = "jointIndicator";
+                this.sceneHelper.addToScene(proxy1);
+                this.sceneHelper.addToScene(proxy2);
+                this.sceneHelper.addToScene(proxyOriginal1);
+                this.sceneHelper.addToScene(proxyOriginal2);
+                if(pairDirection == null) {
+                    this.sceneHelper.addToScene(proxyMedian);
+                }
+                
+
+                duct.segment.duct.userData.proxies = {
+                    proxy1: proxy1, 
+                    proxy2: proxy2,
+                    proxyOriginal1: proxyOriginal1, 
+                    proxyOriginal2: proxyOriginal2, 
+                    proxyMedian: proxyMedian, 
+                };
+
+                if(areHelpersOn) {
+                    this.renderProxyVertices(proxy1Vertices, areHelpersOn);
+                    this.renderProxyVertices(proxy2Vertices, areHelpersOn);
+                    this.renderProxyVertices(proxyOriginal1Vertices, areHelpersOn);
+                    this.renderProxyVertices(proxyOriginal2Vertices, areHelpersOn);
+                }
+            }
+  
+        }
+
+        this.alignProxyMedians(intersection);             
+  
+        for(const key in intersection) {
+            let duct = intersection[key];
+            if(duct != null) {
+                const proxyMedianVertices = this.mapProxyVertices(duct.segment.duct.userData.proxies.proxyMedian);
+                duct.segment.duct.userData.proxyMedianVertices = proxyMedianVertices;
+                duct.segment.duct.userData.proxyMedianVertices = proxyMedianVertices;
+                if(areHelpersOn) {
+                    this.renderProxyVertices(proxyMedianVertices);
+                }
+            }
+        }
+  
     }
+
+    alignProxyMedians(intersection) {        
+        let definedIntersectionCount = 0;
+        for(const key in intersection) {
+            if(intersection[key] != null)  {
+                definedIntersectionCount++;
+            }
+        }
+        console.log("definedIntersectionCount:", definedIntersectionCount);
+
+        if(definedIntersectionCount == 2) {
+            if(intersection.up != null && intersection.right != null) {
+                intersection.up.segment.duct.userData.proxies.proxyMedian.position.z = intersection.right.segment.duct.userData.proxies.proxy2.position.z;
+                intersection.right.segment.duct.userData.proxies.proxyMedian.position.z = intersection.up.segment.duct.userData.proxies.proxy2.position.z;
+            }
+        }
+        else if(definedIntersectionCount == 3) {
+            if(intersection.up != null && intersection.left != null) {
+                // top-left median
+                intersection.up.segment.duct.userData.proxies.proxyMedian.position.x = intersection.left.segment.duct.userData.proxies.proxyMedian.position.x;
+            }
+            if(intersection.down != null) {
+                // bottom-right median
+                if(intersection.right != null) {
+                    intersection.down.segment.duct.userData.proxies.proxyMedian.position.x = intersection.right.segment.duct.userData.proxies.proxyMedian.position.x;
+                }
+                else {
+                    intersection.down.segment.duct.userData.proxies.proxyMedian.position.x = intersection.up.segment.duct.userData.proxies.proxy2.position.x;
+                }
+                
+            }
+            if(intersection.left != null && intersection.down != null) {
+                // bottom-right median
+                intersection.left.segment.duct.userData.proxies.proxyMedian.position.z = intersection.down.segment.duct.userData.proxies.proxyMedian.position.z;
+            }
+            if(intersection.right != null && intersection.up != null) {
+                // bottom-right median
+                intersection.right.segment.duct.userData.proxies.proxyMedian.position.z = intersection.up.segment.duct.userData.proxies.proxyMedian.position.z;
+            }
+        }
+        else if(definedIntersectionCount == 4) {
+            // top-left median
+            intersection.up.segment.duct.userData.proxies.proxyMedian.position.x = intersection.left.segment.duct.userData.proxies.proxyMedian.position.x;
+            // bottom-right median
+            intersection.down.segment.duct.userData.proxies.proxyMedian.position.x = intersection.right.segment.duct.userData.proxies.proxyMedian.position.x;
+            // bottom-right median
+            intersection.left.segment.duct.userData.proxies.proxyMedian.position.z = intersection.down.segment.duct.userData.proxies.proxyMedian.position.z;
+            // bottom-right median
+            intersection.right.segment.duct.userData.proxies.proxyMedian.position.z = intersection.up.segment.duct.userData.proxies.proxyMedian.position.z;
+        }
+    }
+
+    moveProxyVertices(proxyGeometry, length) {
+        // Access the position attribute
+        const positionAttribute = proxyGeometry.attributes.position;
+
+        // Modify specific vertices (example: adjust the top vertices of the box)
+        for (let i = 0; i < positionAttribute.count; i++) {
+            const y = positionAttribute.getY(i);
+
+            // Example: Move vertices with y > 0.5 upwards by 500 units
+            if (y > 0.5) {
+                positionAttribute.setY(i, y + length);
+            }
+            else if (y < 0.5) {
+                positionAttribute.setY(i, y - length);
+            }
+        }
+
+        // Mark the position attribute as needing an update
+        positionAttribute.needsUpdate = true;
+    }
+
+    mapProxyVertices(proxy) {
+        console.log("mapProxyVertices started:", proxy);
+
+        const detachedProxy = proxy.clone();
+        // detachedProxy.applyMatrix4(proxy.parent.matrixWorld);
+        const proxyBB = new THREE.Box3().setFromObject(detachedProxy);
+        const proxyMin = proxyBB.min;
+        const proxyMax = proxyBB.max;
+
+        console.log("mapProxyVertices proxyBB:", JSON.stringify(proxyBB));
+  
+        const proxyCorners = [
+          new THREE.Vector3(proxyMin.x, proxyMin.y, proxyMax.z),
+          new THREE.Vector3(proxyMin.x, proxyMin.y, proxyMin.z),
+          new THREE.Vector3(proxyMax.x, proxyMin.y, proxyMin.z),
+          new THREE.Vector3(proxyMax.x, proxyMin.y, proxyMax.z),
+  
+          new THREE.Vector3(proxyMin.x, proxyMax.y, proxyMax.z),
+          new THREE.Vector3(proxyMin.x, proxyMax.y, proxyMin.z),
+          new THREE.Vector3(proxyMax.x, proxyMax.y, proxyMin.z),
+          new THREE.Vector3(proxyMax.x, proxyMax.y, proxyMax.z),
+        ];
+
+        console.log("mapProxyVertices proxyCorners:", proxyCorners);
+  
+        return proxyCorners;
+    }
+
+    renderProxyVertices(proxyCorners) {
+
+        let indicatorSize = 27;
+        if(indicatorSize > 30) {
+            indicatorSize = 30;
+        }
+
+        const createTextCanvasTexture = (text) => {
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        const size = 1000; // Higher size for better resolution
+        canvas.width = size;
+        canvas.height = size;
+
+        // Fill the canvas with a background color
+        context.fillStyle = 'green';
+        context.fillRect(0, 0, size, size);
+
+        // Draw the text
+        context.fillStyle = 'black';
+        context.font = 'bold 800px Arial'; // Adjust font size and style
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        context.fillText(text, size / 2, size / 2);
+
+        // Create a texture from the canvas
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.needsUpdate = true; // Ensure the texture is updated
+        return texture;
+        };
+
+        proxyCorners.forEach((proxyCorner, index) => {
+        const textTexture = createTextCanvasTexture(index.toString());
+
+        const material = new THREE.MeshBasicMaterial({
+            map: textTexture,
+            transparent: true,
+        });
+
+        const vertexGeometry = new THREE.BoxGeometry(indicatorSize, indicatorSize, indicatorSize);
+        const vertexIndicator = new THREE.Mesh(vertexGeometry, material);
+
+        vertexIndicator.position.copy(proxyCorner);
+        vertexIndicator.name = "jointIndicator";
+        this.sceneHelper.addToScene(vertexIndicator);
+        });
+        
+    }
+
+    createOrthogonalCrossJoint(intersection) {
+        this.connectProxiesVertically(
+            intersection.right.segment.duct.userData.proxy2Vertices, 
+            intersection.down.segment.duct.userData.proxyMedianVertices
+        );
+        this.connectProxiesHorizontally(
+            intersection.down.segment.duct.userData.proxy2Vertices,
+            intersection.down.segment.duct.userData.proxyMedianVertices
+        );
+
+        this.connectPoints(
+            intersection.down.segment.duct.userData.proxyOriginal2Vertices[4],
+            intersection.down.segment.duct.userData.proxyOriginal1Vertices[7],
+            intersection.down.segment.duct.userData.proxy1Vertices[7],
+            intersection.down.segment.duct.userData.proxy2Vertices[4]
+        );
+        this.connectPoints(
+            intersection.down.segment.duct.userData.proxyOriginal2Vertices[5],
+            intersection.down.segment.duct.userData.proxyOriginal1Vertices[6],
+            intersection.down.segment.duct.userData.proxy1Vertices[6],
+            intersection.down.segment.duct.userData.proxy2Vertices[5]
+        );
+        this.connectPoints(
+            intersection.down.segment.duct.userData.proxyOriginal1Vertices[7],
+            intersection.down.segment.duct.userData.proxyOriginal2Vertices[4],
+            intersection.down.segment.duct.userData.proxyOriginal2Vertices[5],
+            intersection.down.segment.duct.userData.proxyOriginal1Vertices[6]
+        );
+
+        this.connectProxiesHorizontally(
+            intersection.down.segment.duct.userData.proxy1Vertices,
+            intersection.left.segment.duct.userData.proxyMedianVertices
+        );        
+        this.connectProxiesVertically(
+            intersection.left.segment.duct.userData.proxy2Vertices, 
+            intersection.left.segment.duct.userData.proxyMedianVertices
+        );
+
+        this.connectPoints(
+            intersection.left.segment.duct.userData.proxyOriginal1Vertices[7],
+            intersection.left.segment.duct.userData.proxy1Vertices[7],
+            intersection.left.segment.duct.userData.proxy2Vertices[7],
+            intersection.left.segment.duct.userData.proxyOriginal2Vertices[7]
+        );
+        this.connectPoints(
+            intersection.left.segment.duct.userData.proxyOriginal1Vertices[5],
+            intersection.left.segment.duct.userData.proxy1Vertices[5],
+            intersection.left.segment.duct.userData.proxy2Vertices[5],
+            intersection.left.segment.duct.userData.proxyOriginal2Vertices[5]
+        );
+        this.connectPoints(
+            intersection.left.segment.duct.userData.proxyOriginal1Vertices[5],
+            intersection.left.segment.duct.userData.proxyOriginal2Vertices[4],
+            intersection.left.segment.duct.userData.proxyOriginal2Vertices[7],
+            intersection.left.segment.duct.userData.proxyOriginal1Vertices[6]
+        );
+
+        this.connectProxiesVertically(
+            intersection.up.segment.duct.userData.proxyMedianVertices, 
+            intersection.left.segment.duct.userData.proxy1Vertices
+        );
+        this.connectProxiesHorizontally(
+            intersection.up.segment.duct.userData.proxyMedianVertices, 
+            intersection.up.segment.duct.userData.proxy1Vertices
+        );
+
+        this.connectPoints(
+            intersection.up.segment.duct.userData.proxyOriginal2Vertices[4],
+            intersection.up.segment.duct.userData.proxyOriginal1Vertices[7],
+            intersection.up.segment.duct.userData.proxy1Vertices[7],
+            intersection.up.segment.duct.userData.proxy2Vertices[4]
+        );
+        this.connectPoints(
+            intersection.up.segment.duct.userData.proxyOriginal2Vertices[5],
+            intersection.up.segment.duct.userData.proxyOriginal1Vertices[6],
+            intersection.up.segment.duct.userData.proxy1Vertices[6],
+            intersection.up.segment.duct.userData.proxy2Vertices[5]
+        );
+        this.connectPoints(
+            intersection.up.segment.duct.userData.proxyOriginal1Vertices[7],
+            intersection.up.segment.duct.userData.proxyOriginal2Vertices[4],
+            intersection.up.segment.duct.userData.proxyOriginal2Vertices[5],
+            intersection.up.segment.duct.userData.proxyOriginal1Vertices[6]
+        );
+
+        this.connectProxiesHorizontally(
+            intersection.up.segment.duct.userData.proxy2Vertices, 
+            intersection.right.segment.duct.userData.proxyMedianVertices
+        );
+        this.connectProxiesVertically(
+            intersection.right.segment.duct.userData.proxyMedianVertices, 
+            intersection.right.segment.duct.userData.proxy1Vertices
+        );
+
+        this.connectPoints(
+            intersection.right.segment.duct.userData.proxyOriginal1Vertices[7],
+            intersection.right.segment.duct.userData.proxy1Vertices[7],
+            intersection.right.segment.duct.userData.proxy2Vertices[7],
+            intersection.right.segment.duct.userData.proxyOriginal2Vertices[7]
+        );
+        this.connectPoints(
+            intersection.right.segment.duct.userData.proxyOriginal1Vertices[5],
+            intersection.right.segment.duct.userData.proxy1Vertices[5],
+            intersection.right.segment.duct.userData.proxy2Vertices[5],
+            intersection.right.segment.duct.userData.proxyOriginal2Vertices[5]
+        );
+        this.connectPoints(
+            intersection.right.segment.duct.userData.proxyOriginal1Vertices[5],
+            intersection.right.segment.duct.userData.proxyOriginal2Vertices[4],
+            intersection.right.segment.duct.userData.proxyOriginal2Vertices[7],
+            intersection.right.segment.duct.userData.proxyOriginal1Vertices[6]
+        );
+        
+        this.connectPoints(
+            intersection.right.segment.duct.userData.proxyMedianVertices[7],
+            intersection.down.segment.duct.userData.proxyMedianVertices[6],
+            intersection.left.segment.duct.userData.proxyMedianVertices[5],
+            intersection.up.segment.duct.userData.proxyMedianVertices[4]
+        );
+    }
+
+    createOrthogonalTJoint(intersection) {
+        this.connectProxiesVertically(
+            intersection.up.segment.duct.userData.proxy2Vertices, 
+            intersection.down.segment.duct.userData.proxyMedianVertices
+        );
+
+        this.connectProxiesHorizontally(
+            intersection.down.segment.duct.userData.proxy2Vertices,
+            intersection.down.segment.duct.userData.proxyMedianVertices
+        );
+
+        this.connectPoints(
+            intersection.down.segment.duct.userData.proxyOriginal2Vertices[4],
+            intersection.down.segment.duct.userData.proxyOriginal1Vertices[7],
+            intersection.down.segment.duct.userData.proxy1Vertices[7],
+            intersection.down.segment.duct.userData.proxy2Vertices[4]
+        );
+        this.connectPoints(
+            intersection.down.segment.duct.userData.proxyOriginal2Vertices[5],
+            intersection.down.segment.duct.userData.proxyOriginal1Vertices[6],
+            intersection.down.segment.duct.userData.proxy1Vertices[6],
+            intersection.down.segment.duct.userData.proxy2Vertices[5]
+        );
+        this.connectPoints(
+            intersection.down.segment.duct.userData.proxyOriginal1Vertices[7],
+            intersection.down.segment.duct.userData.proxyOriginal2Vertices[4],
+            intersection.down.segment.duct.userData.proxyOriginal2Vertices[5],
+            intersection.down.segment.duct.userData.proxyOriginal1Vertices[6]
+        );
+
+        this.connectProxiesHorizontally(
+            intersection.down.segment.duct.userData.proxy1Vertices,
+            intersection.left.segment.duct.userData.proxyMedianVertices
+        );        
+        this.connectProxiesVertically(
+            intersection.left.segment.duct.userData.proxy2Vertices, 
+            intersection.left.segment.duct.userData.proxyMedianVertices
+        );
+
+        this.connectPoints(
+            intersection.left.segment.duct.userData.proxyOriginal1Vertices[7],
+            intersection.left.segment.duct.userData.proxy1Vertices[7],
+            intersection.left.segment.duct.userData.proxy2Vertices[7],
+            intersection.left.segment.duct.userData.proxyOriginal2Vertices[7]
+        );
+        this.connectPoints(
+            intersection.left.segment.duct.userData.proxyOriginal1Vertices[5],
+            intersection.left.segment.duct.userData.proxy1Vertices[5],
+            intersection.left.segment.duct.userData.proxy2Vertices[5],
+            intersection.left.segment.duct.userData.proxyOriginal2Vertices[5]
+        );
+        this.connectPoints(
+            intersection.left.segment.duct.userData.proxyOriginal1Vertices[5],
+            intersection.left.segment.duct.userData.proxyOriginal2Vertices[4],
+            intersection.left.segment.duct.userData.proxyOriginal2Vertices[7],
+            intersection.left.segment.duct.userData.proxyOriginal1Vertices[6]
+        );
+
+        this.connectProxiesVertically(
+            intersection.up.segment.duct.userData.proxyMedianVertices, 
+            intersection.left.segment.duct.userData.proxy1Vertices
+        );
+        this.connectProxiesHorizontally(
+            intersection.up.segment.duct.userData.proxyMedianVertices, 
+            intersection.up.segment.duct.userData.proxy1Vertices
+        );
+
+        this.connectPoints(
+            intersection.up.segment.duct.userData.proxyOriginal2Vertices[4],
+            intersection.up.segment.duct.userData.proxyOriginal1Vertices[7],
+            intersection.up.segment.duct.userData.proxy1Vertices[7],
+            intersection.up.segment.duct.userData.proxy2Vertices[4]
+        );
+        this.connectPoints(
+            intersection.up.segment.duct.userData.proxyOriginal2Vertices[5],
+            intersection.up.segment.duct.userData.proxyOriginal1Vertices[6],
+            intersection.up.segment.duct.userData.proxy1Vertices[6],
+            intersection.up.segment.duct.userData.proxy2Vertices[5]
+        );
+        this.connectPoints(
+            intersection.up.segment.duct.userData.proxyOriginal1Vertices[7],
+            intersection.up.segment.duct.userData.proxyOriginal2Vertices[4],
+            intersection.up.segment.duct.userData.proxyOriginal2Vertices[5],
+            intersection.up.segment.duct.userData.proxyOriginal1Vertices[6]
+        );
+
+        // this.connectProxiesHorizontally(
+        //     intersection.up.segment.duct.userData.proxy2Vertices, 
+        //     intersection.right.segment.duct.userData.proxyMedianVertices
+        // );
+        // this.connectProxiesVertically(
+        //     intersection.right.segment.duct.userData.proxyMedianVertices, 
+        //     intersection.right.segment.duct.userData.proxy1Vertices
+        // );
+
+        // this.connectPoints(
+        //     intersection.right.segment.duct.userData.proxyOriginal1Vertices[7],
+        //     intersection.right.segment.duct.userData.proxy1Vertices[7],
+        //     intersection.right.segment.duct.userData.proxy2Vertices[7],
+        //     intersection.right.segment.duct.userData.proxyOriginal2Vertices[7]
+        // );
+        // this.connectPoints(
+        //     intersection.right.segment.duct.userData.proxyOriginal1Vertices[5],
+        //     intersection.right.segment.duct.userData.proxy1Vertices[5],
+        //     intersection.right.segment.duct.userData.proxy2Vertices[5],
+        //     intersection.right.segment.duct.userData.proxyOriginal2Vertices[5]
+        // );
+        // this.connectPoints(
+        //     intersection.right.segment.duct.userData.proxyOriginal1Vertices[5],
+        //     intersection.right.segment.duct.userData.proxyOriginal2Vertices[4],
+        //     intersection.right.segment.duct.userData.proxyOriginal2Vertices[7],
+        //     intersection.right.segment.duct.userData.proxyOriginal1Vertices[6]
+        // );
+        
+        this.connectPoints(
+            intersection.up.segment.duct.userData.proxy2Vertices[7],
+            intersection.down.segment.duct.userData.proxyMedianVertices[6],
+            intersection.left.segment.duct.userData.proxyMedianVertices[5],
+            intersection.up.segment.duct.userData.proxyMedianVertices[4]
+        );
+    }
+
+    connectProxiesHorizontally(leftProxy, rightProxy) {
+        this.connectPoints(
+            leftProxy[2],
+            rightProxy[2],
+            rightProxy[6],
+            leftProxy[6]
+        );
+        this.connectPoints(
+            leftProxy[0],
+            rightProxy[0],
+            rightProxy[4],
+            leftProxy[4]
+        );
+        this.connectPoints(
+            leftProxy[3],
+            rightProxy[0],
+            rightProxy[1],
+            leftProxy[2]
+        );
+        this.connectPoints(
+            leftProxy[4],
+            rightProxy[7],
+            rightProxy[6],
+            leftProxy[5]
+        );
+    }
+
+    connectProxiesVertically(topProxy, bottomProxy) {
+        this.connectPoints(
+            topProxy[2],
+            bottomProxy[2],
+            bottomProxy[6],
+            topProxy[6]
+        );
+        this.connectPoints(
+            topProxy[1],
+            bottomProxy[1],
+            bottomProxy[5],
+            topProxy[5]
+        );
+        this.connectPoints(
+            topProxy[1],
+            bottomProxy[0],
+            bottomProxy[3],
+            topProxy[2]
+        );
+        this.connectPoints(
+            topProxy[6],
+            bottomProxy[7],
+            bottomProxy[4],
+            topProxy[5]
+        );
+    }
+
+    connectPoints(pointA, pointB, pointC, pointD, opacity = 1.0) {
+        // Create an array of vertices
+        const vertices = new Float32Array([
+            pointA.x, pointA.y, pointA.z, // Vertex 0
+            pointB.x, pointB.y, pointB.z, // Vertex 1
+            pointC.x, pointC.y, pointC.z, // Vertex 2
+            pointD.x, pointD.y, pointD.z  // Vertex 3
+        ]);
+  
+        // Define the indices for the two triangles (clockwise winding order)
+        const indices = [
+            0, 1, 2, // First triangle (A -> B -> C)
+            0, 2, 3  // Second triangle (A -> C -> D)
+        ];
+  
+        // Create the BufferGeometry
+        const geometry = new THREE.BufferGeometry();
+  
+        // Set the vertices as a BufferAttribute
+        geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+  
+        // Set the indices
+        geometry.setIndex(indices);
+  
+        // Optionally compute normals if you need lighting effects
+        geometry.computeVertexNormals();
+  
+        // Create a material
+        const material = new THREE.MeshStandardMaterial({ 
+            color: 0xAEB9C2, 
+            side: THREE.DoubleSide, 
+            transparent: false, 
+            opacity: opacity, 
+            // depthWrite: false, 
+        });
+  
+        // Create the mesh
+        const plane = new THREE.Mesh(geometry, material);
+  
+        // Add to the scene
+        plane.name = "joint";
+        plane.renderOrder = 2;
+        this.sceneHelper.addToScene(plane);
+    }  
 
     /**
      * getAssemblyDimensions

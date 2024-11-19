@@ -519,6 +519,30 @@ class Ahu3D {
         }
     }
 
+    dispose() {
+        console.log("Disposing Ahu3D...");
+        
+        // Dispose scene resources
+        if (this.sceneHelper) {
+            this.sceneHelper.dispose();
+            this.sceneHelper = null;
+        }
+
+        // Clear components
+        this.components = {};
+
+        // Nullify utility references
+        this.imports = null;
+        this.utils = null;
+        this.object3DLoader = null;
+
+        // Nullify other references
+        this.library = null;
+        this.loadedXeto = null;
+
+        console.log("Ahu3D disposed successfully.");
+    }
+
 }
 
 export default Ahu3D;
