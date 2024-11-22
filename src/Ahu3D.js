@@ -60,6 +60,8 @@ class Ahu3D {
         this.isLibraryLoaded = false;
         this.components = {};  // This object holds loaded assembly components
         this.loadedXeto = [];  // This object holds xeto
+
+        console.log("ahu3d init started");
     }
 
     createDuct(size, type = "duct") {

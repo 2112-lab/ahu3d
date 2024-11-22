@@ -524,10 +524,48 @@ export default class Utils {
     return parseInt(location.slice(1, location.length)); // Parse and return the row number from the location string.
   }
 
-  setJointTransparency(value) {
-    this.scene.traverse((object3d) => {
-      if (object3d.isObject3D && object3d.name === 'joint') {
-        object3d.material.opacity = value;
+  setJointOpacity(opacity) {
+    this.sceneHelper.scene.traverse((object3d) => {
+      if (object3d.isObject3D) {
+        if(object3d.name === 'joint' || object3d.name === 'jointHelper') {
+          if(opacity < 1) {
+            object3d.material.transparent = true;
+            object3d.material.depthWrite = false;
+          }
+          else {
+            object3d.material.transparent = false;
+            object3d.material.depthWrite = true;
+          }
+          object3d.material.opacity = opacity;
+        }
+      }
+    });
+  }
+
+  setJointWireframe(value) {
+    this.sceneHelper.scene.traverse((object3d) => {
+      if (object3d.isObject3D) {
+        if(object3d.name === 'joint' || object3d.name === 'jointHelper') {
+          object3d.material.wireframe = value;
+        }
+      }
+    });
+  }
+
+  setJointHelpers(value) {
+    this.sceneHelper.scene.traverse((object3d) => {
+      if (object3d.isObject3D) {
+        if(object3d.name === 'jointHelper') {
+          if(value == true) {
+            object3d.material.color.setHex(object3d.userData.helperColor);
+          }
+          else {
+            object3d.material.color.setHex(object3d.userData.productionColor);
+          }
+        }
+        else if(object3d.name === 'jointHelperVertices') {
+          object3d.visible = value;
+        }
       }
     });
   }

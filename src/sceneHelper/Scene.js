@@ -124,7 +124,7 @@ class Scene {
         this.labelRenderer.domElement.style.top = '0px';
         document.body.appendChild(this.labelRenderer.domElement);
 
-        if(this.tooltipParent != null) {
+        if(this.tooltipParent != null && this.tooltipObject != null) {
             this.tooltipParent.remove(this.tooltipObject);
         }
         this.tooltipParent = null;
@@ -197,7 +197,8 @@ class Scene {
             console.warn("Composer is not initialized. Skipping post-processing.");
         }
 
-        // this.updateComposerAndTooltip();
+        // this.updateComposer();
+        this.labelRenderer.render(this.scene, this.cameras.primary);
         this.animateCachedTargets();
     }
 
@@ -226,9 +227,7 @@ class Scene {
         }
     }
 
-    updateComposerAndTooltip(){
-        this.labelRenderer.render(this.scene, this.cameras.primary);
-
+    updateComposer(){
         this.cycleGlowColors();
         this.composer.render();
     }
@@ -330,13 +329,16 @@ class Scene {
     }
 
     addEventListeners() {
-        window.addEventListener('mousedown', this.onMouseDown.bind(this));
+        this.onMouseDownHandler = this.onMouseDown.bind(this); // Store the bound function
+        window.addEventListener('mousedown', this.onMouseDownHandler);
     }
 
     onMouseDown(event) {
-        this.scene.remove(this.boxHelpers);
+        if(this.boxHelpers) {
+            this.scene.remove(this.boxHelpers);
+        }
         if(this.selectorEnabled) {
-            if (this.tooltipObject && this.tooltipObject.element) {
+            if (this.tooltipObject && this.tooltipObject.element && event) {
                 const tooltipRect = this.tooltipObject.element.getBoundingClientRect();
                 const isInsideTooltip = (
                     event.clientX >= tooltipRect.left &&
@@ -364,36 +366,38 @@ class Scene {
     onMeshClick(event) {
         // event.preventDefault();
 
-        this.boundingClientRect = this.renderer.domElement.getBoundingClientRect();    
-        this.mouseVector.x = ((event.clientX - this.boundingClientRect.left) / this.boundingClientRect.width) * 2 - 1;
-        this.mouseVector.y = -((event.clientY - this.boundingClientRect.top) / this.boundingClientRect.height) * 2 + 1;
-    
-        this.cameras.primary.updateMatrixWorld();
-        this.raycaster.setFromCamera(this.mouseVector, this.cameras.primary);
-    
-        const hvacIntersects = this.raycaster.intersectObjects(
-            this.scene.children.filter(child => child.name === 'hvac' && child.visible)
-        );
+        if(this.renderer && this.renderer.domElement && event) {
+            this.boundingClientRect = this.renderer.domElement.getBoundingClientRect();    
+            this.mouseVector.x = ((event.clientX - this.boundingClientRect.left) / this.boundingClientRect.width) * 2 - 1;
+            this.mouseVector.y = -((event.clientY - this.boundingClientRect.top) / this.boundingClientRect.height) * 2 + 1;
+        
+            this.cameras.primary.updateMatrixWorld();
+            this.raycaster.setFromCamera(this.mouseVector, this.cameras.primary);
+        
+            const hvacIntersects = this.raycaster.intersectObjects(
+                this.scene.children.filter(child => child.name === 'hvac' && child.visible)
+            );
 
-        if (hvacIntersects.length > 0) {
-            let mesh = hvacIntersects[0].object.parent;
-            if(mesh.parent.name === "hvac") {
-                mesh = mesh.parent;
-            }
-            console.log("mesh:", mesh);
-
-            if(mesh.userData.component.isComponent) {
-                this.selectedMesh = mesh;
-                if(this.tooltipEnabled) {
-                    this.addBoundingBox();
-                    this.showTooltip();
+            if (hvacIntersects.length > 0) {
+                let mesh = hvacIntersects[0].object.parent;
+                if(mesh.parent.name === "hvac") {
+                    mesh = mesh.parent;
                 }
-            }            
-        } 
-        else if (this.tooltipParent && this.tooltipObject) {
-            this.tooltipParent.remove(this.tooltipObject);
-            this.tooltipParent = null;
-            this.tooltipObject = null;
+                console.log("mesh:", mesh);
+
+                if(mesh.userData.component.isComponent) {
+                    this.selectedMesh = mesh;
+                    if(this.tooltipEnabled) {
+                        this.addBoundingBox();
+                        this.showTooltip();
+                    }
+                }            
+            } 
+            else if (this.tooltipParent && this.tooltipObject) {
+                this.tooltipParent.remove(this.tooltipObject);
+                this.tooltipParent = null;
+                this.tooltipObject = null;
+            }
         }
     }
     
@@ -613,7 +617,8 @@ class Scene {
           (child) => 
             child.name == 'arrowClone' || 
             child.name == 'textMesh' ||
-            child.name == 'jointIndicator' ||
+            child.name == 'jointHelper' ||
+            child.name == 'jointHelperVertices' ||
             child.name == 'joint'
         );
         sceneIndicators.forEach((child) => {
@@ -634,16 +639,21 @@ class Scene {
     dispose() {
         console.log("Disposing Scene...");
         this.isDisposed = true; // Stop the animation loop
-
+    
+        if (this.onMouseDownHandler) {
+            window.removeEventListener('mousedown', this.onMouseDownHandler);
+            this.onMouseDownHandler = null; // Clear the reference to prevent memory leaks
+        }
+    
         if (this.renderer) {
             this.renderer.dispose();
         }
-
+    
         if (this.labelRenderer) {
             document.body.removeChild(this.labelRenderer.domElement);
             this.labelRenderer = null;
         }
-
+    
         this.scene.traverse((object) => {
             if (object.geometry) object.geometry.dispose();
             if (object.material) {
@@ -651,14 +661,14 @@ class Scene {
                 object.material.dispose();
             }
         });
-
+    
         this.scene.clear();
-
         this.scene = null;
         this.renderer = null;
         this.composer = null;
         console.log("Scene disposed successfully.");
     }
+    
 }
 
 export default Scene;
