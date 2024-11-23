@@ -108,9 +108,9 @@ class Import {
         console.log("xetoDictionary.ductsList:", xetoDictionary.ductsList);
         xetoDictionary.componentsList = xeto.filter(child => child.spec.includes('Component'));
 
-        for(const duct of xetoDictionary.ductsList) {
+        // for(const duct of xetoDictionary.ductsList) {
 
-        }
+        // }
 
         this.analyzer.analyzeAndTransform(xetoDictionary);
 
@@ -119,7 +119,7 @@ class Import {
         console.log("Import.js xetoDictionary.ahuGroup:", xetoDictionary.ahuGroup[0].blockStyle);
 
         if(xetoDictionary.ahuJoints == undefined) {
-            xetoDictionary.ahuGroup = {
+            xetoDictionary.ahuJoints = {
                 "id": "r:novo.graphics::AHU-1",
                 "spec": "r:novo.graphics::AhuJoints",
                 "jointPadding": 0,
@@ -127,7 +127,7 @@ class Import {
                 "context": "total"
             }
         }
-        else if(xetoDictionary.ahuJoints.style != "diagonal" && xetoDictionary.ahuJoints.style != "outwards" && xetoDictionary.ahuJoints.style != "inwards") {
+        else if(xetoDictionary.ahuJoints.style != "outwards" && xetoDictionary.ahuJoints.style != "inwards") {
             xetoDictionary.ahuJoints.direction = "inwards"
         }
 

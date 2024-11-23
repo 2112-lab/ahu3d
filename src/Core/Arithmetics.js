@@ -1313,12 +1313,12 @@ export default class Arithmetics {
             }
               
             this.joints.createJointProxies(intersectSegments, null, jointStyle);
-            if(jointStyle == "diagonal") {
-                this.joints.createDiagonalCrossJoint(intersectSegments);
-            }
-            else {
+            // if(jointStyle == "diagonal") {
+            //     this.joints.createDiagonalCrossJoint(intersectSegments);
+            // }
+            // else {
                 this.joints.createOrthogonalCrossJoint(intersectSegments, jointStyle);
-            }
+            // }
             
 
         }
@@ -1399,22 +1399,49 @@ export default class Arithmetics {
                 let maxHalfWidth = this.innerDim[upSize] > this.innerDim[downSize] ? this.innerDim[upSize] / 2 : this.innerDim[downSize] / 2;
                 let maxHalfHeight = this.innerDim[rightSize] / 2;
 
-                if(intersectSegments.down != fixedSegment) {
+                if(fixedSegment == intersectSegments.right) {
                     length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
-                    length += ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
-                    length += maxHalfHeight * 2 + 30;
+                    length += maxHalfHeight + 15;
                     length += jointPadding;
+                    this.translateAssemblySegment(intersectSegments.down.segment, "z", (length * -1));
+
+                    length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfWidth + 15;
+                    length += jointPadding;
+                    this.translateAssemblySegment(intersectSegments.down.segment, "x", (length * -1));
+
+                    length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfHeight + 15;
+                    length += jointPadding;
+                    this.translateAssemblySegment(intersectSegments.up.segment, "z", (length * 1));
+
+                    length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfWidth + 15;
+                    length += jointPadding;
+                    this.translateAssemblySegment(intersectSegments.up.segment, "x", (length * -1));
+                }
+
+                if(fixedSegment == intersectSegments.up) {
+                    length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfHeight * 2 + 30;
+                    length += jointPadding * 2;
                     this.translateAssemblySegment(intersectSegments.down.segment, "z", (length * -1));
 
                     length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight + 15;
                     length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.right.segment, "z", (length * -1));
+
+                    length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfWidth + 15;
+                    length += jointPadding;
+                    this.translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
                 }
 
-                if(intersectSegments.up != fixedSegment) {
-                    length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
-                    length += ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
+                if(fixedSegment == intersectSegments.down) {
+                    length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight * 2 + 30;
                     length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.up.segment, "z", (length * 1));
@@ -1423,12 +1450,12 @@ export default class Arithmetics {
                     length += maxHalfHeight + 15;
                     length += jointPadding;
                     this.translateAssemblySegment(intersectSegments.right.segment, "z", (length * 1));
-                }
 
-                length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
-                length += maxHalfWidth + 15;
-                length += jointPadding;
-                this.translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
+                    length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += maxHalfWidth + 15;
+                    length += jointPadding;
+                    this.translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
+                }
             }
 
             if(intersectSegments.right == null) {
@@ -1633,12 +1660,12 @@ export default class Arithmetics {
             }
 
             this.joints.createJointProxies(intersectSegments, null, jointStyle);
-            if(jointStyle == "diagonal") {
-                this.joints.createDiagonalTJoint(intersectSegments);
-            }
-            else {
+            // if(jointStyle == "diagonal") {
+            //     this.joints.createDiagonalTJoint(intersectSegments);
+            // }
+            // else {
                 this.joints.createOrthogonalTJoint(intersectSegments, jointStyle);
-            }
+            // }
     
         }
         else if(this.ductsDictionary[key].length == 2) {
@@ -1768,12 +1795,12 @@ export default class Arithmetics {
                 this.joints.createParallelJoint(intersectSegments, pairDirection);
             }
             else {
-                if(jointStyle == "diagonal") {
-                    this.joints.createDiagonalLJoint(intersectSegments);
-                }
-                else {
+                // if(jointStyle == "diagonal") {
+                //     this.joints.createDiagonalLJoint(intersectSegments);
+                // }
+                // else {
                     this.joints.createOrthogonalLJoint(intersectSegments, jointStyle);
-                }
+                // }
                 
             }
             
