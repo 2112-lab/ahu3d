@@ -1312,12 +1312,12 @@ export default class Arithmetics {
                 this.translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
             }
               
-            this.joints.createJointProxies(intersectSegments, null, jointStyle);
+            const largestSize = this.joints.createJointProxies(intersectSegments, null, jointStyle);
             // if(jointStyle == "diagonal") {
             //     this.joints.createDiagonalCrossJoint(intersectSegments);
             // }
             // else {
-                this.joints.createOrthogonalCrossJoint(intersectSegments, jointStyle);
+                this.joints.createOrthogonalCrossJoint(intersectSegments, jointStyle, largestSize);
             // }
             
 
@@ -1443,7 +1443,7 @@ export default class Arithmetics {
                     length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
                     length += ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight * 2 + 30;
-                    length += jointPadding;
+                    length += jointPadding * 2;
                     this.translateAssemblySegment(intersectSegments.up.segment, "z", (length * 1));
 
                     length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
@@ -1547,7 +1547,7 @@ export default class Arithmetics {
                     length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
                     length += ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth * 2 + 30;
-                    length += jointPadding;
+                    length += jointPadding * 2;
                     this.translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
                 }
 
@@ -1614,7 +1614,7 @@ export default class Arithmetics {
                     length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
                     length += ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth * 2 + 30;
-                    length += jointPadding;
+                    length += jointPadding * 2;
                     this.translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
                 }
 
@@ -1659,12 +1659,12 @@ export default class Arithmetics {
                 }
             }
 
-            this.joints.createJointProxies(intersectSegments, null, jointStyle);
+            const largestSize = this.joints.createJointProxies(intersectSegments, null, jointStyle);
             // if(jointStyle == "diagonal") {
             //     this.joints.createDiagonalTJoint(intersectSegments);
             // }
             // else {
-                this.joints.createOrthogonalTJoint(intersectSegments, jointStyle);
+                this.joints.createOrthogonalTJoint(intersectSegments, jointStyle, largestSize);
             // }
     
         }
@@ -1790,7 +1790,7 @@ export default class Arithmetics {
                 }
             }
 
-            this.joints.createJointProxies(intersectSegments, pairDirection, jointStyle);
+            const largestSize = this.joints.createJointProxies(intersectSegments, pairDirection, jointStyle);
             if(pairDirection) {
                 this.joints.createParallelJoint(intersectSegments, pairDirection);
             }
@@ -1799,7 +1799,7 @@ export default class Arithmetics {
                 //     this.joints.createDiagonalLJoint(intersectSegments);
                 // }
                 // else {
-                    this.joints.createOrthogonalLJoint(intersectSegments, jointStyle);
+                    this.joints.createOrthogonalLJoint(intersectSegments, jointStyle, largestSize);
                 // }
                 
             }

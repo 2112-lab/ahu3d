@@ -128,7 +128,7 @@ class Import {
             }
         }
         else if(xetoDictionary.ahuJoints.style != "outwards" && xetoDictionary.ahuJoints.style != "inwards") {
-            xetoDictionary.ahuJoints.direction = "inwards"
+            xetoDictionary.ahuJoints.style = "inwards"
         }
 
         const cleanedXeto = [

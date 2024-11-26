@@ -9,7 +9,7 @@ export default class Joints {
             large: 1500
         }
     }
-    createOrthogonalCrossJoint(intersection, jointStyle) {
+    createOrthogonalCrossJoint(intersection, jointStyle, largestSize) {
         if(jointStyle == "outwards") {
             this.connectProxiesVertically(
                 intersection.right.segment.duct.userData.proxy2Vertices, 
@@ -18,25 +18,6 @@ export default class Joints {
             this.connectProxiesHorizontally(
                 intersection.down.segment.duct.userData.proxy2Vertices,
                 intersection.down.segment.duct.userData.proxyMedianVertices
-            );
-    
-            this.connectPoints(
-                intersection.down.segment.duct.userData.proxyOriginal2Vertices[4],
-                intersection.down.segment.duct.userData.proxyOriginal1Vertices[7],
-                intersection.down.segment.duct.userData.proxy1Vertices[7],
-                intersection.down.segment.duct.userData.proxy2Vertices[4]
-            );
-            this.connectPoints(
-                intersection.down.segment.duct.userData.proxyOriginal2Vertices[5],
-                intersection.down.segment.duct.userData.proxyOriginal1Vertices[6],
-                intersection.down.segment.duct.userData.proxy1Vertices[6],
-                intersection.down.segment.duct.userData.proxy2Vertices[5]
-            );
-            this.connectPoints(
-                intersection.down.segment.duct.userData.proxyOriginal1Vertices[7],
-                intersection.down.segment.duct.userData.proxyOriginal2Vertices[4],
-                intersection.down.segment.duct.userData.proxyOriginal2Vertices[5],
-                intersection.down.segment.duct.userData.proxyOriginal1Vertices[6]
             );
     
             this.connectProxiesHorizontally(
@@ -48,25 +29,6 @@ export default class Joints {
                 intersection.left.segment.duct.userData.proxyMedianVertices
             );
     
-            this.connectPoints(
-                intersection.left.segment.duct.userData.proxyOriginal1Vertices[7],
-                intersection.left.segment.duct.userData.proxy1Vertices[7],
-                intersection.left.segment.duct.userData.proxy2Vertices[7],
-                intersection.left.segment.duct.userData.proxyOriginal2Vertices[7]
-            );
-            this.connectPoints(
-                intersection.left.segment.duct.userData.proxyOriginal1Vertices[5],
-                intersection.left.segment.duct.userData.proxy1Vertices[5],
-                intersection.left.segment.duct.userData.proxy2Vertices[5],
-                intersection.left.segment.duct.userData.proxyOriginal2Vertices[5]
-            );
-            this.connectPoints(
-                intersection.left.segment.duct.userData.proxyOriginal1Vertices[5],
-                intersection.left.segment.duct.userData.proxyOriginal2Vertices[4],
-                intersection.left.segment.duct.userData.proxyOriginal2Vertices[7],
-                intersection.left.segment.duct.userData.proxyOriginal1Vertices[6]
-            );
-    
             this.connectProxiesVertically(
                 intersection.up.segment.duct.userData.proxyMedianVertices, 
                 intersection.left.segment.duct.userData.proxy1Vertices
@@ -76,25 +38,6 @@ export default class Joints {
                 intersection.up.segment.duct.userData.proxy1Vertices
             );
     
-            this.connectPoints(
-                intersection.up.segment.duct.userData.proxyOriginal2Vertices[4],
-                intersection.up.segment.duct.userData.proxyOriginal1Vertices[7],
-                intersection.up.segment.duct.userData.proxy1Vertices[7],
-                intersection.up.segment.duct.userData.proxy2Vertices[4]
-            );
-            this.connectPoints(
-                intersection.up.segment.duct.userData.proxyOriginal2Vertices[5],
-                intersection.up.segment.duct.userData.proxyOriginal1Vertices[6],
-                intersection.up.segment.duct.userData.proxy1Vertices[6],
-                intersection.up.segment.duct.userData.proxy2Vertices[5]
-            );
-            this.connectPoints(
-                intersection.up.segment.duct.userData.proxyOriginal1Vertices[7],
-                intersection.up.segment.duct.userData.proxyOriginal2Vertices[4],
-                intersection.up.segment.duct.userData.proxyOriginal2Vertices[5],
-                intersection.up.segment.duct.userData.proxyOriginal1Vertices[6]
-            );
-    
             this.connectProxiesHorizontally(
                 intersection.up.segment.duct.userData.proxy2Vertices, 
                 intersection.right.segment.duct.userData.proxyMedianVertices
@@ -102,32 +45,6 @@ export default class Joints {
             this.connectProxiesVertically(
                 intersection.right.segment.duct.userData.proxyMedianVertices, 
                 intersection.right.segment.duct.userData.proxy1Vertices
-            );
-    
-            this.connectPoints(
-                intersection.right.segment.duct.userData.proxyOriginal1Vertices[7],
-                intersection.right.segment.duct.userData.proxy1Vertices[7],
-                intersection.right.segment.duct.userData.proxy2Vertices[7],
-                intersection.right.segment.duct.userData.proxyOriginal2Vertices[7]
-            );
-            this.connectPoints(
-                intersection.right.segment.duct.userData.proxyOriginal1Vertices[5],
-                intersection.right.segment.duct.userData.proxy1Vertices[5],
-                intersection.right.segment.duct.userData.proxy2Vertices[5],
-                intersection.right.segment.duct.userData.proxyOriginal2Vertices[5]
-            );
-            this.connectPoints(
-                intersection.right.segment.duct.userData.proxyOriginal1Vertices[5],
-                intersection.right.segment.duct.userData.proxyOriginal2Vertices[4],
-                intersection.right.segment.duct.userData.proxyOriginal2Vertices[7],
-                intersection.right.segment.duct.userData.proxyOriginal1Vertices[6]
-            );
-            
-            this.connectPoints(
-                intersection.right.segment.duct.userData.proxyMedianVertices[7],
-                intersection.down.segment.duct.userData.proxyMedianVertices[6],
-                intersection.left.segment.duct.userData.proxyMedianVertices[5],
-                intersection.up.segment.duct.userData.proxyMedianVertices[4]
             );
         }
         else {
@@ -140,25 +57,6 @@ export default class Joints {
                 intersection.down.segment.duct.userData.proxyMedianVertices
             );
     
-            this.connectPoints(
-                intersection.down.segment.duct.userData.proxyOriginal2Vertices[4],
-                intersection.down.segment.duct.userData.proxyOriginal1Vertices[7],
-                intersection.down.segment.duct.userData.proxy1Vertices[7],
-                intersection.down.segment.duct.userData.proxy2Vertices[4]
-            );
-            this.connectPoints(
-                intersection.down.segment.duct.userData.proxyOriginal2Vertices[5],
-                intersection.down.segment.duct.userData.proxyOriginal1Vertices[6],
-                intersection.down.segment.duct.userData.proxy1Vertices[6],
-                intersection.down.segment.duct.userData.proxy2Vertices[5]
-            );
-            this.connectPoints(
-                intersection.down.segment.duct.userData.proxyOriginal1Vertices[7],
-                intersection.down.segment.duct.userData.proxyOriginal2Vertices[4],
-                intersection.down.segment.duct.userData.proxyOriginal2Vertices[5],
-                intersection.down.segment.duct.userData.proxyOriginal1Vertices[6]
-            );
-    
             this.connectProxiesVertically(
                 intersection.down.segment.duct.userData.proxy1Vertices,
                 intersection.left.segment.duct.userData.proxyMedianVertices
@@ -166,25 +64,6 @@ export default class Joints {
             this.connectProxiesHorizontally(
                 intersection.left.segment.duct.userData.proxy2Vertices, 
                 intersection.left.segment.duct.userData.proxyMedianVertices
-            );
-    
-            this.connectPoints(
-                intersection.left.segment.duct.userData.proxyOriginal1Vertices[7],
-                intersection.left.segment.duct.userData.proxy1Vertices[7],
-                intersection.left.segment.duct.userData.proxy2Vertices[7],
-                intersection.left.segment.duct.userData.proxyOriginal2Vertices[7]
-            );
-            this.connectPoints(
-                intersection.left.segment.duct.userData.proxyOriginal1Vertices[5],
-                intersection.left.segment.duct.userData.proxy1Vertices[5],
-                intersection.left.segment.duct.userData.proxy2Vertices[5],
-                intersection.left.segment.duct.userData.proxyOriginal2Vertices[5]
-            );
-            this.connectPoints(
-                intersection.left.segment.duct.userData.proxyOriginal1Vertices[5],
-                intersection.left.segment.duct.userData.proxyOriginal2Vertices[4],
-                intersection.left.segment.duct.userData.proxyOriginal2Vertices[7],
-                intersection.left.segment.duct.userData.proxyOriginal1Vertices[6]
             );
     
             this.connectProxiesHorizontally(
@@ -196,25 +75,6 @@ export default class Joints {
                 intersection.up.segment.duct.userData.proxy1Vertices
             );
     
-            this.connectPoints(
-                intersection.up.segment.duct.userData.proxyOriginal2Vertices[4],
-                intersection.up.segment.duct.userData.proxyOriginal1Vertices[7],
-                intersection.up.segment.duct.userData.proxy1Vertices[7],
-                intersection.up.segment.duct.userData.proxy2Vertices[4]
-            );
-            this.connectPoints(
-                intersection.up.segment.duct.userData.proxyOriginal2Vertices[5],
-                intersection.up.segment.duct.userData.proxyOriginal1Vertices[6],
-                intersection.up.segment.duct.userData.proxy1Vertices[6],
-                intersection.up.segment.duct.userData.proxy2Vertices[5]
-            );
-            this.connectPoints(
-                intersection.up.segment.duct.userData.proxyOriginal1Vertices[7],
-                intersection.up.segment.duct.userData.proxyOriginal2Vertices[4],
-                intersection.up.segment.duct.userData.proxyOriginal2Vertices[5],
-                intersection.up.segment.duct.userData.proxyOriginal1Vertices[6]
-            );
-    
             this.connectProxiesVertically(
                 intersection.up.segment.duct.userData.proxy2Vertices, 
                 intersection.right.segment.duct.userData.proxyMedianVertices
@@ -223,49 +83,33 @@ export default class Joints {
                 intersection.right.segment.duct.userData.proxyMedianVertices, 
                 intersection.right.segment.duct.userData.proxy1Vertices
             );
-
-            this.connectPoints(
-                intersection.up.segment.duct.userData.proxy2Vertices[7],
-                intersection.up.segment.duct.userData.proxy1Vertices[4],
-                intersection.up.segment.duct.userData.proxyMedianVertices[5],
-                intersection.right.segment.duct.userData.proxyMedianVertices[6]
-            );
-            this.connectPoints(
-                intersection.left.segment.duct.userData.proxy1Vertices[4],
-                intersection.left.segment.duct.userData.proxy2Vertices[5],
-                intersection.left.segment.duct.userData.proxyMedianVertices[6],
-                intersection.up.segment.duct.userData.proxyMedianVertices[7]
-            );
-            this.connectPoints(
-                intersection.down.segment.duct.userData.proxy1Vertices[5],
-                intersection.down.segment.duct.userData.proxy2Vertices[6],
-                intersection.down.segment.duct.userData.proxyMedianVertices[7],
-                intersection.left.segment.duct.userData.proxyMedianVertices[4]
-            );
-            this.connectPoints(
-                intersection.right.segment.duct.userData.proxy1Vertices[7],
-                intersection.right.segment.duct.userData.proxyMedianVertices[4],
-                intersection.down.segment.duct.userData.proxyMedianVertices[5],
-                intersection.right.segment.duct.userData.proxy2Vertices[6]
-            );
-            
-            this.connectPoints(
-                intersection.right.segment.duct.userData.proxyMedianVertices[7],
-                intersection.down.segment.duct.userData.proxyMedianVertices[6],
-                intersection.left.segment.duct.userData.proxyMedianVertices[5],
-                intersection.up.segment.duct.userData.proxyMedianVertices[4]
-            );
-
-            this.connectPoints(
-                intersection.right.segment.duct.userData.proxyOriginal1Vertices[7],
-                intersection.right.segment.duct.userData.proxy1Vertices[7],
-                intersection.right.segment.duct.userData.proxy2Vertices[7],
-                intersection.right.segment.duct.userData.proxyOriginal2Vertices[7]
-            );
         }
+
+        let backwall = [
+            intersection.up.segment.duct.userData.proxyMedianVertices[4],
+            intersection.up.segment.duct.userData.proxy1Vertices[4],
+            intersection.up.segment.duct.userData.proxy2Vertices[7],
+            intersection.right.segment.duct.userData.proxyMedianVertices[7],
+            intersection.right.segment.duct.userData.proxy1Vertices[7],
+            intersection.right.segment.duct.userData.proxy2Vertices[6],
+            intersection.down.segment.duct.userData.proxyMedianVertices[6],
+            intersection.down.segment.duct.userData.proxy2Vertices[6],
+            intersection.down.segment.duct.userData.proxy1Vertices[5],
+            intersection.left.segment.duct.userData.proxyMedianVertices[5],
+            intersection.left.segment.duct.userData.proxy2Vertices[5],
+            intersection.left.segment.duct.userData.proxy1Vertices[4]
+        ];
+
+        this.closeJointGap(intersection.up.segment.duct, "horizontal");
+        this.closeJointGap(intersection.right.segment.duct, "vertical");
+        this.closeJointGap(intersection.down.segment.duct, "horizontal");
+        this.closeJointGap(intersection.left.segment.duct, "vertical");
+        
+        this.create2DBackwall(backwall, largestSize);
+
     }
 
-    createOrthogonalTJoint(intersection, jointStyle) {
+    createOrthogonalTJoint(intersection, jointStyle, largestSize) {
         if(jointStyle == "outwards") {
             if(intersection.right == null) {
                 if(this.innerDim[intersection.up.xetoDuct.graphicLocation.size] > this.innerDim[intersection.down.xetoDuct.graphicLocation.size]) {
@@ -291,25 +135,6 @@ export default class Joints {
                     );
                 }               
         
-                this.connectPoints(
-                    intersection.down.segment.duct.userData.proxyOriginal2Vertices[4],
-                    intersection.down.segment.duct.userData.proxyOriginal1Vertices[7],
-                    intersection.down.segment.duct.userData.proxy1Vertices[7],
-                    intersection.down.segment.duct.userData.proxy2Vertices[4]
-                );
-                this.connectPoints(
-                    intersection.down.segment.duct.userData.proxyOriginal2Vertices[5],
-                    intersection.down.segment.duct.userData.proxyOriginal1Vertices[6],
-                    intersection.down.segment.duct.userData.proxy1Vertices[6],
-                    intersection.down.segment.duct.userData.proxy2Vertices[5]
-                );
-                this.connectPoints(
-                    intersection.down.segment.duct.userData.proxyOriginal1Vertices[7],
-                    intersection.down.segment.duct.userData.proxyOriginal2Vertices[4],
-                    intersection.down.segment.duct.userData.proxyOriginal2Vertices[5],
-                    intersection.down.segment.duct.userData.proxyOriginal1Vertices[6]
-                );
-        
                 this.connectProxiesHorizontally(
                     intersection.down.segment.duct.userData.proxy1Vertices,
                     intersection.left.segment.duct.userData.proxyMedianVertices
@@ -319,25 +144,6 @@ export default class Joints {
                     intersection.left.segment.duct.userData.proxyMedianVertices
                 );                
         
-                this.connectPoints(
-                    intersection.left.segment.duct.userData.proxyOriginal1Vertices[7],
-                    intersection.left.segment.duct.userData.proxy1Vertices[7],
-                    intersection.left.segment.duct.userData.proxy2Vertices[7],
-                    intersection.left.segment.duct.userData.proxyOriginal2Vertices[7]
-                );
-                this.connectPoints(
-                    intersection.left.segment.duct.userData.proxyOriginal1Vertices[5],
-                    intersection.left.segment.duct.userData.proxy1Vertices[5],
-                    intersection.left.segment.duct.userData.proxy2Vertices[5],
-                    intersection.left.segment.duct.userData.proxyOriginal2Vertices[5]
-                );
-                this.connectPoints(
-                    intersection.left.segment.duct.userData.proxyOriginal1Vertices[5],
-                    intersection.left.segment.duct.userData.proxyOriginal2Vertices[4],
-                    intersection.left.segment.duct.userData.proxyOriginal2Vertices[7],
-                    intersection.left.segment.duct.userData.proxyOriginal1Vertices[6]
-                );
-        
                 this.connectProxiesVertically(
                     intersection.up.segment.duct.userData.proxyMedianVertices, 
                     intersection.left.segment.duct.userData.proxy1Vertices
@@ -346,44 +152,92 @@ export default class Joints {
                     intersection.up.segment.duct.userData.proxyMedianVertices, 
                     intersection.up.segment.duct.userData.proxy1Vertices
                 );       
-        
-                this.connectPoints(
-                    intersection.up.segment.duct.userData.proxyOriginal2Vertices[4],
-                    intersection.up.segment.duct.userData.proxyOriginal1Vertices[7],
-                    intersection.up.segment.duct.userData.proxy1Vertices[7],
-                    intersection.up.segment.duct.userData.proxy2Vertices[4]
-                );
-                this.connectPoints(
-                    intersection.up.segment.duct.userData.proxyOriginal2Vertices[5],
-                    intersection.up.segment.duct.userData.proxyOriginal1Vertices[6],
-                    intersection.up.segment.duct.userData.proxy1Vertices[6],
-                    intersection.up.segment.duct.userData.proxy2Vertices[5]
-                );
-                this.connectPoints(
-                    intersection.up.segment.duct.userData.proxyOriginal1Vertices[7],
-                    intersection.up.segment.duct.userData.proxyOriginal2Vertices[4],
-                    intersection.up.segment.duct.userData.proxyOriginal2Vertices[5],
-                    intersection.up.segment.duct.userData.proxyOriginal1Vertices[6]
-                );
-                
-                this.connectPoints(
-                    intersection.up.segment.duct.userData.proxy2Vertices[7],
-                    intersection.down.segment.duct.userData.proxyMedianVertices[6],
-                    intersection.left.segment.duct.userData.proxyMedianVertices[5],
-                    intersection.up.segment.duct.userData.proxyMedianVertices[4]
+            }
+            else if(intersection.left == null) {
+
+                if(intersection.up.segment.duct.userData.proxyMedianVertices[0].z == intersection.up.segment.duct.userData.proxy1Vertices[0].z) {
+                    this.connectProxiesHorizontally(
+                        intersection.up.segment.duct.userData.proxyMedianVertices, 
+                        intersection.up.segment.duct.userData.proxy1Vertices
+                    );
+                    this.connectProxiesVertically(
+                        intersection.down.segment.duct.userData.proxy1Vertices,
+                        intersection.up.segment.duct.userData.proxyMedianVertices
+                    );
+                }
+                else {
+                    this.connectProxiesVertically(
+                        intersection.up.segment.duct.userData.proxyMedianVertices, 
+                        intersection.up.segment.duct.userData.proxy1Vertices
+                    );
+                    this.connectProxiesHorizontally(
+                        intersection.down.segment.duct.userData.proxy1Vertices,
+                        intersection.up.segment.duct.userData.proxyMedianVertices
+                    );
+                }
+
+                this.connectProxiesHorizontally(
+                    intersection.up.segment.duct.userData.proxy2Vertices,
+                    intersection.right.segment.duct.userData.proxyMedianVertices
+                );        
+                this.connectProxiesVertically(
+                    intersection.right.segment.duct.userData.proxyMedianVertices,
+                    intersection.right.segment.duct.userData.proxy1Vertices
                 );
 
-                // this.connectPoints(
-                //     intersection.left.segment.duct.userData.proxyOriginal1Vertices[7],
-                //     intersection.left.segment.duct.userData.proxy1Vertices[7],
-                //     intersection.left.segment.duct.userData.proxy2Vertices[7],
-                //     intersection.left.segment.duct.userData.proxyOriginal2Vertices[7]
-                // );
+                this.connectProxiesHorizontally(
+                    intersection.down.segment.duct.userData.proxy2Vertices, 
+                    intersection.down.segment.duct.userData.proxyMedianVertices
+                );
+                this.connectProxiesVertically(
+                    intersection.right.segment.duct.userData.proxy2Vertices,
+                    intersection.down.segment.duct.userData.proxyMedianVertices
+                );
+                
+            }
+            else if(intersection.up == null) {
+
+                if(intersection.right.segment.duct.userData.proxyMedianVertices[0].z == intersection.right.segment.duct.userData.proxy1Vertices[0].z) {
+                    this.connectProxiesVertically(
+                        intersection.right.segment.duct.userData.proxyMedianVertices, 
+                        intersection.left.segment.duct.userData.proxy1Vertices
+                    );
+                    this.connectProxiesHorizontally(
+                        intersection.right.segment.duct.userData.proxy1Vertices,
+                        intersection.right.segment.duct.userData.proxyMedianVertices
+                    ); 
+                }
+                else {
+                    this.connectProxiesHorizontally(
+                        intersection.right.segment.duct.userData.proxyMedianVertices, 
+                        intersection.left.segment.duct.userData.proxy1Vertices
+                    );
+                    this.connectProxiesVertically(
+                        intersection.right.segment.duct.userData.proxy1Vertices,
+                        intersection.right.segment.duct.userData.proxyMedianVertices
+                    );  
+                }
+
+                this.connectProxiesHorizontally(
+                    intersection.left.segment.duct.userData.proxyMedianVertices, 
+                    intersection.down.segment.duct.userData.proxy1Vertices
+                );
+                this.connectProxiesHorizontally(
+                    intersection.down.segment.duct.userData.proxy2Vertices, 
+                    intersection.down.segment.duct.userData.proxyMedianVertices
+                );
+                this.connectProxiesVertically(
+                    intersection.down.segment.duct.userData.proxyMedianVertices,
+                    intersection.right.segment.duct.userData.proxy2Vertices
+                );
+                this.connectProxiesVertically(
+                    intersection.left.segment.duct.userData.proxy2Vertices,
+                    intersection.left.segment.duct.userData.proxyMedianVertices
+                );                   
             }
         }
         else if(jointStyle == "inwards") {
             if(intersection.right == null) {
-                
                 if(this.innerDim[intersection.up.xetoDuct.graphicLocation.size] > this.innerDim[intersection.down.xetoDuct.graphicLocation.size]) {
                     this.connectProxiesHorizontally(
                         intersection.down.segment.duct.userData.proxy2Vertices, 
@@ -406,26 +260,6 @@ export default class Joints {
                         intersection.down.segment.duct.userData.proxyMedianVertices
                     );
                 }
-                
-        
-                this.connectPoints(
-                    intersection.down.segment.duct.userData.proxyOriginal2Vertices[4],
-                    intersection.down.segment.duct.userData.proxyOriginal1Vertices[7],
-                    intersection.down.segment.duct.userData.proxy1Vertices[7],
-                    intersection.down.segment.duct.userData.proxy2Vertices[4]
-                );
-                this.connectPoints(
-                    intersection.down.segment.duct.userData.proxyOriginal2Vertices[5],
-                    intersection.down.segment.duct.userData.proxyOriginal1Vertices[6],
-                    intersection.down.segment.duct.userData.proxy1Vertices[6],
-                    intersection.down.segment.duct.userData.proxy2Vertices[5]
-                );
-                this.connectPoints(
-                    intersection.down.segment.duct.userData.proxyOriginal1Vertices[7],
-                    intersection.down.segment.duct.userData.proxyOriginal2Vertices[4],
-                    intersection.down.segment.duct.userData.proxyOriginal2Vertices[5],
-                    intersection.down.segment.duct.userData.proxyOriginal1Vertices[6]
-                );
         
                 this.connectProxiesVertically(
                     intersection.down.segment.duct.userData.proxy1Vertices,
@@ -434,26 +268,6 @@ export default class Joints {
                 this.connectProxiesHorizontally(
                     intersection.left.segment.duct.userData.proxy2Vertices, 
                     intersection.left.segment.duct.userData.proxyMedianVertices
-                );
-                
-        
-                this.connectPoints(
-                    intersection.left.segment.duct.userData.proxyOriginal1Vertices[7],
-                    intersection.left.segment.duct.userData.proxy1Vertices[7],
-                    intersection.left.segment.duct.userData.proxy2Vertices[7],
-                    intersection.left.segment.duct.userData.proxyOriginal2Vertices[7]
-                );
-                this.connectPoints(
-                    intersection.left.segment.duct.userData.proxyOriginal1Vertices[5],
-                    intersection.left.segment.duct.userData.proxy1Vertices[5],
-                    intersection.left.segment.duct.userData.proxy2Vertices[5],
-                    intersection.left.segment.duct.userData.proxyOriginal2Vertices[5]
-                );
-                this.connectPoints(
-                    intersection.left.segment.duct.userData.proxyOriginal1Vertices[5],
-                    intersection.left.segment.duct.userData.proxyOriginal2Vertices[4],
-                    intersection.left.segment.duct.userData.proxyOriginal2Vertices[7],
-                    intersection.left.segment.duct.userData.proxyOriginal1Vertices[6]
                 );
         
                 this.connectProxiesHorizontally(
@@ -465,70 +279,30 @@ export default class Joints {
                     intersection.up.segment.duct.userData.proxy1Vertices
                 );
                 
-        
-                this.connectPoints(
-                    intersection.up.segment.duct.userData.proxyOriginal2Vertices[4],
-                    intersection.up.segment.duct.userData.proxyOriginal1Vertices[7],
-                    intersection.up.segment.duct.userData.proxy1Vertices[7],
-                    intersection.up.segment.duct.userData.proxy2Vertices[4]
-                );
-                this.connectPoints(
-                    intersection.up.segment.duct.userData.proxyOriginal2Vertices[5],
-                    intersection.up.segment.duct.userData.proxyOriginal1Vertices[6],
-                    intersection.up.segment.duct.userData.proxy1Vertices[6],
-                    intersection.up.segment.duct.userData.proxy2Vertices[5]
-                );
-                this.connectPoints(
-                    intersection.up.segment.duct.userData.proxyOriginal1Vertices[7],
-                    intersection.up.segment.duct.userData.proxyOriginal2Vertices[4],
-                    intersection.up.segment.duct.userData.proxyOriginal2Vertices[5],
-                    intersection.up.segment.duct.userData.proxyOriginal1Vertices[6]
-                );
-
-                const backwall = [
-                    intersection.up.segment.duct.userData.proxyMedianVertices[4],
-                    intersection.up.segment.duct.userData.proxy1Vertices[4],
-                    intersection.up.segment.duct.userData.proxy2Vertices[7],
-                    intersection.down.segment.duct.userData.proxyMedianVertices[6],
-                    intersection.down.segment.duct.userData.proxy2Vertices[6],
-                    intersection.down.segment.duct.userData.proxy1Vertices[5],
-                    intersection.left.segment.duct.userData.proxyMedianVertices[5],
-                    intersection.left.segment.duct.userData.proxy2Vertices[5],
-                    intersection.left.segment.duct.userData.proxy1Vertices[4],
-                ];
-                this.create2DBackwall(backwall);
-                
             }
             else if(intersection.left == null) {
-                this.connectProxiesVertically(
-                    intersection.down.segment.duct.userData.proxy2Vertices, 
-                    intersection.down.segment.duct.userData.proxyMedianVertices
-                );
-        
-                this.connectProxiesHorizontally(
-                    intersection.right.segment.duct.userData.proxy2Vertices,
-                    intersection.down.segment.duct.userData.proxyMedianVertices
-                );
-        
-                this.connectPoints(
-                    intersection.down.segment.duct.userData.proxyOriginal2Vertices[4],
-                    intersection.down.segment.duct.userData.proxyOriginal1Vertices[7],
-                    intersection.down.segment.duct.userData.proxy1Vertices[7],
-                    intersection.down.segment.duct.userData.proxy2Vertices[4]
-                );
-                this.connectPoints(
-                    intersection.down.segment.duct.userData.proxyOriginal2Vertices[5],
-                    intersection.down.segment.duct.userData.proxyOriginal1Vertices[6],
-                    intersection.down.segment.duct.userData.proxy1Vertices[6],
-                    intersection.down.segment.duct.userData.proxy2Vertices[5]
-                );
-                this.connectPoints(
-                    intersection.down.segment.duct.userData.proxyOriginal1Vertices[7],
-                    intersection.down.segment.duct.userData.proxyOriginal2Vertices[4],
-                    intersection.down.segment.duct.userData.proxyOriginal2Vertices[5],
-                    intersection.down.segment.duct.userData.proxyOriginal1Vertices[6]
-                );
-        
+
+                if(intersection.up.segment.duct.userData.proxyMedianVertices[0].z == intersection.up.segment.duct.userData.proxy1Vertices[0].z) {
+                    this.connectProxiesHorizontally(
+                        intersection.up.segment.duct.userData.proxyMedianVertices, 
+                        intersection.up.segment.duct.userData.proxy1Vertices
+                    );
+                    this.connectProxiesVertically(
+                        intersection.down.segment.duct.userData.proxy1Vertices,
+                        intersection.up.segment.duct.userData.proxyMedianVertices
+                    );
+                }
+                else {
+                    this.connectProxiesVertically(
+                        intersection.up.segment.duct.userData.proxyMedianVertices, 
+                        intersection.up.segment.duct.userData.proxy1Vertices
+                    );
+                    this.connectProxiesHorizontally(
+                        intersection.down.segment.duct.userData.proxy1Vertices,
+                        intersection.up.segment.duct.userData.proxyMedianVertices
+                    );
+                }
+
                 this.connectProxiesVertically(
                     intersection.up.segment.duct.userData.proxy2Vertices,
                     intersection.right.segment.duct.userData.proxyMedianVertices
@@ -536,124 +310,216 @@ export default class Joints {
                 this.connectProxiesHorizontally(
                     intersection.right.segment.duct.userData.proxyMedianVertices,
                     intersection.right.segment.duct.userData.proxy1Vertices
-                    
+                );
+
+                this.connectProxiesVertically(
+                    intersection.down.segment.duct.userData.proxy2Vertices, 
+                    intersection.down.segment.duct.userData.proxyMedianVertices
+                );
+                this.connectProxiesHorizontally(
+                    intersection.right.segment.duct.userData.proxy2Vertices,
+                    intersection.down.segment.duct.userData.proxyMedianVertices
                 );
                 
-        
-                // this.connectPoints(
-                //     intersection.right.segment.duct.userData.proxyOriginal1Vertices[7],
-                //     intersection.right.segment.duct.userData.proxy1Vertices[7],
-                //     intersection.right.segment.duct.userData.proxy2Vertices[7],
-                //     intersection.right.segment.duct.userData.proxyOriginal2Vertices[7]
-                // );
-                // this.connectPoints(
-                //     intersection.right.segment.duct.userData.proxyOriginal1Vertices[5],
-                //     intersection.right.segment.duct.userData.proxy1Vertices[5],
-                //     intersection.right.segment.duct.userData.proxy2Vertices[5],
-                //     intersection.right.segment.duct.userData.proxyOriginal2Vertices[5]
-                // );
-                // this.connectPoints(
-                //     intersection.right.segment.duct.userData.proxyOriginal1Vertices[5],
-                //     intersection.right.segment.duct.userData.proxyOriginal2Vertices[4],
-                //     intersection.right.segment.duct.userData.proxyOriginal2Vertices[7],
-                //     intersection.right.segment.duct.userData.proxyOriginal1Vertices[6]
-                // );
-        
+            }
+            else if(intersection.down == null) {
+
+                if(intersection.left.segment.duct.userData.proxyMedianVertices[0].z == intersection.right.segment.duct.userData.proxy2Vertices[0].z) {
+                    this.connectProxiesVertically(
+                        intersection.left.segment.duct.userData.proxy2Vertices,
+                        intersection.left.segment.duct.userData.proxyMedianVertices
+                    );
+                    this.connectProxiesHorizontally(
+                        intersection.left.segment.duct.userData.proxyMedianVertices, 
+                        intersection.right.segment.duct.userData.proxy2Vertices
+                    );
+                }
+                else {
+                    this.connectProxiesHorizontally(
+                        intersection.left.segment.duct.userData.proxy2Vertices,
+                        intersection.left.segment.duct.userData.proxyMedianVertices
+                    );
+                    this.connectProxiesVertically(
+                        intersection.left.segment.duct.userData.proxyMedianVertices, 
+                        intersection.right.segment.duct.userData.proxy2Vertices
+                    );
+                }
+
+                this.connectProxiesVertically(
+                    intersection.up.segment.duct.userData.proxy1Vertices, 
+                    intersection.up.segment.duct.userData.proxyMedianVertices
+                );
                 this.connectProxiesHorizontally(
-                    intersection.down.segment.duct.userData.proxy1Vertices,
+                    intersection.left.segment.duct.userData.proxy1Vertices,
+                    intersection.up.segment.duct.userData.proxyMedianVertices
+                );
+                this.connectProxiesHorizontally(
+                    intersection.right.segment.duct.userData.proxy1Vertices,
+                    intersection.right.segment.duct.userData.proxyMedianVertices
+                );
+                this.connectProxiesVertically(
+                    intersection.right.segment.duct.userData.proxyMedianVertices,
+                    intersection.up.segment.duct.userData.proxy2Vertices
+                );
+            }
+            else if(intersection.up == null) {
+
+                if(intersection.right.segment.duct.userData.proxyMedianVertices[0].z == intersection.right.segment.duct.userData.proxy1Vertices[0].z) {
+                    this.connectProxiesVertically(
+                        intersection.right.segment.duct.userData.proxyMedianVertices, 
+                        intersection.left.segment.duct.userData.proxy1Vertices
+                    );
+                    this.connectProxiesHorizontally(
+                        intersection.right.segment.duct.userData.proxy1Vertices,
+                        intersection.right.segment.duct.userData.proxyMedianVertices
+                    ); 
+                }
+                else {
+                    this.connectProxiesHorizontally(
+                        intersection.right.segment.duct.userData.proxyMedianVertices, 
+                        intersection.left.segment.duct.userData.proxy1Vertices
+                    );
+                    this.connectProxiesVertically(
+                        intersection.right.segment.duct.userData.proxy1Vertices,
+                        intersection.right.segment.duct.userData.proxyMedianVertices
+                    );  
+                }
+
+                this.connectProxiesVertically(
+                    intersection.left.segment.duct.userData.proxyMedianVertices, 
+                    intersection.down.segment.duct.userData.proxy1Vertices
+                );
+                this.connectProxiesVertically(
+                    intersection.down.segment.duct.userData.proxy2Vertices, 
+                    intersection.down.segment.duct.userData.proxyMedianVertices
+                );
+                this.connectProxiesHorizontally(
+                    intersection.down.segment.duct.userData.proxyMedianVertices,
+                    intersection.right.segment.duct.userData.proxy2Vertices
+                );
+                this.connectProxiesHorizontally(
+                    intersection.left.segment.duct.userData.proxy2Vertices,
+                    intersection.left.segment.duct.userData.proxyMedianVertices
+                );             
+                      
+            }
+        }
+
+        let backwall = [];
+        if(intersection.up != null) {
+            backwall.push(intersection.up.segment.duct.userData.proxyMedianVertices[4]);
+            backwall.push(intersection.up.segment.duct.userData.proxy1Vertices[4]);
+            backwall.push(intersection.up.segment.duct.userData.proxy2Vertices[7]);
+            this.closeJointGap(intersection.up.segment.duct, "horizontal");
+        }
+        if(intersection.right != null) {
+            backwall.push(intersection.right.segment.duct.userData.proxyMedianVertices[7]);
+            backwall.push(intersection.right.segment.duct.userData.proxy1Vertices[7]);
+            backwall.push(intersection.right.segment.duct.userData.proxy2Vertices[6]);
+            this.closeJointGap(intersection.right.segment.duct, "vertical");
+        }
+        if(intersection.down != null) {
+            backwall.push(intersection.down.segment.duct.userData.proxyMedianVertices[6]);
+            backwall.push(intersection.down.segment.duct.userData.proxy2Vertices[6]);
+            backwall.push(intersection.down.segment.duct.userData.proxy1Vertices[5]);
+            this.closeJointGap(intersection.down.segment.duct, "horizontal");
+        }
+        if(intersection.left != null) {
+            backwall.push(intersection.left.segment.duct.userData.proxyMedianVertices[5]);
+            backwall.push(intersection.left.segment.duct.userData.proxy2Vertices[5]);
+            backwall.push(intersection.left.segment.duct.userData.proxy1Vertices[4]);
+            this.closeJointGap(intersection.left.segment.duct, "vertical");
+        }   
+        
+        this.create2DBackwall(backwall, largestSize);
+    }
+
+    createOrthogonalLJoint(intersection, jointStyle, largestSize) {
+        if(jointStyle == "outwards") {
+            if(intersection.right != null && intersection.up != null) {
+                this.connectProxiesVertically(
+                    intersection.right.segment.duct.userData.proxyMedianVertices, 
+                    intersection.right.segment.duct.userData.proxy1Vertices
+                );
+                this.connectProxiesHorizontally(
+                    intersection.up.segment.duct.userData.proxyMedianVertices,
+                    intersection.right.segment.duct.userData.proxy2Vertices
+                );
+                this.connectProxiesVertically(
+                    intersection.up.segment.duct.userData.proxy1Vertices, 
+                    intersection.up.segment.duct.userData.proxyMedianVertices
+                );
+                this.connectProxiesHorizontally(
+                    intersection.up.segment.duct.userData.proxy2Vertices,
+                    intersection.right.segment.duct.userData.proxyMedianVertices
+                );
+            }
+            else if(intersection.right != null && intersection.down != null) {
+                this.connectProxiesVertically(
+                    intersection.right.segment.duct.userData.proxyMedianVertices, 
+                    intersection.down.segment.duct.userData.proxy1Vertices
+                );
+                this.connectProxiesHorizontally(
+                    intersection.down.segment.duct.userData.proxy2Vertices,
+                    intersection.down.segment.duct.userData.proxyMedianVertices
+                );
+                this.connectProxiesVertically(
+                    intersection.down.segment.duct.userData.proxyMedianVertices, 
+                    intersection.right.segment.duct.userData.proxy2Vertices
+                );
+                this.connectProxiesHorizontally(
+                    intersection.right.segment.duct.userData.proxy1Vertices,
+                    intersection.right.segment.duct.userData.proxyMedianVertices
+                );
+            } 
+            else if(intersection.left != null && intersection.up != null) {
+                this.connectProxiesHorizontally(
+                    intersection.up.segment.duct.userData.proxy1Vertices,
                     intersection.up.segment.duct.userData.proxyMedianVertices
                 );
                 this.connectProxiesVertically(
                     intersection.up.segment.duct.userData.proxyMedianVertices, 
-                    intersection.up.segment.duct.userData.proxy1Vertices
+                    intersection.left.segment.duct.userData.proxy1Vertices
                 );
-                
-        
-                // this.connectPoints(
-                //     intersection.up.segment.duct.userData.proxyOriginal2Vertices[4],
-                //     intersection.up.segment.duct.userData.proxyOriginal1Vertices[7],
-                //     intersection.up.segment.duct.userData.proxy1Vertices[7],
-                //     intersection.up.segment.duct.userData.proxy2Vertices[4]
-                // );
-                // this.connectPoints(
-                //     intersection.up.segment.duct.userData.proxyOriginal2Vertices[5],
-                //     intersection.up.segment.duct.userData.proxyOriginal1Vertices[6],
-                //     intersection.up.segment.duct.userData.proxy1Vertices[6],
-                //     intersection.up.segment.duct.userData.proxy2Vertices[5]
-                // );
-                // this.connectPoints(
-                //     intersection.up.segment.duct.userData.proxyOriginal1Vertices[7],
-                //     intersection.up.segment.duct.userData.proxyOriginal2Vertices[4],
-                //     intersection.up.segment.duct.userData.proxyOriginal2Vertices[5],
-                //     intersection.up.segment.duct.userData.proxyOriginal1Vertices[6]
-                // );
-                
-                // this.connectPoints(
-                //     intersection.up.segment.duct.userData.proxy2Vertices[7],
-                //     intersection.down.segment.duct.userData.proxyMedianVertices[6],
-                //     intersection.right.segment.duct.userData.proxyMedianVertices[5],
-                //     intersection.up.segment.duct.userData.proxyMedianVertices[4]
-                // );
-    
-                this.connectPoints(
-                    intersection.up.segment.duct.userData.proxy2Vertices[7],
-                    intersection.up.segment.duct.userData.proxy1Vertices[4],
-                    intersection.up.segment.duct.userData.proxyMedianVertices[5],
-                    intersection.right.segment.duct.userData.proxyMedianVertices[5]
+                this.connectProxiesVertically(
+                    intersection.left.segment.duct.userData.proxy2Vertices, 
+                    intersection.left.segment.duct.userData.proxyMedianVertices
                 );
-                this.connectPoints(
-                    intersection.right.segment.duct.userData.proxyMedianVertices[5],
-                    intersection.right.segment.duct.userData.proxy1Vertices[6],
-                    intersection.right.segment.duct.userData.proxy2Vertices[6],
-                    intersection.down.segment.duct.userData.proxyMedianVertices[5]
-                );
-                this.connectPoints(
-                    intersection.right.segment.duct.userData.proxyMedianVertices[5],
-                    intersection.down.segment.duct.userData.proxyMedianVertices[5],
-                    intersection.down.segment.duct.userData.proxy2Vertices[5],
-                    intersection.up.segment.duct.userData.proxyMedianVertices[5]
+                this.connectProxiesHorizontally(
+                    intersection.left.segment.duct.userData.proxyMedianVertices,
+                    intersection.up.segment.duct.userData.proxy2Vertices
                 );
             }
+            else if(intersection.left != null && intersection.down != null) {
+                this.connectProxiesVertically(
+                    intersection.left.segment.duct.userData.proxy2Vertices, 
+                    intersection.left.segment.duct.userData.proxyMedianVertices
+                );
+                this.connectProxiesHorizontally(
+                    intersection.left.segment.duct.userData.proxyMedianVertices,
+                    intersection.down.segment.duct.userData.proxy1Vertices
+                );
+                this.connectProxiesVertically(
+                    intersection.down.segment.duct.userData.proxy2Vertices,
+                    intersection.down.segment.duct.userData.proxyMedianVertices
+                );
+                this.connectProxiesHorizontally(
+                    intersection.down.segment.duct.userData.proxyMedianVertices, 
+                    intersection.left.segment.duct.userData.proxy1Vertices
+                );                
+            }  
         }
-    }
-
-    createOrthogonalLJoint(intersection, jointStyle) {
-        if(jointStyle == "outwards") {
-            this.connectProxiesVertically(
-                intersection.right.segment.duct.userData.proxyMedianVertices, 
-                intersection.right.segment.duct.userData.proxy1Vertices
-            );
-            this.connectProxiesHorizontally(
-                intersection.up.segment.duct.userData.proxyMedianVertices,
-                intersection.right.segment.duct.userData.proxy2Vertices
-            );
-            this.connectProxiesVertically(
-                intersection.up.segment.duct.userData.proxy1Vertices, 
-                intersection.up.segment.duct.userData.proxyMedianVertices
-            );
-            this.connectProxiesHorizontally(
-                intersection.up.segment.duct.userData.proxy2Vertices,
-                intersection.right.segment.duct.userData.proxyMedianVertices
-            );
-    
-            this.connectPoints(
-                intersection.right.segment.duct.userData.proxyMedianVertices[7],
-                intersection.right.segment.duct.userData.proxy2Vertices[6],
-                intersection.up.segment.duct.userData.proxyMedianVertices[5],
-                intersection.up.segment.duct.userData.proxy1Vertices[4]
-            );
-        }
-        else {
-            if(intersection.left == null && intersection.down == null) {
+        else if(jointStyle == "inwards") {
+            if(intersection.right != null && intersection.up != null) {
                 this.connectProxiesHorizontally(
                     intersection.right.segment.duct.userData.proxyMedianVertices, 
                     intersection.right.segment.duct.userData.proxy1Vertices
                 );
-                this.connectProxiesVertically(
+                this.connectProxiesHorizontally(
                     intersection.up.segment.duct.userData.proxyMedianVertices,
                     intersection.right.segment.duct.userData.proxy2Vertices
                 );
-                this.connectProxiesHorizontally(
+                this.connectProxiesVertically(
                     intersection.up.segment.duct.userData.proxy1Vertices, 
                     intersection.up.segment.duct.userData.proxyMedianVertices
                 );
@@ -661,24 +527,139 @@ export default class Joints {
                     intersection.up.segment.duct.userData.proxy2Vertices,
                     intersection.right.segment.duct.userData.proxyMedianVertices
                 );
-                
-                this.connectPoints(
-                    intersection.up.segment.duct.userData.proxy1Vertices[4],
-                    intersection.up.segment.duct.userData.proxyMedianVertices[5],
-                    intersection.right.segment.duct.userData.proxyMedianVertices[6],
-                    intersection.up.segment.duct.userData.proxy2Vertices[7]
+            }
+            else if(intersection.right != null && intersection.down != null) {
+                this.connectProxiesVertically(
+                    intersection.right.segment.duct.userData.proxyMedianVertices, 
+                    intersection.down.segment.duct.userData.proxy1Vertices
                 );
-                this.connectPoints(
-                    intersection.right.segment.duct.userData.proxyMedianVertices[4],
-                    intersection.up.segment.duct.userData.proxyMedianVertices[5],
-                    intersection.right.segment.duct.userData.proxy2Vertices[6],
-                    intersection.right.segment.duct.userData.proxy1Vertices[7]
+                this.connectProxiesVertically(
+                    intersection.down.segment.duct.userData.proxy2Vertices,
+                    intersection.down.segment.duct.userData.proxyMedianVertices
+                );
+                this.connectProxiesHorizontally(
+                    intersection.down.segment.duct.userData.proxyMedianVertices, 
+                    intersection.right.segment.duct.userData.proxy2Vertices
+                );
+                
+                this.connectProxiesHorizontally(
+                    intersection.right.segment.duct.userData.proxy1Vertices,
+                    intersection.right.segment.duct.userData.proxyMedianVertices
                 );
             }
+            else if(intersection.left != null && intersection.up != null) {
+                this.connectProxiesVertically(
+                    intersection.up.segment.duct.userData.proxy1Vertices,
+                    intersection.up.segment.duct.userData.proxyMedianVertices
+                );
+                this.connectProxiesHorizontally(
+                    intersection.up.segment.duct.userData.proxyMedianVertices, 
+                    intersection.left.segment.duct.userData.proxy1Vertices
+                );
+                this.connectProxiesVertically(
+                    intersection.left.segment.duct.userData.proxy2Vertices, 
+                    intersection.left.segment.duct.userData.proxyMedianVertices
+                );
+                this.connectProxiesHorizontally(
+                    intersection.left.segment.duct.userData.proxyMedianVertices,
+                    intersection.up.segment.duct.userData.proxy2Vertices
+                );
+            }  
+            else if(intersection.left != null && intersection.down != null) {
+                this.connectProxiesHorizontally(
+                    intersection.left.segment.duct.userData.proxy2Vertices, 
+                    intersection.left.segment.duct.userData.proxyMedianVertices
+                );
+                this.connectProxiesVertically(
+                    intersection.left.segment.duct.userData.proxyMedianVertices,
+                    intersection.down.segment.duct.userData.proxy1Vertices
+                );
+                this.connectProxiesVertically(
+                    intersection.down.segment.duct.userData.proxy2Vertices,
+                    intersection.down.segment.duct.userData.proxyMedianVertices
+                );
+                this.connectProxiesHorizontally(
+                    intersection.down.segment.duct.userData.proxyMedianVertices, 
+                    intersection.left.segment.duct.userData.proxy1Vertices
+                );                
+            }  
+        }
+
+        let backwall = [];
+        if(intersection.up != null) {
+            backwall.push(intersection.up.segment.duct.userData.proxyMedianVertices[4]);
+            backwall.push(intersection.up.segment.duct.userData.proxy1Vertices[4]);
+            backwall.push(intersection.up.segment.duct.userData.proxy2Vertices[7]);
+            this.closeJointGap(intersection.up.segment.duct, "horizontal");
+        }
+        if(intersection.right != null) {
+            backwall.push(intersection.right.segment.duct.userData.proxyMedianVertices[7]);
+            backwall.push(intersection.right.segment.duct.userData.proxy1Vertices[7]);
+            backwall.push(intersection.right.segment.duct.userData.proxy2Vertices[6]);
+            this.closeJointGap(intersection.right.segment.duct, "vertical");
+        }
+        if(intersection.down != null) {
+            backwall.push(intersection.down.segment.duct.userData.proxyMedianVertices[6]);
+            backwall.push(intersection.down.segment.duct.userData.proxy2Vertices[6]);
+            backwall.push(intersection.down.segment.duct.userData.proxy1Vertices[5]);
+            this.closeJointGap(intersection.down.segment.duct, "horizontal");
+        }
+        if(intersection.left != null) {
+            backwall.push(intersection.left.segment.duct.userData.proxyMedianVertices[5]);
+            backwall.push(intersection.left.segment.duct.userData.proxy2Vertices[5]);
+            backwall.push(intersection.left.segment.duct.userData.proxy1Vertices[4]);
+            this.closeJointGap(intersection.left.segment.duct, "vertical");
+        }   
+        
+        this.create2DBackwall(backwall, largestSize);
+    }
+
+    closeJointGap(duct, direction) {
+        console.log("closeJointGap started:", duct);
+
+        if(direction == "horizontal") {
+            this.connectPoints(
+                duct.userData.proxyOriginal2Vertices[4],
+                duct.userData.proxyOriginal1Vertices[7],
+                duct.userData.proxy1Vertices[7],
+                duct.userData.proxy2Vertices[4]
+            );
+            this.connectPoints(
+                duct.userData.proxyOriginal2Vertices[5],
+                duct.userData.proxyOriginal1Vertices[6],
+                duct.userData.proxy1Vertices[6],
+                duct.userData.proxy2Vertices[5]
+            );
+            this.connectPoints(
+                duct.userData.proxyOriginal1Vertices[7],
+                duct.userData.proxyOriginal2Vertices[4],
+                duct.userData.proxyOriginal2Vertices[5],
+                duct.userData.proxyOriginal1Vertices[6]
+            );
+        }
+        else {
+            this.connectPoints(
+                duct.userData.proxyOriginal2Vertices[4],
+                duct.userData.proxyOriginal1Vertices[4],
+                duct.userData.proxy1Vertices[4],
+                duct.userData.proxy2Vertices[4]
+            );
+            this.connectPoints(
+                duct.userData.proxyOriginal2Vertices[7],
+                duct.userData.proxyOriginal1Vertices[7],
+                duct.userData.proxy1Vertices[7],
+                duct.userData.proxy2Vertices[7]
+            );
+            this.connectPoints(
+                duct.userData.proxyOriginal1Vertices[7],
+                duct.userData.proxyOriginal2Vertices[6],
+                duct.userData.proxyOriginal2Vertices[5],
+                duct.userData.proxyOriginal1Vertices[4]
+            );
         }
     }
 
-    create2DBackwall(points) {
+    create2DBackwall(points, largestSize = 1000) {
         console.log("create2DBackwall started:", points);
         if (points.length < 3) {
             throw new Error("A shape requires at least 3 points.");
@@ -697,298 +678,300 @@ export default class Joints {
         const mesh = new THREE.Mesh(geometry, material);
 
         mesh.rotation.x = Math.PI / 2;
-        mesh.position.y += (1000 / 2) - 14;
+        mesh.position.y += (largestSize / 2) - 14;
+
+        mesh.name = "joint";
 
         this.sceneHelper.addToScene(mesh);
     }
 
-    createDiagonalCrossJoint(intersection) {
-        // top-left
-        this.connectProxiesDiagonalUphill(
-            intersection.left.segment.duct.userData.proxy1Vertices,
-            intersection.up.segment.duct.userData.proxy1Vertices
-        );
-        // bottom-right
-        this.connectProxiesDiagonalUphill(
-            intersection.down.segment.duct.userData.proxy2Vertices,
-            intersection.right.segment.duct.userData.proxy2Vertices
-        );
-        // bottom-left
-        this.connectProxiesDiagonalDownhill(
-            intersection.left.segment.duct.userData.proxy2Vertices,
-            intersection.down.segment.duct.userData.proxy1Vertices
-        );
-        // top-right
-        this.connectProxiesDiagonalDownhill(
-            intersection.up.segment.duct.userData.proxy2Vertices,
-            intersection.right.segment.duct.userData.proxy1Vertices
-        );
+    // createDiagonalCrossJoint(intersection) {
+    //     // top-left
+    //     this.connectProxiesDiagonalUphill(
+    //         intersection.left.segment.duct.userData.proxy1Vertices,
+    //         intersection.up.segment.duct.userData.proxy1Vertices
+    //     );
+    //     // bottom-right
+    //     this.connectProxiesDiagonalUphill(
+    //         intersection.down.segment.duct.userData.proxy2Vertices,
+    //         intersection.right.segment.duct.userData.proxy2Vertices
+    //     );
+    //     // bottom-left
+    //     this.connectProxiesDiagonalDownhill(
+    //         intersection.left.segment.duct.userData.proxy2Vertices,
+    //         intersection.down.segment.duct.userData.proxy1Vertices
+    //     );
+    //     // top-right
+    //     this.connectProxiesDiagonalDownhill(
+    //         intersection.up.segment.duct.userData.proxy2Vertices,
+    //         intersection.right.segment.duct.userData.proxy1Vertices
+    //     );
 
-        this.connectPoints(
-            intersection.down.segment.duct.userData.proxyOriginal2Vertices[4],
-            intersection.down.segment.duct.userData.proxyOriginal1Vertices[7],
-            intersection.down.segment.duct.userData.proxy1Vertices[7],
-            intersection.down.segment.duct.userData.proxy2Vertices[4]
-        );
-        this.connectPoints(
-            intersection.down.segment.duct.userData.proxyOriginal2Vertices[5],
-            intersection.down.segment.duct.userData.proxyOriginal1Vertices[6],
-            intersection.down.segment.duct.userData.proxy1Vertices[6],
-            intersection.down.segment.duct.userData.proxy2Vertices[5]
-        );
-        this.connectPoints(
-            intersection.down.segment.duct.userData.proxyOriginal1Vertices[7],
-            intersection.down.segment.duct.userData.proxyOriginal2Vertices[4],
-            intersection.down.segment.duct.userData.proxyOriginal2Vertices[5],
-            intersection.down.segment.duct.userData.proxyOriginal1Vertices[6]
-        );
+    //     this.connectPoints(
+    //         intersection.down.segment.duct.userData.proxyOriginal2Vertices[4],
+    //         intersection.down.segment.duct.userData.proxyOriginal1Vertices[7],
+    //         intersection.down.segment.duct.userData.proxy1Vertices[7],
+    //         intersection.down.segment.duct.userData.proxy2Vertices[4]
+    //     );
+    //     this.connectPoints(
+    //         intersection.down.segment.duct.userData.proxyOriginal2Vertices[5],
+    //         intersection.down.segment.duct.userData.proxyOriginal1Vertices[6],
+    //         intersection.down.segment.duct.userData.proxy1Vertices[6],
+    //         intersection.down.segment.duct.userData.proxy2Vertices[5]
+    //     );
+    //     this.connectPoints(
+    //         intersection.down.segment.duct.userData.proxyOriginal1Vertices[7],
+    //         intersection.down.segment.duct.userData.proxyOriginal2Vertices[4],
+    //         intersection.down.segment.duct.userData.proxyOriginal2Vertices[5],
+    //         intersection.down.segment.duct.userData.proxyOriginal1Vertices[6]
+    //     );
 
-        this.connectPoints(
-            intersection.left.segment.duct.userData.proxyOriginal1Vertices[7],
-            intersection.left.segment.duct.userData.proxy1Vertices[7],
-            intersection.left.segment.duct.userData.proxy2Vertices[7],
-            intersection.left.segment.duct.userData.proxyOriginal2Vertices[7]
-        );
-        this.connectPoints(
-            intersection.left.segment.duct.userData.proxyOriginal1Vertices[5],
-            intersection.left.segment.duct.userData.proxy1Vertices[5],
-            intersection.left.segment.duct.userData.proxy2Vertices[5],
-            intersection.left.segment.duct.userData.proxyOriginal2Vertices[5]
-        );
-        this.connectPoints(
-            intersection.left.segment.duct.userData.proxyOriginal1Vertices[5],
-            intersection.left.segment.duct.userData.proxyOriginal2Vertices[4],
-            intersection.left.segment.duct.userData.proxyOriginal2Vertices[7],
-            intersection.left.segment.duct.userData.proxyOriginal1Vertices[6]
-        );
+    //     this.connectPoints(
+    //         intersection.left.segment.duct.userData.proxyOriginal1Vertices[7],
+    //         intersection.left.segment.duct.userData.proxy1Vertices[7],
+    //         intersection.left.segment.duct.userData.proxy2Vertices[7],
+    //         intersection.left.segment.duct.userData.proxyOriginal2Vertices[7]
+    //     );
+    //     this.connectPoints(
+    //         intersection.left.segment.duct.userData.proxyOriginal1Vertices[5],
+    //         intersection.left.segment.duct.userData.proxy1Vertices[5],
+    //         intersection.left.segment.duct.userData.proxy2Vertices[5],
+    //         intersection.left.segment.duct.userData.proxyOriginal2Vertices[5]
+    //     );
+    //     this.connectPoints(
+    //         intersection.left.segment.duct.userData.proxyOriginal1Vertices[5],
+    //         intersection.left.segment.duct.userData.proxyOriginal2Vertices[4],
+    //         intersection.left.segment.duct.userData.proxyOriginal2Vertices[7],
+    //         intersection.left.segment.duct.userData.proxyOriginal1Vertices[6]
+    //     );
 
-        this.connectPoints(
-            intersection.up.segment.duct.userData.proxyOriginal2Vertices[4],
-            intersection.up.segment.duct.userData.proxyOriginal1Vertices[7],
-            intersection.up.segment.duct.userData.proxy1Vertices[7],
-            intersection.up.segment.duct.userData.proxy2Vertices[4]
-        );
-        this.connectPoints(
-            intersection.up.segment.duct.userData.proxyOriginal2Vertices[5],
-            intersection.up.segment.duct.userData.proxyOriginal1Vertices[6],
-            intersection.up.segment.duct.userData.proxy1Vertices[6],
-            intersection.up.segment.duct.userData.proxy2Vertices[5]
-        );
-        this.connectPoints(
-            intersection.up.segment.duct.userData.proxyOriginal1Vertices[7],
-            intersection.up.segment.duct.userData.proxyOriginal2Vertices[4],
-            intersection.up.segment.duct.userData.proxyOriginal2Vertices[5],
-            intersection.up.segment.duct.userData.proxyOriginal1Vertices[6]
-        );
+    //     this.connectPoints(
+    //         intersection.up.segment.duct.userData.proxyOriginal2Vertices[4],
+    //         intersection.up.segment.duct.userData.proxyOriginal1Vertices[7],
+    //         intersection.up.segment.duct.userData.proxy1Vertices[7],
+    //         intersection.up.segment.duct.userData.proxy2Vertices[4]
+    //     );
+    //     this.connectPoints(
+    //         intersection.up.segment.duct.userData.proxyOriginal2Vertices[5],
+    //         intersection.up.segment.duct.userData.proxyOriginal1Vertices[6],
+    //         intersection.up.segment.duct.userData.proxy1Vertices[6],
+    //         intersection.up.segment.duct.userData.proxy2Vertices[5]
+    //     );
+    //     this.connectPoints(
+    //         intersection.up.segment.duct.userData.proxyOriginal1Vertices[7],
+    //         intersection.up.segment.duct.userData.proxyOriginal2Vertices[4],
+    //         intersection.up.segment.duct.userData.proxyOriginal2Vertices[5],
+    //         intersection.up.segment.duct.userData.proxyOriginal1Vertices[6]
+    //     );
 
-        this.connectPoints(
-            intersection.right.segment.duct.userData.proxyOriginal1Vertices[7],
-            intersection.right.segment.duct.userData.proxy1Vertices[7],
-            intersection.right.segment.duct.userData.proxy2Vertices[7],
-            intersection.right.segment.duct.userData.proxyOriginal2Vertices[7]
-        );
-        this.connectPoints(
-            intersection.right.segment.duct.userData.proxyOriginal1Vertices[5],
-            intersection.right.segment.duct.userData.proxy1Vertices[5],
-            intersection.right.segment.duct.userData.proxy2Vertices[5],
-            intersection.right.segment.duct.userData.proxyOriginal2Vertices[5]
-        );
-        this.connectPoints(
-            intersection.right.segment.duct.userData.proxyOriginal1Vertices[5],
-            intersection.right.segment.duct.userData.proxyOriginal2Vertices[4],
-            intersection.right.segment.duct.userData.proxyOriginal2Vertices[7],
-            intersection.right.segment.duct.userData.proxyOriginal1Vertices[6]
-        );
+    //     this.connectPoints(
+    //         intersection.right.segment.duct.userData.proxyOriginal1Vertices[7],
+    //         intersection.right.segment.duct.userData.proxy1Vertices[7],
+    //         intersection.right.segment.duct.userData.proxy2Vertices[7],
+    //         intersection.right.segment.duct.userData.proxyOriginal2Vertices[7]
+    //     );
+    //     this.connectPoints(
+    //         intersection.right.segment.duct.userData.proxyOriginal1Vertices[5],
+    //         intersection.right.segment.duct.userData.proxy1Vertices[5],
+    //         intersection.right.segment.duct.userData.proxy2Vertices[5],
+    //         intersection.right.segment.duct.userData.proxyOriginal2Vertices[5]
+    //     );
+    //     this.connectPoints(
+    //         intersection.right.segment.duct.userData.proxyOriginal1Vertices[5],
+    //         intersection.right.segment.duct.userData.proxyOriginal2Vertices[4],
+    //         intersection.right.segment.duct.userData.proxyOriginal2Vertices[7],
+    //         intersection.right.segment.duct.userData.proxyOriginal1Vertices[6]
+    //     );
 
-        this.connectPoints(
-            intersection.up.segment.duct.userData.proxy2Vertices[5],
-            intersection.up.segment.duct.userData.proxy2Vertices[4],
-            intersection.up.segment.duct.userData.proxy1Vertices[7],
-            intersection.up.segment.duct.userData.proxy1Vertices[6]
-        );
-        this.connectPoints(
-            intersection.left.segment.duct.userData.proxy2Vertices[7],
-            intersection.left.segment.duct.userData.proxy2Vertices[4],
-            intersection.left.segment.duct.userData.proxy1Vertices[5],
-            intersection.left.segment.duct.userData.proxy1Vertices[6]
-        );
-        this.connectPoints(
-            intersection.down.segment.duct.userData.proxy2Vertices[5],
-            intersection.down.segment.duct.userData.proxy2Vertices[4],
-            intersection.down.segment.duct.userData.proxy1Vertices[7],
-            intersection.down.segment.duct.userData.proxy1Vertices[6]
-        );
+    //     this.connectPoints(
+    //         intersection.up.segment.duct.userData.proxy2Vertices[5],
+    //         intersection.up.segment.duct.userData.proxy2Vertices[4],
+    //         intersection.up.segment.duct.userData.proxy1Vertices[7],
+    //         intersection.up.segment.duct.userData.proxy1Vertices[6]
+    //     );
+    //     this.connectPoints(
+    //         intersection.left.segment.duct.userData.proxy2Vertices[7],
+    //         intersection.left.segment.duct.userData.proxy2Vertices[4],
+    //         intersection.left.segment.duct.userData.proxy1Vertices[5],
+    //         intersection.left.segment.duct.userData.proxy1Vertices[6]
+    //     );
+    //     this.connectPoints(
+    //         intersection.down.segment.duct.userData.proxy2Vertices[5],
+    //         intersection.down.segment.duct.userData.proxy2Vertices[4],
+    //         intersection.down.segment.duct.userData.proxy1Vertices[7],
+    //         intersection.down.segment.duct.userData.proxy1Vertices[6]
+    //     );
 
-        this.connectPoints(
-            intersection.right.segment.duct.userData.proxy1Vertices[5],
-            intersection.up.segment.duct.userData.proxy2Vertices[5],
-            intersection.up.segment.duct.userData.proxy1Vertices[6],
-            intersection.left.segment.duct.userData.proxy1Vertices[6]
-        );
-        this.connectPoints(
-            intersection.right.segment.duct.userData.proxy1Vertices[5],
-            intersection.left.segment.duct.userData.proxy1Vertices[6],
-            intersection.left.segment.duct.userData.proxy2Vertices[6],
-            intersection.right.segment.duct.userData.proxy2Vertices[4]
-        );
-        this.connectPoints(
-            intersection.right.segment.duct.userData.proxy2Vertices[4],
-            intersection.down.segment.duct.userData.proxy2Vertices[4],
-            intersection.down.segment.duct.userData.proxy1Vertices[7],
-            intersection.left.segment.duct.userData.proxy2Vertices[7]
-        );
-    }
+    //     this.connectPoints(
+    //         intersection.right.segment.duct.userData.proxy1Vertices[5],
+    //         intersection.up.segment.duct.userData.proxy2Vertices[5],
+    //         intersection.up.segment.duct.userData.proxy1Vertices[6],
+    //         intersection.left.segment.duct.userData.proxy1Vertices[6]
+    //     );
+    //     this.connectPoints(
+    //         intersection.right.segment.duct.userData.proxy1Vertices[5],
+    //         intersection.left.segment.duct.userData.proxy1Vertices[6],
+    //         intersection.left.segment.duct.userData.proxy2Vertices[6],
+    //         intersection.right.segment.duct.userData.proxy2Vertices[4]
+    //     );
+    //     this.connectPoints(
+    //         intersection.right.segment.duct.userData.proxy2Vertices[4],
+    //         intersection.down.segment.duct.userData.proxy2Vertices[4],
+    //         intersection.down.segment.duct.userData.proxy1Vertices[7],
+    //         intersection.left.segment.duct.userData.proxy2Vertices[7]
+    //     );
+    // }
 
-    createDiagonalTJoint(intersection) {
-        if(intersection.right == null) {
-            // top-left
-            this.connectProxiesDiagonalUphill(
-                intersection.left.segment.duct.userData.proxy1Vertices,
-                intersection.up.segment.duct.userData.proxy1Vertices
-            );
-            // bottom-left
-            this.connectProxiesDiagonalDownhill(
-                intersection.left.segment.duct.userData.proxy2Vertices,
-                intersection.down.segment.duct.userData.proxy1Vertices
-            );
+    // createDiagonalTJoint(intersection) {
+    //     if(intersection.right == null) {
+    //         // top-left
+    //         this.connectProxiesDiagonalUphill(
+    //             intersection.left.segment.duct.userData.proxy1Vertices,
+    //             intersection.up.segment.duct.userData.proxy1Vertices
+    //         );
+    //         // bottom-left
+    //         this.connectProxiesDiagonalDownhill(
+    //             intersection.left.segment.duct.userData.proxy2Vertices,
+    //             intersection.down.segment.duct.userData.proxy1Vertices
+    //         );
 
-            this.connectPoints(
-                intersection.down.segment.duct.userData.proxyOriginal2Vertices[4],
-                intersection.down.segment.duct.userData.proxyOriginal1Vertices[7],
-                intersection.down.segment.duct.userData.proxy1Vertices[7],
-                intersection.down.segment.duct.userData.proxy2Vertices[4]
-            );
-            this.connectPoints(
-                intersection.down.segment.duct.userData.proxyOriginal2Vertices[5],
-                intersection.down.segment.duct.userData.proxyOriginal1Vertices[6],
-                intersection.down.segment.duct.userData.proxy1Vertices[6],
-                intersection.down.segment.duct.userData.proxy2Vertices[5]
-            );
-            this.connectPoints(
-                intersection.down.segment.duct.userData.proxyOriginal1Vertices[7],
-                intersection.down.segment.duct.userData.proxyOriginal2Vertices[4],
-                intersection.down.segment.duct.userData.proxyOriginal2Vertices[5],
-                intersection.down.segment.duct.userData.proxyOriginal1Vertices[6]
-            );
+    //         this.connectPoints(
+    //             intersection.down.segment.duct.userData.proxyOriginal2Vertices[4],
+    //             intersection.down.segment.duct.userData.proxyOriginal1Vertices[7],
+    //             intersection.down.segment.duct.userData.proxy1Vertices[7],
+    //             intersection.down.segment.duct.userData.proxy2Vertices[4]
+    //         );
+    //         this.connectPoints(
+    //             intersection.down.segment.duct.userData.proxyOriginal2Vertices[5],
+    //             intersection.down.segment.duct.userData.proxyOriginal1Vertices[6],
+    //             intersection.down.segment.duct.userData.proxy1Vertices[6],
+    //             intersection.down.segment.duct.userData.proxy2Vertices[5]
+    //         );
+    //         this.connectPoints(
+    //             intersection.down.segment.duct.userData.proxyOriginal1Vertices[7],
+    //             intersection.down.segment.duct.userData.proxyOriginal2Vertices[4],
+    //             intersection.down.segment.duct.userData.proxyOriginal2Vertices[5],
+    //             intersection.down.segment.duct.userData.proxyOriginal1Vertices[6]
+    //         );
 
-            this.connectPoints(
-                intersection.left.segment.duct.userData.proxyOriginal1Vertices[7],
-                intersection.left.segment.duct.userData.proxy1Vertices[7],
-                intersection.left.segment.duct.userData.proxy2Vertices[7],
-                intersection.left.segment.duct.userData.proxyOriginal2Vertices[7]
-            );
-            this.connectPoints(
-                intersection.left.segment.duct.userData.proxyOriginal1Vertices[5],
-                intersection.left.segment.duct.userData.proxy1Vertices[5],
-                intersection.left.segment.duct.userData.proxy2Vertices[5],
-                intersection.left.segment.duct.userData.proxyOriginal2Vertices[5]
-            );
-            this.connectPoints(
-                intersection.left.segment.duct.userData.proxyOriginal1Vertices[5],
-                intersection.left.segment.duct.userData.proxyOriginal2Vertices[4],
-                intersection.left.segment.duct.userData.proxyOriginal2Vertices[7],
-                intersection.left.segment.duct.userData.proxyOriginal1Vertices[6]
-            );
+    //         this.connectPoints(
+    //             intersection.left.segment.duct.userData.proxyOriginal1Vertices[7],
+    //             intersection.left.segment.duct.userData.proxy1Vertices[7],
+    //             intersection.left.segment.duct.userData.proxy2Vertices[7],
+    //             intersection.left.segment.duct.userData.proxyOriginal2Vertices[7]
+    //         );
+    //         this.connectPoints(
+    //             intersection.left.segment.duct.userData.proxyOriginal1Vertices[5],
+    //             intersection.left.segment.duct.userData.proxy1Vertices[5],
+    //             intersection.left.segment.duct.userData.proxy2Vertices[5],
+    //             intersection.left.segment.duct.userData.proxyOriginal2Vertices[5]
+    //         );
+    //         this.connectPoints(
+    //             intersection.left.segment.duct.userData.proxyOriginal1Vertices[5],
+    //             intersection.left.segment.duct.userData.proxyOriginal2Vertices[4],
+    //             intersection.left.segment.duct.userData.proxyOriginal2Vertices[7],
+    //             intersection.left.segment.duct.userData.proxyOriginal1Vertices[6]
+    //         );
 
-            this.connectPoints(
-                intersection.up.segment.duct.userData.proxyOriginal2Vertices[4],
-                intersection.up.segment.duct.userData.proxyOriginal1Vertices[7],
-                intersection.up.segment.duct.userData.proxy1Vertices[7],
-                intersection.up.segment.duct.userData.proxy2Vertices[4]
-            );
-            this.connectPoints(
-                intersection.up.segment.duct.userData.proxyOriginal2Vertices[5],
-                intersection.up.segment.duct.userData.proxyOriginal1Vertices[6],
-                intersection.up.segment.duct.userData.proxy1Vertices[6],
-                intersection.up.segment.duct.userData.proxy2Vertices[5]
-            );
-            this.connectPoints(
-                intersection.up.segment.duct.userData.proxyOriginal1Vertices[7],
-                intersection.up.segment.duct.userData.proxyOriginal2Vertices[4],
-                intersection.up.segment.duct.userData.proxyOriginal2Vertices[5],
-                intersection.up.segment.duct.userData.proxyOriginal1Vertices[6]
-            );
+    //         this.connectPoints(
+    //             intersection.up.segment.duct.userData.proxyOriginal2Vertices[4],
+    //             intersection.up.segment.duct.userData.proxyOriginal1Vertices[7],
+    //             intersection.up.segment.duct.userData.proxy1Vertices[7],
+    //             intersection.up.segment.duct.userData.proxy2Vertices[4]
+    //         );
+    //         this.connectPoints(
+    //             intersection.up.segment.duct.userData.proxyOriginal2Vertices[5],
+    //             intersection.up.segment.duct.userData.proxyOriginal1Vertices[6],
+    //             intersection.up.segment.duct.userData.proxy1Vertices[6],
+    //             intersection.up.segment.duct.userData.proxy2Vertices[5]
+    //         );
+    //         this.connectPoints(
+    //             intersection.up.segment.duct.userData.proxyOriginal1Vertices[7],
+    //             intersection.up.segment.duct.userData.proxyOriginal2Vertices[4],
+    //             intersection.up.segment.duct.userData.proxyOriginal2Vertices[5],
+    //             intersection.up.segment.duct.userData.proxyOriginal1Vertices[6]
+    //         );
 
-            this.connectPoints(
-                intersection.up.segment.duct.userData.proxy2Vertices[5],
-                intersection.up.segment.duct.userData.proxy2Vertices[4],
-                intersection.up.segment.duct.userData.proxy1Vertices[7],
-                intersection.up.segment.duct.userData.proxy1Vertices[6]
-            );
-            this.connectPoints(
-                intersection.left.segment.duct.userData.proxy2Vertices[7],
-                intersection.left.segment.duct.userData.proxy2Vertices[4],
-                intersection.left.segment.duct.userData.proxy1Vertices[5],
-                intersection.left.segment.duct.userData.proxy1Vertices[6]
-            );
-            this.connectPoints(
-                intersection.down.segment.duct.userData.proxy2Vertices[5],
-                intersection.down.segment.duct.userData.proxy2Vertices[4],
-                intersection.down.segment.duct.userData.proxy1Vertices[7],
-                intersection.down.segment.duct.userData.proxy1Vertices[6]
-            );
+    //         this.connectPoints(
+    //             intersection.up.segment.duct.userData.proxy2Vertices[5],
+    //             intersection.up.segment.duct.userData.proxy2Vertices[4],
+    //             intersection.up.segment.duct.userData.proxy1Vertices[7],
+    //             intersection.up.segment.duct.userData.proxy1Vertices[6]
+    //         );
+    //         this.connectPoints(
+    //             intersection.left.segment.duct.userData.proxy2Vertices[7],
+    //             intersection.left.segment.duct.userData.proxy2Vertices[4],
+    //             intersection.left.segment.duct.userData.proxy1Vertices[5],
+    //             intersection.left.segment.duct.userData.proxy1Vertices[6]
+    //         );
+    //         this.connectPoints(
+    //             intersection.down.segment.duct.userData.proxy2Vertices[5],
+    //             intersection.down.segment.duct.userData.proxy2Vertices[4],
+    //             intersection.down.segment.duct.userData.proxy1Vertices[7],
+    //             intersection.down.segment.duct.userData.proxy1Vertices[6]
+    //         );
 
-            this.connectProxiesVertically(
-                intersection.up.segment.duct.userData.proxy2Vertices,
-                intersection.down.segment.duct.userData.proxy2Vertices
-            );
+    //         this.connectProxiesVertically(
+    //             intersection.up.segment.duct.userData.proxy2Vertices,
+    //             intersection.down.segment.duct.userData.proxy2Vertices
+    //         );
 
-            this.connectPoints(
-                intersection.up.segment.duct.userData.proxy2Vertices[5],
-                intersection.up.segment.duct.userData.proxy1Vertices[6],
-                intersection.down.segment.duct.userData.proxy1Vertices[7],
-                intersection.down.segment.duct.userData.proxy2Vertices[4]
-            );
-            this.connectPoints(
-                intersection.up.segment.duct.userData.proxy1Vertices[6],
-                intersection.left.segment.duct.userData.proxy1Vertices[6],
-                intersection.left.segment.duct.userData.proxy2Vertices[7],
-                intersection.down.segment.duct.userData.proxy1Vertices[7]
-            );
-        }
-        else if(intersection.left == null) {
-        }
-    }
+    //         this.connectPoints(
+    //             intersection.up.segment.duct.userData.proxy2Vertices[5],
+    //             intersection.up.segment.duct.userData.proxy1Vertices[6],
+    //             intersection.down.segment.duct.userData.proxy1Vertices[7],
+    //             intersection.down.segment.duct.userData.proxy2Vertices[4]
+    //         );
+    //         this.connectPoints(
+    //             intersection.up.segment.duct.userData.proxy1Vertices[6],
+    //             intersection.left.segment.duct.userData.proxy1Vertices[6],
+    //             intersection.left.segment.duct.userData.proxy2Vertices[7],
+    //             intersection.down.segment.duct.userData.proxy1Vertices[7]
+    //         );
+    //     }
+    //     else if(intersection.left == null) {
+    //     }
+    // }
 
-    createDiagonalLJoint(intersection) {
-        return
-        let proxy3Vertices = JSON.parse(JSON.stringify(intersection.up.segment.duct.userData.proxy1Vertices));
-        proxy3Vertices[0].z = intersection.right.segment.duct.userData.proxy2Vertices[0].z;
-        proxy3Vertices[1].z = intersection.right.segment.duct.userData.proxy2Vertices[1].z;
-        proxy3Vertices[2].z = intersection.right.segment.duct.userData.proxy2Vertices[2].z;
-        proxy3Vertices[3].z = intersection.right.segment.duct.userData.proxy2Vertices[3].z;
-        proxy3Vertices[4].z = intersection.right.segment.duct.userData.proxy2Vertices[4].z;
-        proxy3Vertices[5].z = intersection.right.segment.duct.userData.proxy2Vertices[5].z;
-        proxy3Vertices[6].z = intersection.right.segment.duct.userData.proxy2Vertices[6].z;
-        proxy3Vertices[7].z = intersection.right.segment.duct.userData.proxy2Vertices[7].z;
-        this.renderProxyVertices(proxy3Vertices);
+    // createDiagonalLJoint(intersection) {
+    //     return
+    //     let proxy3Vertices = JSON.parse(JSON.stringify(intersection.up.segment.duct.userData.proxy1Vertices));
+    //     proxy3Vertices[0].z = intersection.right.segment.duct.userData.proxy2Vertices[0].z;
+    //     proxy3Vertices[1].z = intersection.right.segment.duct.userData.proxy2Vertices[1].z;
+    //     proxy3Vertices[2].z = intersection.right.segment.duct.userData.proxy2Vertices[2].z;
+    //     proxy3Vertices[3].z = intersection.right.segment.duct.userData.proxy2Vertices[3].z;
+    //     proxy3Vertices[4].z = intersection.right.segment.duct.userData.proxy2Vertices[4].z;
+    //     proxy3Vertices[5].z = intersection.right.segment.duct.userData.proxy2Vertices[5].z;
+    //     proxy3Vertices[6].z = intersection.right.segment.duct.userData.proxy2Vertices[6].z;
+    //     proxy3Vertices[7].z = intersection.right.segment.duct.userData.proxy2Vertices[7].z;
+    //     this.renderProxyVertices(proxy3Vertices);
 
-        this.connectProxiesVertically(
-            intersection.up.segment.duct.userData.proxy1Vertices, 
-            proxy3Vertices
-        );
-        this.connectProxiesHorizontally(
-            proxy3Vertices,
-            intersection.right.segment.duct.userData.proxy2Vertices, 
-        );
-        this.connectProxiesDiagonalDownhill(
-            intersection.up.segment.duct.userData.proxy2Vertices,
-            intersection.right.segment.duct.userData.proxy1Vertices
-        );
+    //     this.connectProxiesVertically(
+    //         intersection.up.segment.duct.userData.proxy1Vertices, 
+    //         proxy3Vertices
+    //     );
+    //     this.connectProxiesHorizontally(
+    //         proxy3Vertices,
+    //         intersection.right.segment.duct.userData.proxy2Vertices, 
+    //     );
+    //     this.connectProxiesDiagonalDownhill(
+    //         intersection.up.segment.duct.userData.proxy2Vertices,
+    //         intersection.right.segment.duct.userData.proxy1Vertices
+    //     );
 
-        this.connectPoints(
-            intersection.up.segment.duct.userData.proxy2Vertices[7],
-            intersection.up.segment.duct.userData.proxy1Vertices[4],
-            intersection.right.segment.duct.userData.proxy1Vertices[6],
-            intersection.right.segment.duct.userData.proxy1Vertices[7]
-        );
-        this.connectPoints(
-            intersection.up.segment.duct.userData.proxy1Vertices[7],
-            proxy3Vertices[7],
-            intersection.right.segment.duct.userData.proxy2Vertices[7],
-            intersection.right.segment.duct.userData.proxy1Vertices[7]
-        );
-    }
+    //     this.connectPoints(
+    //         intersection.up.segment.duct.userData.proxy2Vertices[7],
+    //         intersection.up.segment.duct.userData.proxy1Vertices[4],
+    //         intersection.right.segment.duct.userData.proxy1Vertices[6],
+    //         intersection.right.segment.duct.userData.proxy1Vertices[7]
+    //     );
+    //     this.connectPoints(
+    //         intersection.up.segment.duct.userData.proxy1Vertices[7],
+    //         proxy3Vertices[7],
+    //         intersection.right.segment.duct.userData.proxy2Vertices[7],
+    //         intersection.right.segment.duct.userData.proxy1Vertices[7]
+    //     );
+    // }
 
     connectProxiesDiagonalDownhill(leftProxy, rightProxy) {
         //front strip
@@ -1327,7 +1310,7 @@ export default class Joints {
             }
         }
 
-        const areHelpersOn = true;
+        const areHelpersOn = false;
 
         let material = new THREE.MeshStandardMaterial({ color: 0xAEB9C2 });
         let material2 = new THREE.MeshStandardMaterial({ color: 0xAEB9C2 });
@@ -1442,11 +1425,11 @@ export default class Joints {
                 duct.segment.duct.userData.proxyOriginal1Vertices = proxyOriginal1Vertices;
                 duct.segment.duct.userData.proxyOriginal2Vertices = proxyOriginal2Vertices;
 
-                material.color.setHex("0xFF0000");
-                material2.color.setHex("0x0000FF");
-                material3.color.setHex("0x00FF00");
-                material4.color.setHex("0xFF0000");
-                material5.color.setHex("0x0000FF");
+                // material.color.setHex("0xFF0000");
+                // material2.color.setHex("0x0000FF");
+                // material3.color.setHex("0x00FF00");
+                // material4.color.setHex("0xFF0000");
+                // material5.color.setHex("0x0000FF");
         
                 proxy1.name = "jointHelper";
                 proxy2.name = "jointHelper";
@@ -1491,12 +1474,10 @@ export default class Joints {
                     proxyMedian: proxyMedian, 
                 };
 
-                if(areHelpersOn) {
-                    this.renderProxyVertices(proxy1Vertices, areHelpersOn);
-                    this.renderProxyVertices(proxy2Vertices, areHelpersOn);
-                    this.renderProxyVertices(proxyOriginal1Vertices, areHelpersOn);
-                    this.renderProxyVertices(proxyOriginal2Vertices, areHelpersOn);
-                }
+                this.renderProxyVertices(proxy1Vertices, areHelpersOn);
+                this.renderProxyVertices(proxy2Vertices, areHelpersOn);
+                this.renderProxyVertices(proxyOriginal1Vertices, areHelpersOn);
+                this.renderProxyVertices(proxyOriginal2Vertices, areHelpersOn);
             }
   
         }
@@ -1515,11 +1496,11 @@ export default class Joints {
                 const proxyMedianVertices = this.mapProxyVertices(duct.segment.duct.userData.proxies.proxyMedian);
                 duct.segment.duct.userData.proxyMedianVertices = proxyMedianVertices;
                 duct.segment.duct.userData.proxyMedianVertices = proxyMedianVertices;
-                if(areHelpersOn) {
-                    this.renderProxyVertices(proxyMedianVertices);
-                }
+                this.renderProxyVertices(proxyMedianVertices, areHelpersOn);
             }
         }
+
+        return largestSize;
   
     }
 
@@ -1536,11 +1517,25 @@ export default class Joints {
                 intersection.up.segment.duct.userData.proxies.proxyMedian.position.z = intersection.right.segment.duct.userData.proxies.proxy2.position.z;
                 intersection.right.segment.duct.userData.proxies.proxyMedian.position.z = intersection.up.segment.duct.userData.proxies.proxy2.position.z;
             }
+            else if(intersection.down != null && intersection.right != null) {
+                intersection.down.segment.duct.userData.proxies.proxyMedian.position.x = intersection.right.segment.duct.userData.proxies.proxy2.position.x;
+                intersection.right.segment.duct.userData.proxies.proxyMedian.position.x = intersection.down.segment.duct.userData.proxies.proxy1.position.x;
+            }
+            else if(intersection.up != null && intersection.left != null) {
+                intersection.up.segment.duct.userData.proxies.proxyMedian.position.x = intersection.left.segment.duct.userData.proxies.proxy2.position.x;
+                intersection.left.segment.duct.userData.proxies.proxyMedian.position.x = intersection.up.segment.duct.userData.proxies.proxy2.position.x;
+                intersection.left.segment.duct.userData.proxies.proxyMedian.position.z = intersection.left.segment.duct.userData.proxies.proxy2.position.z;
+            }
+            else if(intersection.down != null && intersection.left != null) {
+                intersection.left.segment.duct.userData.proxies.proxyMedian.position.z = intersection.down.segment.duct.userData.proxies.proxy1.position.z;
+                intersection.down.segment.duct.userData.proxies.proxyMedian.position.x = intersection.down.segment.duct.userData.proxies.proxy2.position.x;
+                intersection.down.segment.duct.userData.proxies.proxyMedian.position.z = intersection.left.segment.duct.userData.proxies.proxy1.position.z;
+                
+            }
         }
         else if(definedIntersectionCount == 3) {
             
             if(intersection.right == null) {
-                // top-left median
                 intersection.up.segment.duct.userData.proxies.proxyMedian.position.x = intersection.left.segment.duct.userData.proxies.proxyMedian.position.x;
                 intersection.left.segment.duct.userData.proxies.proxyMedian.position.z = intersection.down.segment.duct.userData.proxies.proxyMedian.position.z;
 
@@ -1551,6 +1546,46 @@ export default class Joints {
                     intersection.down.segment.duct.userData.proxies.proxyMedian.position.x = intersection.down.segment.duct.userData.proxies.proxy2.position.x;
                     intersection.down.segment.duct.userData.proxies.proxyMedian.position.z = intersection.up.segment.duct.userData.proxies.proxy2.position.z;
                 }
+            }
+            else if(intersection.left == null) {
+                if(this.innerDim[intersection.up.xetoDuct.graphicLocation.size] > this.innerDim[intersection.down.xetoDuct.graphicLocation.size]) {
+                    intersection.up.segment.duct.userData.proxies.proxyMedian.position.z = intersection.down.segment.duct.userData.proxies.proxy2.position.z;
+                }
+                else {
+                    intersection.up.segment.duct.userData.proxies.proxyMedian.position.x = intersection.down.segment.duct.userData.proxies.proxy1.position.x;
+                }
+                intersection.down.segment.duct.userData.proxies.proxyMedian.position.z = intersection.down.segment.duct.userData.proxies.proxy2.position.z;
+                intersection.down.segment.duct.userData.proxies.proxyMedian.position.x = intersection.right.segment.duct.userData.proxies.proxy2.position.x;
+
+                intersection.right.segment.duct.userData.proxies.proxyMedian.position.z = intersection.up.segment.duct.userData.proxies.proxy2.position.z;                
+            }
+            else if(intersection.down == null) {
+                if(this.innerDim[intersection.left.xetoDuct.graphicLocation.size] > this.innerDim[intersection.right.xetoDuct.graphicLocation.size]) {
+                    intersection.left.segment.duct.userData.proxies.proxyMedian.position.x = intersection.right.segment.duct.userData.proxies.proxy2.position.x;
+                    intersection.left.segment.duct.userData.proxies.proxyMedian.position.z = intersection.left.segment.duct.userData.proxies.proxy2.position.z;
+                }
+                else {
+                    intersection.left.segment.duct.userData.proxies.proxyMedian.position.z = intersection.right.segment.duct.userData.proxies.proxy2.position.z;
+                } 
+
+                intersection.up.segment.duct.userData.proxies.proxyMedian.position.x = intersection.left.segment.duct.userData.proxies.proxy1.position.x;
+
+                intersection.right.segment.duct.userData.proxies.proxyMedian.position.z = intersection.up.segment.duct.userData.proxies.proxy2.position.z;
+                
+            }
+            else if(intersection.up == null) {
+                intersection.left.segment.duct.userData.proxies.proxyMedian.position.z = intersection.down.segment.duct.userData.proxies.proxy1.position.z;
+                intersection.left.segment.duct.userData.proxies.proxyMedian.position.x = intersection.left.segment.duct.userData.proxies.proxy2.position.x;
+
+                intersection.down.segment.duct.userData.proxies.proxyMedian.position.z = intersection.down.segment.duct.userData.proxies.proxy2.position.z;
+                intersection.down.segment.duct.userData.proxies.proxyMedian.position.x = intersection.right.segment.duct.userData.proxies.proxy2.position.x;
+
+                if(this.innerDim[intersection.left.xetoDuct.graphicLocation.size] > this.innerDim[intersection.right.xetoDuct.graphicLocation.size]) {
+                    intersection.right.segment.duct.userData.proxies.proxyMedian.position.z = intersection.left.segment.duct.userData.proxies.proxy1.position.z;
+                }
+                else {
+                    intersection.right.segment.duct.userData.proxies.proxyMedian.position.x = intersection.left.segment.duct.userData.proxies.proxy1.position.x;
+                }                
             }
         }
         else if(definedIntersectionCount == 4) {
@@ -1578,6 +1613,24 @@ export default class Joints {
                 intersection.up.segment.duct.userData.proxies.proxyMedian.position.z = intersection.right.segment.duct.userData.proxies.proxy2.position.z;
                 intersection.right.segment.duct.userData.proxies.proxyMedian.position.x = intersection.up.segment.duct.userData.proxies.proxy2.position.x;
             }
+            else if(intersection.down != null && intersection.right != null) {
+                intersection.down.segment.duct.userData.proxies.proxyMedian.position.x = intersection.down.segment.duct.userData.proxies.proxy2.position.x;
+                intersection.down.segment.duct.userData.proxies.proxyMedian.position.z = intersection.right.segment.duct.userData.proxies.proxy2.position.z;
+
+                intersection.right.segment.duct.userData.proxies.proxyMedian.position.x = intersection.down.segment.duct.userData.proxies.proxy1.position.x;
+            }
+            else if(intersection.up != null && intersection.left != null) {
+                intersection.up.segment.duct.userData.proxies.proxyMedian.position.z = intersection.left.segment.duct.userData.proxies.proxy1.position.z;
+                intersection.left.segment.duct.userData.proxies.proxyMedian.position.x = intersection.up.segment.duct.userData.proxies.proxy2.position.x;
+                intersection.left.segment.duct.userData.proxies.proxyMedian.position.z = intersection.left.segment.duct.userData.proxies.proxy2.position.z;
+            }
+            else if(intersection.down != null && intersection.left != null) {
+                intersection.left.segment.duct.userData.proxies.proxyMedian.position.x = intersection.down.segment.duct.userData.proxies.proxy1.position.x;
+                intersection.left.segment.duct.userData.proxies.proxyMedian.position.z = intersection.left.segment.duct.userData.proxies.proxy2.position.z;
+                intersection.down.segment.duct.userData.proxies.proxyMedian.position.x = intersection.down.segment.duct.userData.proxies.proxy2.position.x;
+                intersection.down.segment.duct.userData.proxies.proxyMedian.position.z = intersection.left.segment.duct.userData.proxies.proxy1.position.z;
+                
+            }
         }
         else if(definedIntersectionCount == 3) {
             if(intersection.right == null) {
@@ -1596,12 +1649,44 @@ export default class Joints {
 
             }
             else if(intersection.left == null) {
-                intersection.up.segment.duct.userData.proxies.proxyMedian.position.z = intersection.down.segment.duct.userData.proxies.proxy1.position.z;
+                if(this.innerDim[intersection.up.xetoDuct.graphicLocation.size] > this.innerDim[intersection.down.xetoDuct.graphicLocation.size]) {
+                    intersection.up.segment.duct.userData.proxies.proxyMedian.position.z = intersection.down.segment.duct.userData.proxies.proxy2.position.z;
+                }
+                else {
+                    intersection.up.segment.duct.userData.proxies.proxyMedian.position.x = intersection.down.segment.duct.userData.proxies.proxy1.position.x;
+                }
+                intersection.down.segment.duct.userData.proxies.proxyMedian.position.x = intersection.down.segment.duct.userData.proxies.proxy2.position.x;
+                intersection.down.segment.duct.userData.proxies.proxyMedian.position.z = intersection.right.segment.duct.userData.proxies.proxy2.position.z;
+
+                intersection.right.segment.duct.userData.proxies.proxyMedian.position.x = intersection.up.segment.duct.userData.proxies.proxy2.position.x;                
+            }
+            else if(intersection.down == null) {
+                if(this.innerDim[intersection.left.xetoDuct.graphicLocation.size] > this.innerDim[intersection.right.xetoDuct.graphicLocation.size]) {
+                    intersection.left.segment.duct.userData.proxies.proxyMedian.position.x = intersection.right.segment.duct.userData.proxies.proxy2.position.x;
+                    intersection.left.segment.duct.userData.proxies.proxyMedian.position.z = intersection.left.segment.duct.userData.proxies.proxy2.position.z;
+                }
+                else {
+                    intersection.left.segment.duct.userData.proxies.proxyMedian.position.z = intersection.right.segment.duct.userData.proxies.proxy2.position.z;
+                } 
+
+                intersection.up.segment.duct.userData.proxies.proxyMedian.position.z = intersection.left.segment.duct.userData.proxies.proxy1.position.z;
 
                 intersection.right.segment.duct.userData.proxies.proxyMedian.position.x = intersection.up.segment.duct.userData.proxies.proxy2.position.x;
                 
+            }
+            else if(intersection.up == null) {
+                intersection.left.segment.duct.userData.proxies.proxyMedian.position.x = intersection.down.segment.duct.userData.proxies.proxy1.position.x;
+                intersection.left.segment.duct.userData.proxies.proxyMedian.position.z = intersection.left.segment.duct.userData.proxies.proxy2.position.z;
+
                 intersection.down.segment.duct.userData.proxies.proxyMedian.position.x = intersection.down.segment.duct.userData.proxies.proxy2.position.x;
                 intersection.down.segment.duct.userData.proxies.proxyMedian.position.z = intersection.right.segment.duct.userData.proxies.proxy2.position.z;
+
+                if(this.innerDim[intersection.left.xetoDuct.graphicLocation.size] > this.innerDim[intersection.right.xetoDuct.graphicLocation.size]) {
+                    intersection.right.segment.duct.userData.proxies.proxyMedian.position.z = intersection.left.segment.duct.userData.proxies.proxy1.position.z;
+                }
+                else {
+                    intersection.right.segment.duct.userData.proxies.proxyMedian.position.x = intersection.left.segment.duct.userData.proxies.proxy1.position.x;
+                }                
             }
         }
         else if(definedIntersectionCount == 4) {
@@ -1663,7 +1748,7 @@ export default class Joints {
         return proxyCorners;
     }
 
-    renderProxyVertices(proxyCorners) {
+    renderProxyVertices(proxyCorners, areHelpersOn) {
 
         let indicatorSize = 27;
         if(indicatorSize > 30) {
@@ -1711,6 +1796,7 @@ export default class Joints {
 
             vertexIndicator.position.copy(proxyCorner);
             vertexIndicator.name = "jointHelperVertices";
+            vertexIndicator.visible = areHelpersOn;
             this.sceneHelper.addToScene(vertexIndicator);
         });
         
