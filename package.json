@@ -1,6 +1,6 @@
 {
   "name": "@musashi/ahu3d",
-  "version": "1.0.105",
+  "version": "1.0.107",
   "description": "",
   "main": "dist/bundle.js",
   "files": [
@@ -17,7 +17,7 @@
   "license": "ISC",
   "dependencies": {
     "axios": "^1.7.5",
-    "three": "^0.169.0",
+    "three": "^0.170.0",
     "webpack": "^5.94.0",
     "webpack-cli": "^5.1.4"
   },

@@ -50,7 +50,7 @@ class Ahu3D {
         console.log("this.moduleConfigs:", this.moduleConfigs);
 
         this.sceneHelper = new Scene(this.moduleConfigs);
-        this.imports = new Import();
+        this.imports = new Import(this.moduleConfigs);
         this.utils = new Utils(this.sceneHelper);
         this.object3DLoader = new Object3DLoader(this.sceneHelper);
         this.library = null;

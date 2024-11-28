@@ -537,6 +537,21 @@ export default class Utils {
             object3d.material.depthWrite = true;
           }
           object3d.material.opacity = opacity;
+
+          if(opacity <= 0.2) {
+            for(const child of object3d.children) {
+              if(child.type == "LineSegments") {
+                child.visible = true;
+              }
+            }
+          }
+          else if(opacity >= 0.8) {
+            for(const child of object3d.children) {
+              if(child.type == "LineSegments") {
+                child.visible = false;
+              }
+            }
+          }
         }
       }
     });
@@ -544,9 +559,14 @@ export default class Utils {
 
   setJointWireframe(value) {
     this.sceneHelper.scene.traverse((object3d) => {
-      if (object3d.isObject3D) {
+      if(object3d.isObject3D) {
         if(object3d.name === 'joint' || object3d.name === 'jointHelper') {
-          object3d.material.wireframe = value;
+          console.log("object3d:", object3d);
+          for(const child of object3d.children) {
+            if(child.type == "LineSegments") {
+              child.visible = value;
+            }
+          }
         }
       }
     });
@@ -554,7 +574,7 @@ export default class Utils {
 
   setJointHelpers(value) {
     this.sceneHelper.scene.traverse((object3d) => {
-      if (object3d.isObject3D) {
+      if(object3d.isObject3D) {
         if(object3d.name === 'jointHelper') {
           if(value == true) {
             object3d.material.color.setHex(object3d.userData.helperColor);

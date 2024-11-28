@@ -31,7 +31,8 @@ import Analyze from "./Analyze.js"
 import Validate from "./Validate.js"
 
 class Import {
-    constructor() {
+    constructor(moduleConfigs) {
+        this.moduleConfigs = moduleConfigs;
         this.assets = {};
         this.assetConfigs = null;
 
@@ -108,27 +109,17 @@ class Import {
         console.log("xetoDictionary.ductsList:", xetoDictionary.ductsList);
         xetoDictionary.componentsList = xeto.filter(child => child.spec.includes('Component'));
 
-        // for(const duct of xetoDictionary.ductsList) {
-
-        // }
-
         this.analyzer.analyzeAndTransform(xetoDictionary);
 
         this.validator.propogateBlockStyle(xetoDictionary);
 
-        console.log("Import.js xetoDictionary.ahuGroup:", xetoDictionary.ahuGroup[0].blockStyle);
+        console.log("Import.js this.moduleConfigs:", this.moduleConfigs);
 
         if(xetoDictionary.ahuJoints == undefined) {
-            xetoDictionary.ahuJoints = {
-                "id": "r:novo.graphics::AHU-1",
-                "spec": "r:novo.graphics::AhuJoints",
-                "jointPadding": 0,
-                "style": "inwards", 
-                "context": "total"
-            }
+            xetoDictionary.ahuJoints = this.moduleConfigs.xeto.jointBlock;
         }
-        else if(xetoDictionary.ahuJoints.style != "outwards" && xetoDictionary.ahuJoints.style != "inwards") {
-            xetoDictionary.ahuJoints.style = "inwards"
+        else if(xetoDictionary.ahuJoints.direction != "outwards" && xetoDictionary.ahuJoints.direction != "inwards") {
+            xetoDictionary.ahuJoints.direction = this.moduleConfigs.xeto.jointBlock.direction;
         }
 
         const cleanedXeto = [

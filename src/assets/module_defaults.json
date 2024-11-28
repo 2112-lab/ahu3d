@@ -125,5 +125,15 @@
             },
             "padding": 0
         }
-	}
+	},
+    "xeto": {
+        "jointBlock": {
+            "id": "r:novo.graphics::AHU-1",
+            "spec": "r:novo.graphics::AhuJoints",
+            "padding": 0,
+            "style": "orthogonal",
+            "direction": "inwards",
+            "context": "global"
+        }
+    }
 }
