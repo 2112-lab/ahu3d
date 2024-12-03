@@ -200,7 +200,7 @@ export default class Utils {
     console.log("this.instanceSet:", this.instanceSet);
   }
 
-  createDuct(segment, type = "duct") {
+  createDuct(segment) {
 
     console.log("segment createDuct:", segment);
 
@@ -235,7 +235,9 @@ export default class Utils {
     );
 
     // Create materials
-    const ductMaterial = new THREE.MeshStandardMaterial({ color: 0xAEB9C2, wireframe: false });
+    const ductMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0xAEB9C2
+    });
 
     // Create the meshes
     const ceiling = new THREE.Mesh(ceilingGeometry, ductMaterial);
@@ -284,7 +286,7 @@ export default class Utils {
     // Assign the component's name to the cloned instance
     parentObject.userData.component.componentName = name;
 
-    parentObject.name = "hvac";
+    parentObject.name = "duct";
 
     // Clone the materials of all children of the cloned instance
     parentObject.traverse(child => {
@@ -527,7 +529,7 @@ export default class Utils {
   setJointOpacity(opacity) {
     this.sceneHelper.scene.traverse((object3d) => {
       if (object3d.isObject3D) {
-        if(object3d.name === 'joint' || object3d.name === 'jointHelper') {
+        if(object3d.name.includes('joint')) {
           if(opacity < 1) {
             object3d.material.transparent = true;
             object3d.material.depthWrite = false;
@@ -572,10 +574,10 @@ export default class Utils {
     });
   }
 
-  setJointHelpers(value) {
+  setJointProxyHelpers(value) {
     this.sceneHelper.scene.traverse((object3d) => {
       if(object3d.isObject3D) {
-        if(object3d.name === 'jointHelper') {
+        if(object3d.name === 'jointHelperProxy') {
           if(value == true) {
             object3d.material.color.setHex(object3d.userData.helperColor);
           }
@@ -583,8 +585,61 @@ export default class Utils {
             object3d.material.color.setHex(object3d.userData.productionColor);
           }
         }
-        else if(object3d.name === 'jointHelperVertices') {
+      }
+    });
+  }
+
+  setJointVertexHelpers(value) {
+    this.sceneHelper.scene.traverse((object3d) => {
+      if(object3d.isObject3D) {
+        if(object3d.name === 'jointHelperVertices') {
           object3d.visible = value;
+        }
+      }
+    });
+  }
+
+  setDuctOpacity(opacity) {
+    this.sceneHelper.scene.traverse((object3d) => {
+      if (object3d.isObject3D) {
+        if(object3d.name === 'duct') {
+          object3d.traverse(child => {
+            if (child.isMesh && child.material) {
+              if(opacity < 1) {
+                child.material.transparent = true;
+                child.material.depthWrite = false;
+              }
+              else {
+                child.material.transparent = false;
+                child.material.depthWrite = true;
+              }
+              child.material.opacity = opacity;
+            }
+          });
+
+        }
+      }
+    });
+  }
+
+  setComponentOpacity(opacity) {
+    this.sceneHelper.scene.traverse((object3d) => {
+      if (object3d.isObject3D) {
+        if(object3d.name === 'hvac') {
+          object3d.traverse(child => {
+            if (child.isMesh && child.material) {
+              if(opacity < 1) {
+                child.material.transparent = true;
+                // child.material.depthWrite = false;
+              }
+              else {
+                child.material.transparent = false;
+                // child.material.depthWrite = true;
+              }
+              child.material.opacity = opacity;
+            }
+          });
+
         }
       }
     });

@@ -10,9 +10,10 @@ export default class Joints {
             large: 1500
         }
     }
-    createOrthogonalCrossJoint(intersection, jointDirection, largestSize) {
+    
+    createOrthogonalCrossJoint(intersection, xzJointDirection, largestGlobalSize) {
         const geometries = [];
-        if(jointDirection == "outwards") {
+        if(xzJointDirection == "outwards") {
             geometries.push(
                 ...this.connectProxiesVertically(
                     intersection.right.segment.duct.userData.proxy2Vertices, 
@@ -129,27 +130,27 @@ export default class Joints {
         ];
 
         geometries.push(
-            ...this.closeJointGap(intersection.up.segment.duct, "horizontal")
+            ...this.createJointClosure(intersection.up.segment.duct, "horizontal")
         );
         geometries.push(
-            ...this.closeJointGap(intersection.right.segment.duct, "vertical")
+            ...this.createJointClosure(intersection.right.segment.duct, "vertical")
         );
         geometries.push(
-            ...this.closeJointGap(intersection.down.segment.duct, "horizontal")
+            ...this.createJointClosure(intersection.down.segment.duct, "horizontal")
         );
         geometries.push(
-            ...this.closeJointGap(intersection.left.segment.duct, "vertical")
+            ...this.createJointClosure(intersection.left.segment.duct, "vertical")
         );
         
-        this.create2DBackwall(backwall, largestSize);
+        this.createJointBackwall(backwall, largestGlobalSize);
 
         this.mergeAndAddToScene(geometries);
 
     }
 
-    createOrthogonalTJoint(intersection, jointDirection, largestSize) {
+    createOrthogonalTJoint(intersection, xzJointDirection, largestGlobalSize) {
         const geometries = [];
-        if(jointDirection == "outwards") {
+        if(xzJointDirection == "outwards") {
             if(intersection.right == null) {
                 if(this.innerDim[intersection.up.xetoDuct.graphicLocation.size] > this.innerDim[intersection.down.xetoDuct.graphicLocation.size]) {
                     geometries.push(
@@ -313,7 +314,7 @@ export default class Joints {
                 );       
             }
         }
-        else if(jointDirection == "inwards") {
+        else if(xzJointDirection == "inwards") {
             if(intersection.right == null) {
                 if(this.innerDim[intersection.up.xetoDuct.graphicLocation.size] > this.innerDim[intersection.down.xetoDuct.graphicLocation.size]) {
                     geometries.push(
@@ -542,7 +543,7 @@ export default class Joints {
             backwall.push(intersection.up.segment.duct.userData.proxy1Vertices[4]);
             backwall.push(intersection.up.segment.duct.userData.proxy2Vertices[7]);
             geometries.push(
-                ...this.closeJointGap(intersection.up.segment.duct, "horizontal")
+                ...this.createJointClosure(intersection.up.segment.duct, "horizontal")
             );
         }
         if(intersection.right != null) {
@@ -550,7 +551,7 @@ export default class Joints {
             backwall.push(intersection.right.segment.duct.userData.proxy1Vertices[7]);
             backwall.push(intersection.right.segment.duct.userData.proxy2Vertices[6]);
             geometries.push(
-                ...this.closeJointGap(intersection.right.segment.duct, "vertical")
+                ...this.createJointClosure(intersection.right.segment.duct, "vertical")
             );
         }
         if(intersection.down != null) {
@@ -558,7 +559,7 @@ export default class Joints {
             backwall.push(intersection.down.segment.duct.userData.proxy2Vertices[6]);
             backwall.push(intersection.down.segment.duct.userData.proxy1Vertices[5]);
             geometries.push(
-                ...this.closeJointGap(intersection.down.segment.duct, "horizontal")
+                ...this.createJointClosure(intersection.down.segment.duct, "horizontal")
             );
         }
         if(intersection.left != null) {
@@ -566,19 +567,19 @@ export default class Joints {
             backwall.push(intersection.left.segment.duct.userData.proxy2Vertices[5]);
             backwall.push(intersection.left.segment.duct.userData.proxy1Vertices[4]);
             geometries.push(
-                ...this.closeJointGap(intersection.left.segment.duct, "vertical")
+                ...this.createJointClosure(intersection.left.segment.duct, "vertical")
             );
         }   
         
-        this.create2DBackwall(backwall, largestSize);
+        this.createJointBackwall(backwall, largestGlobalSize);
 
         this.mergeAndAddToScene(geometries);
     }
 
-    createOrthogonalLJoint(intersection, jointDirection, largestSize) {
+    createOrthogonalLJoint(intersection, xzJointDirection, largestGlobalSize) {
         const geometries = [];
 
-        if(jointDirection == "outwards") {
+        if(xzJointDirection == "outwards") {
             if(intersection.right != null && intersection.up != null) {
                 geometries.push(
                     ...this.connectProxiesVertically(
@@ -684,7 +685,7 @@ export default class Joints {
                 );     
             }  
         }
-        else if(jointDirection == "inwards") {
+        else if(xzJointDirection == "inwards") {
             if(intersection.right != null && intersection.up != null) {
                 geometries.push(
                     ...this.connectProxiesHorizontally(
@@ -799,7 +800,7 @@ export default class Joints {
                 intersection.up.segment.duct.userData.proxy2Vertices[7]
             ]);
             geometries.push(
-                ...this.closeJointGap(intersection.up.segment.duct, "horizontal")
+                ...this.createJointClosure(intersection.up.segment.duct, "horizontal")
             ); 
         }
         if(intersection.right != null) {
@@ -807,7 +808,7 @@ export default class Joints {
             backwall.push(intersection.right.segment.duct.userData.proxy1Vertices[7]);
             backwall.push(intersection.right.segment.duct.userData.proxy2Vertices[6]);
             geometries.push(
-                ...this.closeJointGap(intersection.right.segment.duct, "vertical")
+                ...this.createJointClosure(intersection.right.segment.duct, "vertical")
             ); 
         }
         if(intersection.down != null) {
@@ -815,7 +816,7 @@ export default class Joints {
             backwall.push(intersection.down.segment.duct.userData.proxy2Vertices[6]);
             backwall.push(intersection.down.segment.duct.userData.proxy1Vertices[5]);
             geometries.push(
-                ...this.closeJointGap(intersection.down.segment.duct, "horizontal")
+                ...this.createJointClosure(intersection.down.segment.duct, "horizontal")
             ); 
         }
         if(intersection.left != null) {
@@ -823,21 +824,21 @@ export default class Joints {
             backwall.push(intersection.left.segment.duct.userData.proxy2Vertices[5]);
             backwall.push(intersection.left.segment.duct.userData.proxy1Vertices[4]);
             geometries.push(
-                ...this.closeJointGap(intersection.left.segment.duct, "vertical")
+                ...this.createJointClosure(intersection.left.segment.duct, "vertical")
             ); 
         }   
         
-        this.create2DBackwall(backwall, largestSize);
+        this.createJointBackwall(backwall, largestGlobalSize);
 
         this.mergeAndAddToScene(geometries);
     }
 
-    closeJointGap(duct, direction) {
+    createJointClosure(duct, direction) {
         const geometries = [];
 
         if(direction == "horizontal") {
             geometries.push(
-                this.calculateGeometryFromPoints(
+                this.createGeometryFromPoints(
                     duct.userData.proxyOriginal2Vertices[4],
                     duct.userData.proxyOriginal1Vertices[7],
                     duct.userData.proxy1Vertices[7],
@@ -845,7 +846,7 @@ export default class Joints {
                 )
             );
             geometries.push(
-                this.calculateGeometryFromPoints(
+                this.createGeometryFromPoints(
                     duct.userData.proxyOriginal2Vertices[5],
                     duct.userData.proxyOriginal1Vertices[6],
                     duct.userData.proxy1Vertices[6],
@@ -853,7 +854,7 @@ export default class Joints {
                 )
             );
             geometries.push(
-                this.calculateGeometryFromPoints(
+                this.createGeometryFromPoints(
                     duct.userData.proxyOriginal1Vertices[7],
                     duct.userData.proxyOriginal2Vertices[4],
                     duct.userData.proxyOriginal2Vertices[5],
@@ -863,7 +864,7 @@ export default class Joints {
         }
         else {
             geometries.push(
-                this.calculateGeometryFromPoints(
+                this.createGeometryFromPoints(
                     duct.userData.proxyOriginal2Vertices[4],
                     duct.userData.proxyOriginal1Vertices[4],
                     duct.userData.proxy1Vertices[4],
@@ -871,7 +872,7 @@ export default class Joints {
                 )
             );
             geometries.push(
-                this.calculateGeometryFromPoints(
+                this.createGeometryFromPoints(
                     duct.userData.proxyOriginal2Vertices[7],
                     duct.userData.proxyOriginal1Vertices[7],
                     duct.userData.proxy1Vertices[7],
@@ -879,7 +880,7 @@ export default class Joints {
                 )
             );
             geometries.push(
-                this.calculateGeometryFromPoints(
+                this.createGeometryFromPoints(
                     duct.userData.proxyOriginal1Vertices[7],
                     duct.userData.proxyOriginal2Vertices[6],
                     duct.userData.proxyOriginal2Vertices[5],
@@ -891,8 +892,8 @@ export default class Joints {
         return geometries;
     }
 
-    create2DBackwall(points, largestSize = 1000) {
-        console.log("create2DBackwall started:", points);
+    createJointBackwall(points, largestGlobalSize = 1000) {
+        console.log("createJointBackwall started:", points);
         if (points.length < 3) {
             throw new Error("A shape requires at least 3 points.");
         }
@@ -918,7 +919,7 @@ export default class Joints {
 
         // Rotate and position the mesh
         mesh.rotation.x = Math.PI / 2;
-        mesh.position.y += (largestSize / 2) - 15;
+        mesh.position.y += (largestGlobalSize / 2) - 15;
 
         mesh.position.y += wallThickness;
 
@@ -926,10 +927,24 @@ export default class Joints {
 
         // Add an optional wireframe
         const wireframe = new THREE.WireframeGeometry(mesh.geometry);
-        const lineMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
+        const lineMaterial = new THREE.LineBasicMaterial({ 
+            color: 0x000000 
+        });
+
+        // Enable depth testing and set render order to ensure visibility
+        lineMaterial.depthTest = false; // Makes sure the wireframe is rendered on top
+        lineMaterial.renderOrder = 3;  // Prioritize rendering order (higher values render later)
+        // lineMaterial.opacity = 0.3;
+
+        // Create the wireframe mesh
         const wireframeMesh = new THREE.LineSegments(wireframe, lineMaterial);
-        wireframeMesh.visible = false;
+        wireframeMesh.visible = false; // Set visibility based on your requirements
         mesh.add(wireframeMesh); // Add wireframe as a child of the original mesh
+
+        // Ensure the original mesh is rendered with a slight polygon offset
+        // mesh.material.polygonOffset = true;
+        // mesh.material.polygonOffsetFactor = 2; // Adjust this value as needed
+        // mesh.material.polygonOffsetUnits = 5;  // Fine-tune offset to prevent Z-fighting
 
         this.sceneHelper.addToScene(mesh);
     }
@@ -938,7 +953,7 @@ export default class Joints {
         const geometries = [];
 
         geometries.push(
-            this.calculateGeometryFromPoints(
+            this.createGeometryFromPoints(
                 leftProxy[2],
                 rightProxy[2],
                 rightProxy[6],
@@ -946,7 +961,7 @@ export default class Joints {
             )
         );
         geometries.push(
-            this.calculateGeometryFromPoints(
+            this.createGeometryFromPoints(
                 leftProxy[0],
                 rightProxy[0],
                 rightProxy[4],
@@ -954,7 +969,7 @@ export default class Joints {
             )
         );
         geometries.push(
-            this.calculateGeometryFromPoints(
+            this.createGeometryFromPoints(
                 leftProxy[3],
                 rightProxy[0],
                 rightProxy[1],
@@ -962,7 +977,7 @@ export default class Joints {
             )
         );
         geometries.push(
-            this.calculateGeometryFromPoints(
+            this.createGeometryFromPoints(
                 leftProxy[4],
                 rightProxy[7],
                 rightProxy[6],
@@ -977,7 +992,7 @@ export default class Joints {
         const geometries = [];
 
         geometries.push(
-            this.calculateGeometryFromPoints(
+            this.createGeometryFromPoints(
                 topProxy[2],
                 bottomProxy[3],
                 bottomProxy[7],
@@ -985,7 +1000,7 @@ export default class Joints {
             )
         );
         geometries.push(
-            this.calculateGeometryFromPoints(
+            this.createGeometryFromPoints(
                 topProxy[1],
                 bottomProxy[1],
                 bottomProxy[5],
@@ -993,7 +1008,7 @@ export default class Joints {
             )
         );
         geometries.push(
-            this.calculateGeometryFromPoints(
+            this.createGeometryFromPoints(
                 topProxy[1],
                 bottomProxy[0],
                 bottomProxy[3],
@@ -1001,7 +1016,7 @@ export default class Joints {
             )
         );
         geometries.push(
-            this.calculateGeometryFromPoints(
+            this.createGeometryFromPoints(
                 topProxy[6],
                 bottomProxy[7],
                 bottomProxy[4],
@@ -1012,7 +1027,7 @@ export default class Joints {
         return geometries;
     }
 
-    calculateGeometryFromPoints(pointA, pointB, pointC, pointD) {
+    createGeometryFromPoints(pointA, pointB, pointC, pointD) {
         // Create an array of vertices
         const vertices = new Float32Array([
             pointA.x, pointA.y, pointA.z, // Vertex 0
@@ -1047,7 +1062,7 @@ export default class Joints {
 
         if(pairDirection == "vertical") {
             geometries.push(
-                this.calculateGeometryFromPoints(
+                this.createGeometryFromPoints(
                     intersection.up.segment.duct.userData.proxy1Vertices[1],
                     intersection.down.segment.duct.userData.proxy1Vertices[1],
                     intersection.down.segment.duct.userData.proxy1Vertices[5],
@@ -1055,7 +1070,7 @@ export default class Joints {
                 )
             );
             geometries.push(
-                this.calculateGeometryFromPoints(
+                this.createGeometryFromPoints(
                     intersection.up.segment.duct.userData.proxy1Vertices[0],
                     intersection.down.segment.duct.userData.proxy1Vertices[0],
                     intersection.down.segment.duct.userData.proxy1Vertices[4],
@@ -1063,7 +1078,7 @@ export default class Joints {
                 )
             );
             geometries.push(
-                this.calculateGeometryFromPoints(
+                this.createGeometryFromPoints(
                     intersection.up.segment.duct.userData.proxy1Vertices[0],
                     intersection.down.segment.duct.userData.proxy1Vertices[3],
                     intersection.down.segment.duct.userData.proxy1Vertices[2],
@@ -1071,7 +1086,7 @@ export default class Joints {
                 )
             );
             geometries.push(
-                this.calculateGeometryFromPoints(
+                this.createGeometryFromPoints(
                     intersection.up.segment.duct.userData.proxy1Vertices[4],
                     intersection.down.segment.duct.userData.proxy1Vertices[4],
                     intersection.down.segment.duct.userData.proxy1Vertices[5],
@@ -1079,7 +1094,7 @@ export default class Joints {
                 )
             );
             geometries.push(
-                this.calculateGeometryFromPoints(
+                this.createGeometryFromPoints(
                     intersection.up.segment.duct.userData.proxyOriginal1Vertices[7],
                     intersection.up.segment.duct.userData.proxyOriginal2Vertices[7],
                     intersection.up.segment.duct.userData.proxy2Vertices[7],
@@ -1087,7 +1102,7 @@ export default class Joints {
                 )
             );
             geometries.push(
-                this.calculateGeometryFromPoints(
+                this.createGeometryFromPoints(
                     intersection.down.segment.duct.userData.proxyOriginal1Vertices[5],
                     intersection.down.segment.duct.userData.proxyOriginal2Vertices[5],
                     intersection.down.segment.duct.userData.proxy2Vertices[5],
@@ -1095,7 +1110,7 @@ export default class Joints {
                 )
             );
             geometries.push(
-                this.calculateGeometryFromPoints(
+                this.createGeometryFromPoints(
                     intersection.down.segment.duct.userData.proxyOriginal1Vertices[4],
                     intersection.down.segment.duct.userData.proxyOriginal2Vertices[4],
                     intersection.down.segment.duct.userData.proxyOriginal2Vertices[5],
@@ -1103,7 +1118,7 @@ export default class Joints {
                 )
             );
             geometries.push(
-                this.calculateGeometryFromPoints(
+                this.createGeometryFromPoints(
                     intersection.up.segment.duct.userData.proxy1Vertices[4],
                     intersection.down.segment.duct.userData.proxy2Vertices[4],
                     intersection.down.segment.duct.userData.proxy2Vertices[5],
@@ -1111,7 +1126,7 @@ export default class Joints {
                 )
             );
             geometries.push(
-                this.calculateGeometryFromPoints(
+                this.createGeometryFromPoints(
                     intersection.up.segment.duct.userData.proxy2Vertices[1],
                     intersection.down.segment.duct.userData.proxy2Vertices[1],
                     intersection.down.segment.duct.userData.proxy2Vertices[5],
@@ -1119,7 +1134,7 @@ export default class Joints {
                 )
             );
             geometries.push(
-                this.calculateGeometryFromPoints(
+                this.createGeometryFromPoints(
                     intersection.up.segment.duct.userData.proxy2Vertices[0],
                     intersection.down.segment.duct.userData.proxy2Vertices[0],
                     intersection.down.segment.duct.userData.proxy2Vertices[4],
@@ -1127,7 +1142,7 @@ export default class Joints {
                 )
             );
             geometries.push(
-                this.calculateGeometryFromPoints(
+                this.createGeometryFromPoints(
                     intersection.up.segment.duct.userData.proxy2Vertices[0],
                     intersection.down.segment.duct.userData.proxy2Vertices[3],
                     intersection.down.segment.duct.userData.proxy2Vertices[2],
@@ -1135,7 +1150,7 @@ export default class Joints {
                 )
             );
             geometries.push(
-                this.calculateGeometryFromPoints(
+                this.createGeometryFromPoints(
                     intersection.up.segment.duct.userData.proxy2Vertices[4],
                     intersection.down.segment.duct.userData.proxy2Vertices[4],
                     intersection.down.segment.duct.userData.proxy2Vertices[5],
@@ -1145,7 +1160,7 @@ export default class Joints {
         }
         if(pairDirection == "horizontal") {
             geometries.push(
-                this.calculateGeometryFromPoints(
+                this.createGeometryFromPoints(
                     intersection.left.segment.duct.userData.proxy1Vertices[2],
                     intersection.right.segment.duct.userData.proxy1Vertices[2],
                     intersection.right.segment.duct.userData.proxy1Vertices[6],
@@ -1153,7 +1168,7 @@ export default class Joints {
                 )
             );
             geometries.push(
-                this.calculateGeometryFromPoints(
+                this.createGeometryFromPoints(
                     intersection.left.segment.duct.userData.proxy1Vertices[1],
                     intersection.right.segment.duct.userData.proxy1Vertices[1],
                     intersection.right.segment.duct.userData.proxy1Vertices[5],
@@ -1161,7 +1176,7 @@ export default class Joints {
                 )
             );
             geometries.push(
-                this.calculateGeometryFromPoints(
+                this.createGeometryFromPoints(
                     intersection.left.segment.duct.userData.proxy1Vertices[1],
                     intersection.right.segment.duct.userData.proxy1Vertices[0],
                     intersection.right.segment.duct.userData.proxy1Vertices[3],
@@ -1169,7 +1184,7 @@ export default class Joints {
                 )
             );
             geometries.push(
-                this.calculateGeometryFromPoints(
+                this.createGeometryFromPoints(
                     intersection.left.segment.duct.userData.proxy1Vertices[5],
                     intersection.right.segment.duct.userData.proxy1Vertices[5],
                     intersection.right.segment.duct.userData.proxy1Vertices[6],
@@ -1177,7 +1192,7 @@ export default class Joints {
                 )
             );
             geometries.push(
-                this.calculateGeometryFromPoints(
+                this.createGeometryFromPoints(
                     intersection.right.segment.duct.userData.proxyOriginal1Vertices[5],
                     intersection.right.segment.duct.userData.proxyOriginal2Vertices[5],
                     intersection.right.segment.duct.userData.proxy2Vertices[5],
@@ -1185,7 +1200,7 @@ export default class Joints {
                 )
             );
             geometries.push(
-                this.calculateGeometryFromPoints(
+                this.createGeometryFromPoints(
                     intersection.right.segment.duct.userData.proxyOriginal1Vertices[6],
                     intersection.right.segment.duct.userData.proxyOriginal2Vertices[6],
                     intersection.right.segment.duct.userData.proxy2Vertices[6],
@@ -1193,7 +1208,7 @@ export default class Joints {
                 )
             );
             geometries.push(
-                this.calculateGeometryFromPoints(
+                this.createGeometryFromPoints(
                     intersection.right.segment.duct.userData.proxyOriginal1Vertices[5],
                     intersection.right.segment.duct.userData.proxyOriginal2Vertices[5],
                     intersection.right.segment.duct.userData.proxyOriginal2Vertices[6],
@@ -1201,7 +1216,7 @@ export default class Joints {
                 )
             );
             geometries.push(
-                this.calculateGeometryFromPoints(
+                this.createGeometryFromPoints(
                     intersection.left.segment.duct.userData.proxy1Vertices[5],
                     intersection.right.segment.duct.userData.proxy2Vertices[5],
                     intersection.right.segment.duct.userData.proxy2Vertices[6],
@@ -1209,7 +1224,7 @@ export default class Joints {
                 )
             );
             geometries.push(
-                this.calculateGeometryFromPoints(
+                this.createGeometryFromPoints(
                     intersection.left.segment.duct.userData.proxy2Vertices[2],
                     intersection.right.segment.duct.userData.proxy2Vertices[2],
                     intersection.right.segment.duct.userData.proxy2Vertices[6],
@@ -1217,7 +1232,7 @@ export default class Joints {
                 )
             );
             geometries.push(
-                this.calculateGeometryFromPoints(
+                this.createGeometryFromPoints(
                     intersection.left.segment.duct.userData.proxy2Vertices[1],
                     intersection.right.segment.duct.userData.proxy2Vertices[1],
                     intersection.right.segment.duct.userData.proxy2Vertices[5],
@@ -1225,7 +1240,7 @@ export default class Joints {
                 )
             );
             geometries.push(
-                this.calculateGeometryFromPoints(
+                this.createGeometryFromPoints(
                     intersection.left.segment.duct.userData.proxy2Vertices[1],
                     intersection.right.segment.duct.userData.proxy2Vertices[0],
                     intersection.right.segment.duct.userData.proxy2Vertices[3],
@@ -1233,7 +1248,7 @@ export default class Joints {
                 )
             );
             geometries.push(
-                this.calculateGeometryFromPoints(
+                this.createGeometryFromPoints(
                     intersection.left.segment.duct.userData.proxy2Vertices[5],
                     intersection.right.segment.duct.userData.proxy2Vertices[5],
                     intersection.right.segment.duct.userData.proxy2Vertices[6],
@@ -1273,17 +1288,17 @@ export default class Joints {
         }
     }
 
-    createJointProxies(intersection, pairDirection = null, jointDirection = "inwards") {
+    createJointProxies(intersection, pairDirection = null, xzJointDirection = "inwards") {
         console.log("createJointProxies started");
   
         const wallThickness = 30;
   
-        let largestSize = this.innerDim["small"];
+        let largestGlobalSize = this.innerDim["small"];
         for(const key in intersection) {
             let duct = intersection[key];
             if(duct != null) {
-                if(this.innerDim[duct.xetoDuct.graphicLocation.size] > largestSize) {
-                    largestSize = this.innerDim[duct.xetoDuct.graphicLocation.size];
+                if(this.innerDim[duct.xetoDuct.graphicLocation.size] > largestGlobalSize) {
+                    largestGlobalSize = this.innerDim[duct.xetoDuct.graphicLocation.size];
                 }
             }
         }
@@ -1314,6 +1329,49 @@ export default class Joints {
             let duct = intersection[key];
 
             if(duct != null) {
+
+                let largestAdjacentSize = this.innerDim["small"];
+                if(key == "left") {
+                    let adjacentDucts = [intersection.up, intersection.down, intersection.left];
+                    for(const adjacentDuct of adjacentDucts) {
+                        if(adjacentDuct != null) {
+                            if(this.innerDim[adjacentDuct.xetoDuct.graphicLocation.size] > largestAdjacentSize) {
+                                largestAdjacentSize = this.innerDim[adjacentDuct.xetoDuct.graphicLocation.size];
+                            }
+                        }
+                    }
+                }
+                else if(key == "up") {
+                    let adjacentDucts = [intersection.left, intersection.right, intersection.up];
+                    for(const adjacentDuct of adjacentDucts) {
+                        if(adjacentDuct != null) {
+                            if(this.innerDim[adjacentDuct.xetoDuct.graphicLocation.size] > largestAdjacentSize) {
+                                largestAdjacentSize = this.innerDim[adjacentDuct.xetoDuct.graphicLocation.size];
+                            }
+                        }
+                    }
+                }
+                else if(key == "right") {
+                    let adjacentDucts = [intersection.up, intersection.down, intersection.right];
+                    for(const adjacentDuct of adjacentDucts) {
+                        if(adjacentDuct != null) {
+                            if(this.innerDim[adjacentDuct.xetoDuct.graphicLocation.size] > largestAdjacentSize) {
+                                largestAdjacentSize = this.innerDim[adjacentDuct.xetoDuct.graphicLocation.size];
+                            }
+                        }
+                    }
+                }
+                else if(key == "down") {
+                    let adjacentDucts = [intersection.left, intersection.right, intersection.down];
+                    for(const adjacentDuct of adjacentDucts) {
+                        if(adjacentDuct != null) {
+                            if(this.innerDim[adjacentDuct.xetoDuct.graphicLocation.size] > largestAdjacentSize) {
+                                largestAdjacentSize = this.innerDim[adjacentDuct.xetoDuct.graphicLocation.size];
+                            }
+                        }
+                    }
+                }
+
                 const innerDimensions = duct.segment.duct.userData.component.object.innerDimensions;
     
                 const proxy1Geometry = new THREE.BoxGeometry(
@@ -1321,15 +1379,18 @@ export default class Joints {
                     this.innerDim[duct.xetoDuct.graphicLocation.size] + y_offset, 
                     wallThickness
                 );
+
+                const ductDepth = this.innerDim[duct.xetoDuct.graphicLocation.size];
+
+                
+                this.moveProxyVertices(proxy1Geometry, ductDepth, largestGlobalSize, largestAdjacentSize);
+
                 const proxyOriginal1Geometry = new THREE.BoxGeometry(
                     wallThickness, 
                     this.innerDim[duct.xetoDuct.graphicLocation.size] + y_offset, 
                     wallThickness
                 );
                 const proxyOriginal1 = new THREE.Mesh(proxyOriginal1Geometry, material4); 
-
-                const ductDepth = this.innerDim[duct.xetoDuct.graphicLocation.size];
-                this.moveProxyVertices(proxy1Geometry, (largestSize - ductDepth) / 2);
 
                 const proxy1 = new THREE.Mesh(proxy1Geometry, material);
                 proxy1.position.copy(duct.segment.duct.userData.component.object.position);
@@ -1339,22 +1400,24 @@ export default class Joints {
                     this.innerDim[duct.xetoDuct.graphicLocation.size] + y_offset, 
                     wallThickness
                 );
+
+                this.moveProxyVertices(proxy2Geometry, ductDepth, largestGlobalSize, largestAdjacentSize);
+                const proxy2 = new THREE.Mesh(proxy2Geometry, material2);
+
                 const proxyOriginal2Geometry = new THREE.BoxGeometry(
                     wallThickness, 
                     this.innerDim[duct.xetoDuct.graphicLocation.size] + y_offset, 
                     wallThickness
                 );
-                const proxyOriginal2 = new THREE.Mesh(proxyOriginal2Geometry, material5);
-
-                this.moveProxyVertices(proxy2Geometry, (largestSize - ductDepth) / 2);
-                const proxy2 = new THREE.Mesh(proxy2Geometry, material2);
+                const proxyOriginal2 = new THREE.Mesh(proxyOriginal2Geometry, material5);                
         
                 const proxyMedianGeometry = new THREE.BoxGeometry(
                     wallThickness, 
                     this.innerDim[duct.xetoDuct.graphicLocation.size] + y_offset,
                     wallThickness
                 );
-                this.moveProxyVertices(proxyMedianGeometry, (largestSize - ductDepth) / 2);
+                
+                this.moveProxyVertices(proxyMedianGeometry, ductDepth, largestGlobalSize, largestAdjacentSize);
                 const proxyMedian = new THREE.Mesh(proxyMedianGeometry, material3);
 
                 if(key == "up") {
@@ -1413,11 +1476,11 @@ export default class Joints {
                 // material4.color.setHex("0xFF0000");
                 // material5.color.setHex("0x0000FF");
         
-                proxy1.name = "jointHelper";
-                proxy2.name = "jointHelper";
-                proxyOriginal1.name = "jointHelper";
-                proxyOriginal2.name = "jointHelper";
-                proxyMedian.name = "jointHelper";
+                proxy1.name = "jointHelperProxy";
+                proxy2.name = "jointHelperProxy";
+                proxyOriginal1.name = "jointHelperProxy";
+                proxyOriginal2.name = "jointHelperProxy";
+                proxyMedian.name = "jointHelperProxy";
 
                 proxy1.userData = {
                     helperColor: "0xFF0000",
@@ -1474,11 +1537,11 @@ export default class Joints {
   
         }
 
-        if(jointDirection == "inwards") {
+        if(xzJointDirection == "inwards") {
             this.alignProxyMediansInwards(intersection); 
             
         }
-        else if(jointDirection == "outwards") {
+        else if(xzJointDirection == "outwards") {
             this.alignProxyMediansOutwards(intersection); 
         }                  
   
@@ -1492,7 +1555,7 @@ export default class Joints {
             }
         }
 
-        return largestSize;
+        return largestGlobalSize;
   
     }
 
@@ -1695,20 +1758,23 @@ export default class Joints {
         }
     }
 
-    moveProxyVertices(proxyGeometry, length) {
+    moveProxyVertices(proxyGeometry, ductDepth, largestGlobalSize, largestAdjacentSize) {
+
+        const globalLength = ((largestGlobalSize - ductDepth) / 2);
+        const adjacentLength = ((largestAdjacentSize - ductDepth) / 2);
+
         // Access the position attribute
         const positionAttribute = proxyGeometry.attributes.position;
 
-        // Modify specific vertices (example: adjust the top vertices of the box)
         for (let i = 0; i < positionAttribute.count; i++) {
             const y = positionAttribute.getY(i);
 
-            // Example: Move vertices with y > 0.5 upwards by 500 units
+            // Move vertices with y > 0.5 upwards by "globalLength/adjacentLength" units
             if (y > 0.5) {
-                positionAttribute.setY(i, y + length + 30);
+                positionAttribute.setY(i, y + globalLength + 30);
             }
             else if (y < 0.5) {
-                positionAttribute.setY(i, y - length - 30);
+                positionAttribute.setY(i, y - adjacentLength - 30);
             }
         }
 

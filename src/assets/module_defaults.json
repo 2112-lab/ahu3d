@@ -127,13 +127,23 @@
         }
 	},
     "xeto": {
-        "jointBlock": {
-            "id": "r:novo.graphics::AHU-1",
-            "spec": "r:novo.graphics::AhuJoints",
-            "padding": 0,
-            "style": "orthogonal",
-            "direction": "inwards",
-            "context": "global"
+        "joints": {
+            "XZ": {
+                "style": "orthogonal",
+                "direction": "outwards", 
+                "context": "adjacent",
+                "padding": 250
+            },
+            "XY": {
+                "style": "diagonal",
+                "direction": "inwards",
+                "context": "adjacent"
+            },
+            "YZ": {
+                "style": "diagonal",
+                "direction": "inwards",
+                "context": "adjacent"
+            }
         }
     }
 }

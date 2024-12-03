@@ -113,19 +113,9 @@ class Import {
 
         this.validator.propogateBlockStyle(xetoDictionary);
 
-        console.log("Import.js this.moduleConfigs:", this.moduleConfigs);
-
-        if(xetoDictionary.ahuJoints == undefined) {
-            xetoDictionary.ahuJoints = this.moduleConfigs.xeto.jointBlock;
-        }
-        else if(xetoDictionary.ahuJoints.direction != "outwards" && xetoDictionary.ahuJoints.direction != "inwards") {
-            xetoDictionary.ahuJoints.direction = this.moduleConfigs.xeto.jointBlock.direction;
-        }
-
         const cleanedXeto = [
             xetoDictionary.ductsDictionary,
             ...xetoDictionary.ahuGroup,
-            xetoDictionary.ahuJoints,
             ...xetoDictionary.ductsList,
             ...xetoDictionary.componentsList,
         ];

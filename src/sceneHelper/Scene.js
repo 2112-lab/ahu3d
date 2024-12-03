@@ -599,7 +599,9 @@ class Scene {
     clearScene() {
         console.log("clearScene started:");
         const sceneChildren = this.scene.children.filter(
-          (child) => child.name == 'hvac' && child.isObject3D && child.visible
+          (child) => 
+            child.name == 'hvac' && child.isObject3D && child.visible ||
+            child.name == 'duct' && child.isObject3D
         );
       
         sceneChildren.forEach((child) => {
@@ -617,9 +619,7 @@ class Scene {
           (child) => 
             child.name == 'arrowClone' || 
             child.name == 'textMesh' ||
-            child.name == 'jointHelper' ||
-            child.name == 'jointHelperVertices' ||
-            child.name == 'joint'
+            child.name.includes('joint')
         );
         sceneIndicators.forEach((child) => {
           this.scene.remove(child);
