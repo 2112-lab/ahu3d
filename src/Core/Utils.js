@@ -645,4 +645,19 @@ export default class Utils {
     });
   }
 
+  setShowComponents(value) {
+    this.sceneHelper.scene.traverse((object3d) => {
+      if (object3d.isObject3D) {
+        if(object3d.name === 'hvac') {
+          object3d.traverse(child => {
+            if (child.isMesh) {
+              child.visible = value;
+            }
+          });
+
+        }
+      }
+    });
+  }
+
 }
