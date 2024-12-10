@@ -79,6 +79,8 @@ export default class Arithmetics {
             large: 1.5
         }     
 
+        
+
         // const assemblySegments = this.calculateAssembly(); // Precalculate the assembly segments.
 
         // return assemblySegments; // Return the precalculated segments.
@@ -104,6 +106,15 @@ export default class Arithmetics {
         this.cleanedXeto = cleanedXeto; // Store the cleaned assembly data.
         this.ahuGroup = cleanedXeto.filter(child => child.spec.includes('AhuGroup'))[0];
         this.assemblyGridBounds = this.ahuGroup.graphicLocation; // Get the grid bounds for the AHU group.
+
+        this.jointBlockStyle = this.ahuGroup.blockStyle.joints;
+
+        this.xzJointStyle = this.jointBlockStyle.XZ.style;
+        this.xzJointDirection = this.jointBlockStyle.XZ.direction;
+        this.xzJointContext = this.jointBlockStyle.XZ.context;
+
+        this.xzJointYStyle = this.jointBlockStyle.XZ.yStyle;
+        this.xzJointYDirection = this.jointBlockStyle.XZ.yDirection;
 
         const ductsList = this.cleanedXeto.filter(child => child.spec.includes('DuctEdge')); // Filter the ducts from the cleaned assembly.
 
@@ -148,8 +159,6 @@ export default class Arithmetics {
         this.determineFlowDirections(this.assemblySegments); // Determine and adjust flow directions for ducts
 
         this.createFlowIndicators(); // Create arrows for the ducts with open ends.
-
-        // this.locateDuctCorners();
 
         return this.assemblySegments; // Return the assembly segments.
     }
@@ -793,228 +802,6 @@ export default class Arithmetics {
     }
 
     /**
-     * locateDuctCorners
-     * 
-     * Identifies the four corners of a duct based on its position and dimensions.
-     * 
-     * @param {Object} duct - The duct object containing position and size information.
-     * @returns {Array} An array of corner positions for the duct.
-     */
-    locateDuctCorners() {
-        console.log("locateDuctCorners this.assemblySegments:", this.assemblySegments);
-    
-        for (const duct of this.assemblySegments) {
-            const ductObject = duct.segment.duct.userData.component.object;
-            let { x, y, z } = ductObject.innerDimensions;
-            const pos = ductObject.position;
-        
-            // Calculate the half-dimensions based on the (potentially swapped) orientation
-            const halfWidth = x / 2;
-            const halfDepth = y / 2;
-            const halfHeight = z / 2;
-        
-            // Define the eight corners based on the center position and dimensions
-            duct.boundaryCorners = [
-                { x: (pos.x - halfWidth), y: pos.y - halfDepth, z: pos.z - halfHeight },
-                { x: (pos.x + halfWidth), y: pos.y - halfDepth, z: pos.z - halfHeight },
-                { x: (pos.x - halfWidth), y: pos.y + halfDepth, z: pos.z - halfHeight },
-                { x: (pos.x + halfWidth), y: pos.y + halfDepth, z: pos.z - halfHeight },
-                { x: (pos.x - halfWidth), y: pos.y - halfDepth, z: pos.z + halfHeight },
-                { x: (pos.x + halfWidth), y: pos.y - halfDepth, z: pos.z + halfHeight },
-                { x: (pos.x - halfWidth), y: pos.y + halfDepth, z: pos.z + halfHeight },
-                { x: (pos.x + halfWidth), y: pos.y + halfDepth, z: pos.z + halfHeight }
-            ];
-        
-            // console.log("locateDuctCorners duct.boundaryCorners:", duct.boundaryCorners);
-        }
-
-        this.indicateCorners(this.assemblySegments[0].boundaryCorners);
-        this.indicateCorners(this.assemblySegments[1].boundaryCorners);
-        this.indicateCorners(this.assemblySegments[2].boundaryCorners);
-        this.indicateCorners(this.assemblySegments[3].boundaryCorners);     
-
-        const closestEdges1 = this.findclosestEdges(this.assemblySegments[0].boundaryCorners, this.assemblySegments[1].boundaryCorners);
-        this.indicateEdge(closestEdges1.duct1Edge);
-        this.indicateEdge(closestEdges1.duct2Edge);
-
-        const closestEdges2 = this.findclosestEdges(this.assemblySegments[1].boundaryCorners, this.assemblySegments[2].boundaryCorners);
-        this.indicateEdge(closestEdges2.duct1Edge);
-        this.indicateEdge(closestEdges2.duct2Edge);
-
-        const closestEdges3 = this.findclosestEdges(this.assemblySegments[2].boundaryCorners, this.assemblySegments[3].boundaryCorners);
-        this.indicateEdge(closestEdges3.duct1Edge);
-        this.indicateEdge(closestEdges3.duct2Edge);
-
-        const closestEdges4 = this.findclosestEdges(this.assemblySegments[3].boundaryCorners, this.assemblySegments[0].boundaryCorners);
-        this.indicateEdge(closestEdges4.duct1Edge);
-        this.indicateEdge(closestEdges4.duct2Edge);
-
-        console.log("locateDuctCorners closestEdges1:", JSON.stringify(closestEdges1, null, 2));
-        console.log("locateDuctCorners closestEdges2:", JSON.stringify(closestEdges2, null, 2));
-        console.log("locateDuctCorners closestEdges3:", JSON.stringify(closestEdges3, null, 2));
-        console.log("locateDuctCorners closestEdges4:", JSON.stringify(closestEdges4, null, 2));
-
-        const closestEdgeCollection = [closestEdges1, closestEdges2, closestEdges3, closestEdges4];
-        this.renderJointCorners(closestEdgeCollection, areHelpersOn);
-    }
-
-    /**
-     * renderJointCorners
-     * 
-     * Computes the corner positions for a given joint, considering its placement and orientation.
-     * 
-     * @param {Object} joint - The joint object containing position and orientation details.
-     * @returns {Array} An array of corner positions for the joint.
-     */
-    renderJointCorners(closestEdgeCollection, areHelpersOn) {
-        console.log("renderJointCorners started");
-        if(areHelpersOn) {
-            let i = 0;
-            let j = 1;
-            for(const edgePair of closestEdgeCollection) {
-                const material1 = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
-                const material2 = new THREE.MeshStandardMaterial({ color: 0xff00ff });
-                const material3 = new THREE.MeshStandardMaterial({ color: 0x00ffff });
-                const material4 = new THREE.MeshStandardMaterial({ color: 0xffff00 });
-                
-                const cubeGeometry1 = new THREE.BoxGeometry(
-                    60, 60, 60
-                );
-                const cube1 = new THREE.Mesh(cubeGeometry1, material1);
-                cube1.position.x = edgePair.duct1Edge.x;
-                cube1.position.y = this.innerDim[this.assemblySegments[i].xetoDuct.graphicLocation.size]/2;
-                cube1.position.z = edgePair.duct1Edge.z;
-                cube1.name = "jointHelperVertices";
-                this.sceneHelper.addToScene(cube1);
-
-                const cubeGeometry2 = new THREE.BoxGeometry(
-                    60, 60, 60
-                );
-                const cube2 = new THREE.Mesh(cubeGeometry2, material2);
-                cube2.position.x = edgePair.duct2Edge.x;
-                cube2.position.y = this.innerDim[this.assemblySegments[j].xetoDuct.graphicLocation.size]/2;
-                cube2.position.z = edgePair.duct2Edge.z;
-                cube2.name = "jointHelperVertices";
-                this.sceneHelper.addToScene(cube2);
-                
-                const cubeGeometry3 = new THREE.BoxGeometry(
-                    60, 60, 60
-                );
-                const cube3 = new THREE.Mesh(cubeGeometry3, material3);
-                cube3.position.x = edgePair.duct1Edge.x;
-                cube3.position.y = this.innerDim[this.assemblySegments[i].xetoDuct.graphicLocation.size]/-2;
-                cube3.position.z = edgePair.duct1Edge.z;
-                cube3.name = "jointHelperVertices";
-                this.sceneHelper.addToScene(cube3);
-
-                const cubeGeometry4 = new THREE.BoxGeometry(
-                    60, 60, 60
-                );
-                const cube4 = new THREE.Mesh(cubeGeometry4, material4);
-                cube4.position.x = edgePair.duct2Edge.x;
-                cube4.position.y = this.innerDim[this.assemblySegments[j].xetoDuct.graphicLocation.size]/-2;
-                cube4.position.z = edgePair.duct2Edge.z;
-                cube4.name = "jointHelperVertices";
-                this.sceneHelper.addToScene(cube4);
-
-                i++;
-                j++;
-                if(j == 4) {
-                    j = 0;
-                }
-            }
-        }
-        
-    }
-
-    /**
-     * indicateEdge
-     * 
-     * Highlights or marks a specific edge of a segment for visual representation or further processing.
-     * 
-     * @param {Object} segment - The segment object containing edge information.
-     * @param {String} edge - The specific edge to indicate (e.g., "left", "right").
-     */
-    indicateEdge(ductCorner) {
-        // const cubeGeometry = new THREE.BoxGeometry(
-        //     60, 60, 60
-        // );
-        // const material = new THREE.MeshStandardMaterial({ color: 0x0000ff, wireframe: false });
-        // const cube = new THREE.Mesh(cubeGeometry, material);
-        // cube.position.x = ductCorner.x;
-        // cube.position.z = ductCorner.z;
-        // this.sceneHelper.addToScene(cube);
-    }
-
-    /**
-     * indicateCorners
-     * 
-     * Marks or highlights the corners of a segment for visual representation or debugging.
-     * 
-     * @param {Object} segment - The segment object containing corner positions.
-     */
-    indicateCorners(boundaryCorners) {
-        for(const corner of boundaryCorners) {
-            const cubeGeometry = new THREE.BoxGeometry(
-                60, 60, 60
-            );
-            const material = new THREE.MeshStandardMaterial({ color: 0xff0000, wireframe: false });
-            const cube = new THREE.Mesh(cubeGeometry, material);
-            cube.position.x = corner.x;
-            cube.position.z = corner.z;
-            // this.sceneHelper.addToScene(cube);
-        }
-    }
-
-    /**
-     * findClosestEdges
-     * 
-     * Finds and returns the edges of a segment that are closest to a given reference point or segment.
-     * 
-     * @param {Object} segment - The segment to analyze for closest edges.
-     * @param {Object} reference - The reference point or segment for comparison.
-     * @returns {Array} An array of the closest edge positions.
-     */
-    findclosestEdges(duct1, duct2) {
-        let minDistance = Infinity;
-        let closestPair = {};
-    
-        duct1.forEach(corner1 => {
-            duct2.forEach(corner2 => {
-                // Calculate the Euclidean distance between corner1 and corner2
-                const distance = Math.sqrt(
-                    Math.pow(corner1.x - corner2.x, 2) +
-                    Math.pow(corner1.y - corner2.y, 2) +
-                    Math.pow(corner1.z - corner2.z, 2)
-                );
-    
-                // Check if this is the smallest distance found so far
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    closestPair = { duct1Edge: corner1, duct2Edge: corner2 };
-                }
-            });
-        });
-    
-        return closestPair;
-    }
-
-    /**
-     * relativePlacement
-     * 
-     * Determines the relative placement of one segment with respect to another, 
-     * indicating if it is to the left, right, above, or below.
-     * 
-     * @param {Object} segmentA - The first segment.
-     * @param {Object} segmentB - The second segment for comparison.
-     * @returns {String} The relative placement (e.g., "left", "right", "above", "below").
-     */
-    relativePlacement(diffPoint, xetoDuct) {
-        console.log("relativePlacement diffPoint:", diffPoint);
-        console.log("relativePlacement xetoDuct:", xetoDuct);
-    }
-
-    /**
      * getSegmentDirection
      * 
      * Determines the direction of a segment based on its start and end positions.
@@ -1136,11 +923,7 @@ export default class Arithmetics {
     placeIntersection(key) {
         console.log("placeIntersection started");
 
-        const jointBlockStyle = this.ahuGroup.blockStyle.joints;
-
         let xzJointPadding = this.ahuGroup.blockStyle.joints.XZ.padding;
-        const xzJointDirection = this.ahuGroup.blockStyle.joints.XZ.direction;
-        const xzJointContext = this.ahuGroup.blockStyle.joints.XZ.context;
 
         if(this.ductsDictionary[key].length == 4) {
             console.log("placeIntersection 4*");
@@ -1313,7 +1096,7 @@ export default class Arithmetics {
                 this.translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
             }
               
-            const largestGlobalSize = this.createJointProxies(intersectSegments, null, jointBlockStyle);
+            const largestGlobalSize = this.createJointProxies(intersectSegments, null);
             this.createCrossJoint(intersectSegments, largestGlobalSize);
             
 
@@ -1655,8 +1438,8 @@ export default class Arithmetics {
                 }
             }
 
-            const largestGlobalSize = this.createJointProxies(intersectSegments, null, jointBlockStyle);
-            this.createTJoint(intersectSegments, xzJointDirection, largestGlobalSize);
+            const largestGlobalSize = this.createJointProxies(intersectSegments, null);
+            this.createTJoint(intersectSegments, largestGlobalSize);
     
         }
         else if(this.ductsDictionary[key].length == 2) {
@@ -1781,12 +1564,12 @@ export default class Arithmetics {
                 }
             }
 
-            const largestGlobalSize = this.createJointProxies(intersectSegments, pairDirection, jointBlockStyle);
+            const largestGlobalSize = this.createJointProxies(intersectSegments, pairDirection);
             if(pairDirection) {
                 this.createParallelJoint(intersectSegments, pairDirection);
             }
             else {
-                this.createLJoint(intersectSegments, xzJointDirection, largestGlobalSize);
+                this.createLJoint(intersectSegments, largestGlobalSize);
             }
             
         }
@@ -1885,121 +1668,6 @@ export default class Arithmetics {
                 return JSON.parse(JSON.stringify(this.CrossJointEntry)); // Return the Cross-Joint entry for three intersections.
             default:
                 return JSON.parse(JSON.stringify(this.LJointEntry)); // Default to the L-Joint entry.
-        }
-    }
-
-    /**
-     * spawnJoint
-     * 
-     * Spawns a joint at the intersection of segments, placing it in the correct position 
-     * and orientation based on the segment's orientation.
-     * 
-     * @param {Object} segmentCopy - A copy of the current segment.
-     * @param {Object} JointEntry - The joint entry to use.
-     * @param {Boolean} isTop - Whether the joint is on the top side.
-     * @param {Array} intersections - The list of intersecting segments.
-     * @param {Object} segmentRef - A reference to the current segment.
-     */
-    async spawnJoint(segmentCopy, JointEntry, isTop, intersections, segmentRef) {
-        const joint = {
-            userData: {
-                component: JSON.parse(JSON.stringify(JointEntry)) // Clone the joint entry.
-            }
-        }
-        
-        joint.userData.component.object.position = segmentCopy.segment.duct.userData.component.object.position; // Set the joint's position to the segment's position.
-        let length = ((segmentCopy.segment.duct.userData.component.attributes.length.value) / 2) - 530; // Calculate the length of the joint.
-
-        for (const intersection of intersections) { // Iterate over each intersection.
-            intersection.relativePosition = this.getRelativePosition(segmentCopy, intersection); // Determine the relative position of the intersection.
-        }
-
-        let jointQuadrant = 1; // Initialize the joint quadrant.
-        const pos0 = intersections[0].relativePosition; // Get the relative position of the first intersection.
-
-        if (intersections.length == 2) { // If there are two intersections.
-            const pos1 = intersections[1].relativePosition; // Get the relative position of the second intersection.
-            if (pos0 == 'left' && pos1 == 'top' || pos0 == 'top' && pos1 == 'left') {
-                jointQuadrant = 4; // Set the joint quadrant based on the relative positions.
-            } else if (pos0 == 'left' && pos1 == 'bottom' || pos0 == 'bottom' && pos1 == 'left') {
-                jointQuadrant = 4;
-            } else if (pos0 == 'left' && pos1 == 'right' || pos0 == 'right' && pos1 == 'left') {
-                if (isTop) {
-                    jointQuadrant = 3;
-                } else {
-                    jointQuadrant = 1;
-                }
-            } else if (pos0 == 'right' && pos1 == 'top' || pos0 == 'top' && pos1 == 'right') {
-                jointQuadrant = 2;
-            } else if (pos0 == 'right' && pos1 == 'bottom' || pos0 == 'bottom' && pos1 == 'right') {
-                jointQuadrant = 2;
-            }
-        }
-
-        if (intersections.length == 1) { // If there is only one intersection.
-            if (isTop && pos0 == 'left') {
-                jointQuadrant = 4; // Set the joint quadrant based on the relative position.
-            } else if (!isTop && pos0 == 'left') {
-                jointQuadrant = 1;
-            } else if (isTop && pos0 == 'right') {
-                jointQuadrant = 3;
-            } else if (!isTop && pos0 == 'right') {
-                jointQuadrant = 2;
-            }
-        }
-
-        if (isTop) {
-            joint.userData.component.object.position.z += length + 1060; // Adjust the joint's z-position if it's on the top.
-        } else if (isTop == false) {
-            joint.userData.component.object.position.z -= length + 1060; // Adjust the joint's z-position if it's on the bottom.
-        }
-
-        if (jointQuadrant == 2) {
-            joint.userData.component.object.rotation.y = THREE.MathUtils.degToRad(90); // Rotate the joint based on the quadrant.
-        } else if (jointQuadrant == 3) {
-            joint.userData.component.object.rotation.y = THREE.MathUtils.degToRad(180);
-        } else if (jointQuadrant == 4) {
-            joint.userData.component.object.rotation.y = THREE.MathUtils.degToRad(-90);
-        }
-
-        segmentRef.segment.joints.push(joint); // Add the joint to the segment's joints array.
-    }
-
-    /**
-     * getRelativePosition
-     * 
-     * Determines the relative position (left, right, top, bottom) of an intersecting segment 
-     * relative to the current segment.
-     * 
-     * @param {Object} segment - The current segment.
-     * @param {Object} intersection - The intersecting segment.
-     * @returns {String} The relative position of the intersection.
-     */
-    getRelativePosition(segment, intersection) {
-        function letterToNumber(letter) {
-            return letter.toUpperCase().charCodeAt(0); // Convert the letter to a number using its ASCII value.
-        }
-
-        const intersectColumnStart = letterToNumber(intersection.xetoDuct.graphicLocation.start[0]); // Get the column number of the intersection's start.
-        const intersectColumnEnd = letterToNumber(intersection.xetoDuct.graphicLocation.end[0]); // Get the column number of the intersection's end.
-
-        const segmentColumnPosition = letterToNumber(segment.xetoDuct.graphicLocation.start[0]); // Get the column number of the segment's start.
-
-        if (intersectColumnStart < segmentColumnPosition || intersectColumnEnd < segmentColumnPosition) {
-            return 'left'; // Return 'left' if the intersection is to the left of the segment.
-        } else if (intersectColumnStart > segmentColumnPosition || intersectColumnEnd > segmentColumnPosition) {
-            return 'right'; // Return 'right' if the intersection is to the right of the segment.
-        }
-
-        const intersectRowStart = this.getRow(intersection.xetoDuct.graphicLocation.start); // Get the row number of the intersection's start.
-        const intersectRowEnd = this.getRow(intersection.xetoDuct.graphicLocation.end); // Get the row number of the intersection's end.
-
-        const segmentRowPosition = this.getRow(segment.xetoDuct.graphicLocation.start); // Get the row number of the segment's start.
-
-        if (intersectRowStart < segmentRowPosition || intersectRowEnd < segmentRowPosition) {
-            return 'top'; // Return 'top' if the intersection is above the segment.
-        } else if (intersectRowStart > segmentRowPosition || intersectRowEnd > segmentRowPosition) {
-            return 'bottom'; // Return 'bottom' if the intersection is below the segment.
         }
     }
 
@@ -2253,9 +1921,9 @@ export default class Arithmetics {
 
     }
 
-    createTJoint(intersection, xzJointDirection, largestGlobalSize) {
+    createTJoint(intersection, largestGlobalSize) {
         const geometries = [];
-        if(xzJointDirection == "outwards") {
+        if(this.xzJointDirection == "outwards") {
             if(intersection.right == null) {
                 if(this.innerDim[intersection.up.xetoDuct.graphicLocation.size] > this.innerDim[intersection.down.xetoDuct.graphicLocation.size]) {
                     geometries.push(
@@ -2265,7 +1933,7 @@ export default class Arithmetics {
                         )
                     );
                     geometries.push(
-                        ...this.connectProxiesVertically(
+                        ...this.connectProxiesVertically( 
                             intersection.up.segment.duct.userData.proxy2Vertices,
                             intersection.down.segment.duct.userData.proxyMedianVertices
                         )
@@ -2419,7 +2087,7 @@ export default class Arithmetics {
                 );       
             }
         }
-        else if(xzJointDirection == "inwards") {
+        else if(this.xzJointDirection == "inwards") {
             if(intersection.right == null) {
                 if(this.innerDim[intersection.up.xetoDuct.graphicLocation.size] > this.innerDim[intersection.down.xetoDuct.graphicLocation.size]) {
                     geometries.push(
@@ -2681,10 +2349,10 @@ export default class Arithmetics {
         this.mergeAndAddToScene(geometries);
     }
 
-    createLJoint(intersection, xzJointDirection, largestGlobalSize) {
+    createLJoint(intersection, largestGlobalSize) {
         const geometries = [];
 
-        if(xzJointDirection == "outwards") {
+        if(this.xzJointDirection == "outwards") {
             if(intersection.right != null && intersection.up != null) {
                 geometries.push(
                     ...this.connectProxiesDiagonallyDownhill(
@@ -2790,7 +2458,7 @@ export default class Arithmetics {
                 );     
             }  
         }
-        else if(xzJointDirection == "inwards") {
+        else if(this.xzJointDirection == "inwards") {
             if(intersection.right != null && intersection.up != null) {
                 geometries.push(
                     ...this.connectProxiesDiagonallyDownhill(
@@ -3062,7 +2730,9 @@ export default class Arithmetics {
                 leftProxy[2],
                 rightProxy[2],
                 rightProxy[6],
-                leftProxy[6]
+                leftProxy[6],
+                leftProxy,
+                rightProxy
             )
         );
         geometries.push(
@@ -3070,7 +2740,9 @@ export default class Arithmetics {
                 leftProxy[0],
                 rightProxy[0],
                 rightProxy[4],
-                leftProxy[4]
+                leftProxy[4],
+                leftProxy,
+                rightProxy
             )
         );
         geometries.push(
@@ -3078,7 +2750,9 @@ export default class Arithmetics {
                 leftProxy[3],
                 rightProxy[0],
                 rightProxy[1],
-                leftProxy[2]
+                leftProxy[2],
+                leftProxy,
+                rightProxy
             )
         );
         geometries.push(
@@ -3086,7 +2760,9 @@ export default class Arithmetics {
                 leftProxy[4],
                 rightProxy[7],
                 rightProxy[6],
-                leftProxy[5]
+                leftProxy[5],
+                leftProxy,
+                rightProxy
             )
         );
 
@@ -3096,38 +2772,154 @@ export default class Arithmetics {
     connectProxiesVertically(topProxy, bottomProxy) {
         const geometries = [];
 
-        geometries.push(
-            this.createGeometryFromPoints(
-                topProxy[2],
-                bottomProxy[3],
-                bottomProxy[7],
-                topProxy[6]
-            )
-        );
-        geometries.push(
-            this.createGeometryFromPoints(
-                topProxy[1],
-                bottomProxy[1],
-                bottomProxy[5],
-                topProxy[5]
-            )
-        );
-        geometries.push(
-            this.createGeometryFromPoints(
-                topProxy[1],
-                bottomProxy[0],
-                bottomProxy[3],
-                topProxy[2]
-            )
-        );
-        geometries.push(
-            this.createGeometryFromPoints(
-                topProxy[6],
-                bottomProxy[7],
-                bottomProxy[4],
-                topProxy[5]
-            )
-        );
+        const vectors = [topProxy[0], bottomProxy[0]];
+        
+        if (topProxy[0].y !== bottomProxy[0].y) {
+            console.log("connectProxiesVertically vectors:", JSON.stringify(vectors, null, 2));
+
+            let yMinTopProxy = topProxy[0].y;
+            let yMaxTopProxy = topProxy[0].y;
+            for(const vector of topProxy) {
+                if(vector.y < yMinTopProxy) {
+                    yMinTopProxy = vector.y;
+                }
+                else if(vector.y > yMinTopProxy) {
+                    yMaxTopProxy = vector.y;
+                }
+            }
+            const topProxyLength = Math.abs(yMinTopProxy - yMaxTopProxy);
+            console.log("connectProxiesVertically topProxyLength:", topProxyLength);
+
+            console.log("connectProxiesVertically bottomProxy:", bottomProxy);
+            let yMinBottomProxy = bottomProxy[0].y;
+            let yMaxBottomProxy = bottomProxy[0].y;
+            for(const vector of bottomProxy) {
+                if(vector.y < yMinBottomProxy) {
+                    yMinBottomProxy = vector.y;
+                }
+                else if(vector.y > yMinTopProxy) {
+                    yMaxBottomProxy = vector.y;
+                }
+            }
+            const bottomProxyLength = Math.abs(yMinBottomProxy - yMaxBottomProxy);
+            console.log("connectProxiesVertically bottomProxyLength:", bottomProxyLength);
+
+            const material = new THREE.MeshStandardMaterial({
+                color: 0xFF0000,
+                side: THREE.DoubleSide,
+            });
+            const material2 = new THREE.MeshStandardMaterial({
+                color: 0x0000FF,
+                side: THREE.DoubleSide,
+            });
+            const cubeGeometry = new THREE.BoxGeometry(27, 27, 27);
+            const frontLeftPoint = new THREE.Mesh(cubeGeometry, material);
+            frontLeftPoint.name = "jointHelperVertices";
+
+            const longestProxyPosition = topProxy[0].y < bottomProxy[0].y ? topProxy[0] : bottomProxy[0];
+            frontLeftPoint.position.copy(longestProxyPosition);
+
+            const length = Math.abs(topProxyLength - bottomProxyLength);
+            console.log("connectProxiesVertically length:", length);
+
+            frontLeftPoint.position.z -= length;
+            frontLeftPoint.position.y += length;
+
+            const frontRightPoint = frontLeftPoint.clone();
+            frontRightPoint.position.x += 30;
+
+            const backLeftPoint = frontLeftPoint.clone();  
+            backLeftPoint.material = material2;
+
+            backLeftPoint.position.y = topProxy[4].y;
+
+            const backRightPoint = backLeftPoint.clone();  
+            backRightPoint.position.x += 30; 
+
+            // this.sceneHelper.addToScene(frontLeftPoint);
+            // this.sceneHelper.addToScene(frontRightPoint);
+
+            // this.sceneHelper.addToScene(backLeftPoint);
+            // this.sceneHelper.addToScene(backRightPoint);
+
+            geometries.push(
+                this.createGeometryFromPoints(
+                    topProxy[1],
+                    frontLeftPoint.position,
+                    frontRightPoint.position,
+                    topProxy[2]
+                )
+            );
+            geometries.push(
+                this.createGeometryFromPoints(
+                    frontLeftPoint.position,
+                    bottomProxy[0],
+                    bottomProxy[3],
+                    frontRightPoint.position,
+                )
+            );
+
+            geometries.push(
+                this.createGeometryFromPoints(
+                    topProxy[2],
+                    frontRightPoint.position,
+                    backRightPoint.position,
+                    topProxy[6]
+                )
+            );
+            geometries.push(
+                this.createGeometryFromPoints(
+                    frontRightPoint.position,
+                    bottomProxy[3],
+                    bottomProxy[7],
+                    backRightPoint.position
+                )
+            );
+
+            geometries.push(
+                this.createGeometryFromPoints(
+                    topProxy[1],
+                    frontLeftPoint.position,
+                    backLeftPoint.position,
+                    topProxy[5]
+                )
+            );
+            geometries.push(
+                this.createGeometryFromPoints(
+                    frontLeftPoint.position,
+                    bottomProxy[0],
+                    bottomProxy[4],
+                    backLeftPoint.position
+                )
+            );
+        }
+        else {
+            geometries.push(
+                this.createGeometryFromPoints(
+                    topProxy[1],
+                    bottomProxy[0],
+                    bottomProxy[3],
+                    topProxy[2]
+                )
+            );
+            geometries.push(
+                this.createGeometryFromPoints(
+                    topProxy[2],
+                    bottomProxy[3],
+                    bottomProxy[7],
+                    topProxy[6]
+                )
+            );
+            geometries.push(
+                this.createGeometryFromPoints(
+                    topProxy[1],
+                    bottomProxy[0],
+                    bottomProxy[4],
+                    topProxy[5]
+                )
+            );
+        }
+        
 
         return geometries;
     }
@@ -3140,7 +2932,9 @@ export default class Arithmetics {
                 leftProxy[1],
                 rightProxy[1],
                 rightProxy[3],
-                leftProxy[3]
+                leftProxy[3],
+                leftProxy,
+                rightProxy
             )
         );
         geometries.push(
@@ -3148,7 +2942,9 @@ export default class Arithmetics {
                 leftProxy[5],
                 rightProxy[5],
                 rightProxy[7],
-                leftProxy[7]
+                leftProxy[7],
+                leftProxy,
+                rightProxy
             )
         );
         geometries.push(
@@ -3156,7 +2952,9 @@ export default class Arithmetics {
                 leftProxy[1],
                 leftProxy[5],
                 rightProxy[5],
-                rightProxy[1]
+                rightProxy[1],
+                leftProxy,
+                rightProxy
             )
         );
         geometries.push(
@@ -3164,7 +2962,9 @@ export default class Arithmetics {
                 leftProxy[3],
                 leftProxy[7],
                 rightProxy[7],
-                rightProxy[3]
+                rightProxy[3],
+                leftProxy,
+                rightProxy
             )
         );
 
@@ -3174,71 +2974,188 @@ export default class Arithmetics {
     connectProxiesDiagonallyUphill(leftProxy, rightProxy) {
         const geometries = [];
 
-        geometries.push(
-            this.createGeometryFromPoints(
-                leftProxy[0],
-                rightProxy[0],
-                rightProxy[2],
-                leftProxy[2]
-            )
-        );
-        geometries.push(
-            this.createGeometryFromPoints(
-                leftProxy[4],
-                rightProxy[4],
-                rightProxy[6],
-                leftProxy[6]
-            )
-        );
-        geometries.push(
-            this.createGeometryFromPoints(
-                leftProxy[0],
-                leftProxy[4],
-                rightProxy[4],
-                rightProxy[0]
-            )
-        );
-        geometries.push(
-            this.createGeometryFromPoints(
-                leftProxy[2],
-                leftProxy[6],
-                rightProxy[6],
-                rightProxy[2]
-            )
-        );
+        const vectors = [leftProxy[0], rightProxy[0]];
+
+        if (leftProxy[0].y !== rightProxy[0].y) {
+            console.log("connectProxiesVertically vectors:", JSON.stringify(vectors, null, 2));
+
+            let yMinLeftProxy = leftProxy[0].y;
+            let yMaxLeftProxy = leftProxy[0].y;
+            for(const vector of leftProxy) {
+                if(vector.y < yMinLeftProxy) {
+                    yMinLeftProxy = vector.y;
+                }
+                else if(vector.y > yMinLeftProxy) {
+                    yMaxLeftProxy = vector.y;
+                }
+            }
+            const leftProxyLength = Math.abs(yMinLeftProxy - yMaxLeftProxy);
+            console.log("connectProxiesVertically leftProxyLength:", leftProxyLength);
+
+            console.log("connectProxiesVertically rightProxy:", rightProxy);
+            let yMinRightProxy = rightProxy[0].y;
+            let yMaxRightProxy = rightProxy[0].y;
+            for(const vector of rightProxy) {
+                if(vector.y < yMinRightProxy) {
+                    yMinRightProxy = vector.y;
+                }
+                else if(vector.y > yMinLeftProxy) {
+                    yMaxRightProxy = vector.y;
+                }
+            }
+            const rightProxyLength = Math.abs(yMinRightProxy - yMaxRightProxy);
+            console.log("connectProxiesVertically rightProxyLength:", rightProxyLength);
+
+            const material = new THREE.MeshStandardMaterial({
+                color: 0xFF0000,
+                side: THREE.DoubleSide,
+            });
+            const material2 = new THREE.MeshStandardMaterial({
+                color: 0x0000FF,
+                side: THREE.DoubleSide,
+            });
+            const cubeGeometry = new THREE.BoxGeometry(27, 27, 27);
+            const frontLeftPoint = new THREE.Mesh(cubeGeometry, material);
+            frontLeftPoint.name = "jointHelperVertices";
+
+            const longestProxyPosition = leftProxy[0].y < rightProxy[0].y ? leftProxy[0] : rightProxy[0];
+            frontLeftPoint.position.copy(longestProxyPosition);
+
+            const length = Math.abs(leftProxyLength - rightProxyLength);
+            console.log("connectProxiesVertically length:", length);
+
+            if(length < Math.abs(leftProxy[0].z - rightProxy[0].z)) {
+                frontLeftPoint.position.z -= length;
+                frontLeftPoint.position.y += length;
+
+                const frontRightPoint = frontLeftPoint.clone();
+                frontRightPoint.position.x += 30;
+
+                const backLeftPoint = frontLeftPoint.clone();  
+                backLeftPoint.material = material2;
+
+                backLeftPoint.position.y = leftProxy[4].y;
+
+                const backRightPoint = backLeftPoint.clone();  
+                backRightPoint.position.x += 30; 
+
+                // this.sceneHelper.addToScene(frontLeftPoint);
+                // this.sceneHelper.addToScene(frontRightPoint);
+
+                // this.sceneHelper.addToScene(backLeftPoint);
+                // this.sceneHelper.addToScene(backRightPoint);
+
+                geometries.push(
+                    this.createGeometryFromPoints(
+                        leftProxy[0],
+                        frontLeftPoint.position,
+                        frontRightPoint.position,
+                        leftProxy[2]
+                    )
+                );
+                geometries.push(
+                    this.createGeometryFromPoints(
+                        frontLeftPoint.position,
+                        rightProxy[0],
+                        rightProxy[2],
+                        frontRightPoint.position
+                    )
+                );
+                
+                geometries.push(
+                    this.createGeometryFromPoints(
+                        leftProxy[0],
+                        leftProxy[4],
+                        backLeftPoint.position,
+                        frontLeftPoint.position
+                    )
+                );
+                geometries.push(
+                    this.createGeometryFromPoints(
+                        frontLeftPoint.position,
+                        backLeftPoint.position,
+                        rightProxy[4],
+                        rightProxy[0]
+                    )
+                );
+
+                geometries.push(
+                    this.createGeometryFromPoints(
+                        leftProxy[2],
+                        leftProxy[6],
+                        backRightPoint.position,
+                        frontRightPoint.position
+                    )
+                );
+                geometries.push(
+                    this.createGeometryFromPoints(
+                        frontRightPoint.position,
+                        backRightPoint.position,
+                        rightProxy[6],
+                        rightProxy[2]
+                    )
+                );
+            }            
+
+        }
+        if(geometries.length == 0) {
+            geometries.push(
+                this.createGeometryFromPoints(
+                    leftProxy[0],
+                    rightProxy[0],
+                    rightProxy[2],
+                    leftProxy[2]
+                )
+            );
+            geometries.push(
+                this.createGeometryFromPoints(
+                    leftProxy[0],
+                    leftProxy[4],
+                    rightProxy[4],
+                    rightProxy[0]
+                )
+            );
+            geometries.push(
+                this.createGeometryFromPoints(
+                    leftProxy[2],
+                    leftProxy[6],
+                    rightProxy[6],
+                    rightProxy[2]
+                )
+            );
+        }
 
         return geometries;
     }
 
     createGeometryFromPoints(pointA, pointB, pointC, pointD) {
-        // Create an array of vertices
-        const vertices = new Float32Array([
-            pointA.x, pointA.y, pointA.z, // Vertex 0
-            pointB.x, pointB.y, pointB.z, // Vertex 1
-            pointC.x, pointC.y, pointC.z, // Vertex 2
-            pointD.x, pointD.y, pointD.z  // Vertex 3
-        ]);
-    
+        
         // Define the indices for the two triangles (clockwise winding order)
-        const indices = [
+        let indices = [
             0, 1, 2, // First triangle (A -> B -> C)
             0, 2, 3  // Second triangle (A -> C -> D)
         ];
+        
+        // Convert vertices to Float32Array for BufferGeometry
+        const verticesArray = new Float32Array([
+            pointA.x, pointA.y, pointA.z, // Vertex 0
+            pointB.x, pointB.y, pointB.z, // Vertex 1
+            pointC.x, pointC.y, pointC.z, // Vertex 2
+            pointD.x, pointD.y, pointD.z,  // Vertex 3            
+        ]);
     
         // Create the BufferGeometry
         const geometry = new THREE.BufferGeometry();
     
-        // Set the vertices as a BufferAttribute
-        geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
-    
-        // Set the indices
+        // Set the vertices and indices
+        geometry.setAttribute('position', new THREE.BufferAttribute(verticesArray, 3));
         geometry.setIndex(indices);
     
         // Compute normals if you need lighting effects
         geometry.computeVertexNormals();
-    
+
         return geometry;
-    }
+    }    
     
     createParallelJoint(intersection, pairDirection) {
         const geometries = [];
@@ -3471,12 +3388,195 @@ export default class Arithmetics {
         }
     }
 
-    createJointProxies(intersection, pairDirection = null, jointBlockStyle) {
-        console.log("createJointProxies started");
+    calculateAdjacentContext(intersection, key, proxyLengths, largestGlobalSize, pairDirection) {
 
-        const xzJointStyle = jointBlockStyle.XZ.style;
-        const xzJointDirection = jointBlockStyle.XZ.direction;
-        const xzJointContext = jointBlockStyle.XZ.context;
+        if(key == "left") {
+
+            const currentDuctSize = this.innerDim[intersection.left.xetoDuct.graphicLocation.size]
+            proxyLengths.proxy1 = currentDuctSize;
+            proxyLengths.proxy2 = currentDuctSize;
+            proxyLengths.proxyMedian = currentDuctSize;
+
+            if(intersection.up != null) {
+                const adjacentSize = this.innerDim[intersection.up.xetoDuct.graphicLocation.size];
+                if(adjacentSize > currentDuctSize && this.xzJointYDirection == "outwards" || 
+                    adjacentSize < currentDuctSize && this.xzJointYDirection == "inwards") {
+                    proxyLengths.proxy1 = adjacentSize;
+                }
+            }
+            if(intersection.down != null) {
+                const adjacentSize = this.innerDim[intersection.down.xetoDuct.graphicLocation.size];
+
+                if(this.xzJointYStyle == "diagonal") {
+                    proxyLengths.proxyMedian = adjacentSize;
+                }
+                else if(adjacentSize > currentDuctSize && this.xzJointYDirection == "outwards" || 
+                    adjacentSize < currentDuctSize && this.xzJointYDirection == "inwards") {
+                    proxyLengths.proxy2 = adjacentSize;
+                    proxyLengths.proxyMedian = adjacentSize;
+                }  
+            }
+
+            if(intersection.down != null) {
+                if(intersection.up == null) {
+                    const adjacentSize = this.innerDim[intersection.right.xetoDuct.graphicLocation.size];
+                    if(adjacentSize > currentDuctSize && this.xzJointYDirection == "outwards" || 
+                        adjacentSize < currentDuctSize && this.xzJointYDirection == "inwards") {
+                        proxyLengths.proxy2 = adjacentSize;
+                        proxyLengths.proxyMedian = adjacentSize;                            
+                    }
+                }
+            }
+
+        }
+        else if(key == "up") {
+            const currentDuctSize = this.innerDim[intersection.up.xetoDuct.graphicLocation.size];
+            proxyLengths.proxy1 = currentDuctSize;
+            proxyLengths.proxy2 = currentDuctSize;
+            proxyLengths.proxyMedian = currentDuctSize;
+
+            if(intersection.left != null) {
+                const adjacentSize = this.innerDim[intersection.left.xetoDuct.graphicLocation.size];
+
+                if(this.xzJointYStyle == "diagonal") {
+                    proxyLengths.proxyMedian = currentDuctSize;
+                }
+                else if(adjacentSize > currentDuctSize && this.xzJointYDirection == "outwards" || 
+                    adjacentSize < currentDuctSize && this.xzJointYDirection == "inwards"){
+                    proxyLengths.proxy1 = adjacentSize;
+                    proxyLengths.proxyMedian = adjacentSize;
+                }
+            }
+            if(intersection.right != null) {
+                const adjacentSize = this.innerDim[intersection.right.xetoDuct.graphicLocation.size];
+                if(adjacentSize > currentDuctSize && this.xzJointYDirection == "outwards" || 
+                    adjacentSize < currentDuctSize && this.xzJointYDirection == "inwards") {
+                    proxyLengths.proxy2 = adjacentSize;
+                    if(this.xzJointYStyle == "diagonal") {
+                        proxyLengths.proxyMedian = adjacentSize;
+                        proxyLengths.proxy2 = currentDuctSize;
+                    }
+                }
+            }
+
+            if(intersection.left == null || intersection.right == null) {
+                if(intersection.down != null) {
+                    const adjacentSize = this.innerDim[intersection.down.xetoDuct.graphicLocation.size];
+                    if(this.xzJointYStyle == "diagonal") {
+                        proxyLengths.proxy2 = currentDuctSize;
+                    }
+                    else if(adjacentSize > currentDuctSize && this.xzJointYDirection == "outwards" || 
+                        adjacentSize < currentDuctSize && this.xzJointYDirection == "inwards") {
+                        proxyLengths.proxy2 = adjacentSize;
+                        proxyLengths.proxyMedian = adjacentSize;                            
+                    }
+                }
+                
+            }
+        }
+        else if(key == "right") {
+            const currentDuctSize = this.innerDim[intersection.right.xetoDuct.graphicLocation.size];
+            proxyLengths.proxy1 = currentDuctSize;
+            proxyLengths.proxy2 = currentDuctSize;
+            proxyLengths.proxyMedian = currentDuctSize;
+
+            if(intersection.up != null) {
+                const adjacentSize = this.innerDim[intersection.up.xetoDuct.graphicLocation.size];
+
+                if(this.xzJointYStyle == "diagonal") {
+                    if(adjacentSize > currentDuctSize && this.xzJointYDirection == "outwards" || 
+                        adjacentSize < currentDuctSize && this.xzJointYDirection == "inwards") {
+                        proxyLengths.proxyMedian = adjacentSize;
+                    }
+                }
+                else if(adjacentSize > currentDuctSize && this.xzJointYDirection == "outwards" || 
+                        adjacentSize < currentDuctSize && this.xzJointYDirection == "inwards") {
+                    proxyLengths.proxy1 = adjacentSize;
+                    proxyLengths.proxyMedian = adjacentSize;
+                }
+                
+            }
+            if(intersection.down != null) {
+                const adjacentSize = this.innerDim[intersection.down.xetoDuct.graphicLocation.size];
+                if(adjacentSize > currentDuctSize && this.xzJointYDirection == "outwards" || 
+                    adjacentSize < currentDuctSize && this.xzJointYDirection == "inwards") {
+                    proxyLengths.proxy2 = currentDuctSize;
+                }  
+            }
+
+            if(intersection.up == null || intersection.down == null) {
+                if(intersection.left != null) {
+                    const adjacentSize = this.innerDim[intersection.left.xetoDuct.graphicLocation.size];
+                    if(adjacentSize > currentDuctSize && this.xzJointYDirection == "outwards" || 
+                        adjacentSize < currentDuctSize && this.xzJointYDirection == "inwards") {
+                        proxyLengths.proxy2 = adjacentSize;
+                        proxyLengths.proxyMedian = adjacentSize;                            
+                    }
+                }
+            }
+        }
+        else if(key == "down") {
+            const currentDuctSize = this.innerDim[intersection.down.xetoDuct.graphicLocation.size];
+            proxyLengths.proxy1 = currentDuctSize;
+            proxyLengths.proxy2 = currentDuctSize;
+            proxyLengths.proxyMedian = currentDuctSize;
+
+            if(intersection.left != null) {
+                const adjacentSize = this.innerDim[intersection.left.xetoDuct.graphicLocation.size];
+                if(adjacentSize > currentDuctSize && this.xzJointYDirection == "outwards" || 
+                    adjacentSize < currentDuctSize && this.xzJointYDirection == "inwards") {
+                    proxyLengths.proxy1 = adjacentSize;
+                }  
+            }
+            if(intersection.right != null) {
+                const adjacentSize = this.innerDim[intersection.right.xetoDuct.graphicLocation.size];
+
+                if(this.xzJointYStyle == "diagonal") {
+                    proxyLengths.proxyMedian = currentDuctSize;
+                }
+                else if(adjacentSize > currentDuctSize && this.xzJointYDirection == "outwards" || 
+                    adjacentSize < currentDuctSize && this.xzJointYDirection == "inwards") {
+                    proxyLengths.proxy2 = adjacentSize;
+                    proxyLengths.proxyMedian = adjacentSize;                            
+                }
+            }
+
+            if(intersection.left == null || intersection.right == null) {
+                if(intersection.up != null) {
+                    const adjacentSize = this.innerDim[intersection.up.xetoDuct.graphicLocation.size];
+                    if(adjacentSize > currentDuctSize && this.xzJointYDirection == "outwards" || 
+                        adjacentSize < currentDuctSize && this.xzJointYDirection == "inwards") {
+                        proxyLengths.proxy2 = adjacentSize;
+                        proxyLengths.proxyMedian = adjacentSize;                            
+                    }
+                }
+            }
+        }
+
+        if(pairDirection != null) {
+            proxyLengths.proxy1 = largestGlobalSize;
+            proxyLengths.proxy2 = largestGlobalSize;
+        }
+    }
+
+    moveOriginalProxyVertices(proxyGeometry) {
+        // Access the position attribute
+        const positionAttribute = proxyGeometry.attributes.position;
+    
+        for (let i = 0; i < positionAttribute.count; i++) {
+            const y = positionAttribute.getY(i);
+    
+            if (y < 0.5) {
+                positionAttribute.setY(i, 0);
+            }
+        }
+    
+        // Mark the position attribute as needing an update
+        positionAttribute.needsUpdate = true;
+    }
+
+    createJointProxies(intersection, pairDirection = null) {
+        console.log("createJointProxies started");
           
         const wallThickness = 30;
   
@@ -3523,137 +3623,8 @@ export default class Arithmetics {
                     proxyMedian: largestGlobalSize
                 }
 
-                if(xzJointContext != "global") {
-                    if(key == "left") {
-
-                        const currentDuctSize = this.innerDim[intersection.left.xetoDuct.graphicLocation.size]
-                        proxyLengths.proxy1 = currentDuctSize;
-                        proxyLengths.proxy2 = currentDuctSize;
-                        proxyLengths.proxyMedian = currentDuctSize;
-    
-                        if(intersection.up != null) {
-                            const adjacentSize = this.innerDim[intersection.up.xetoDuct.graphicLocation.size];
-                            if(adjacentSize > currentDuctSize) {
-                                proxyLengths.proxy1 = adjacentSize;
-                            }  
-                        }
-                        if(intersection.down != null) {
-                            const adjacentSize = this.innerDim[intersection.down.xetoDuct.graphicLocation.size];
-                            if(adjacentSize > currentDuctSize) {
-                                proxyLengths.proxy2 = adjacentSize;
-                                proxyLengths.proxyMedian = adjacentSize;
-                            }  
-                        }
-
-                        if(intersection.down != null) {
-                            if(intersection.up == null || intersection.down == null) {
-                                const adjacentSize = this.innerDim[intersection.right.xetoDuct.graphicLocation.size];
-                                if(adjacentSize > currentDuctSize) {
-                                    proxyLengths.proxy2 = adjacentSize;
-                                    proxyLengths.proxyMedian = adjacentSize;                            
-                                }
-                            }
-                        }
-    
-                    }
-                    else if(key == "up") {
-                        const currentDuctSize = this.innerDim[intersection.up.xetoDuct.graphicLocation.size];
-                        proxyLengths.proxy1 = currentDuctSize;
-                        proxyLengths.proxy2 = currentDuctSize;
-                        proxyLengths.proxyMedian = currentDuctSize;
-    
-                        if(intersection.left != null) {
-                            const adjacentSize = this.innerDim[intersection.left.xetoDuct.graphicLocation.size];
-                            if(adjacentSize > currentDuctSize) {
-                                proxyLengths.proxy1 = adjacentSize;
-                                proxyLengths.proxyMedian = adjacentSize;
-                            }  
-                        }
-                        if(intersection.right != null) {
-                            const adjacentSize = this.innerDim[intersection.right.xetoDuct.graphicLocation.size];
-                            if(adjacentSize > currentDuctSize) {
-                                proxyLengths.proxy2 = adjacentSize;
-                                
-                            }  
-                        }
-
-                        if(intersection.left == null || intersection.right == null) {
-                            if(intersection.down != null) {
-                                const adjacentSize = this.innerDim[intersection.down.xetoDuct.graphicLocation.size];
-                                if(adjacentSize > currentDuctSize) {
-                                    proxyLengths.proxy2 = adjacentSize;
-                                    proxyLengths.proxyMedian = adjacentSize;                            
-                                }
-                            }
-                            
-                        }
-                    }
-                    else if(key == "right") {
-                        const currentDuctSize = this.innerDim[intersection.right.xetoDuct.graphicLocation.size];
-                        proxyLengths.proxy1 = currentDuctSize;
-                        proxyLengths.proxy2 = currentDuctSize;
-                        proxyLengths.proxyMedian = currentDuctSize;
-    
-                        if(intersection.up != null) {
-                            const adjacentSize = this.innerDim[intersection.up.xetoDuct.graphicLocation.size];
-                            if(adjacentSize > currentDuctSize) {
-                                proxyLengths.proxy1 = adjacentSize;
-                                proxyLengths.proxyMedian = adjacentSize;
-                            }  
-                        }
-                        if(intersection.down != null) {
-                            const adjacentSize = this.innerDim[intersection.down.xetoDuct.graphicLocation.size];
-                            if(adjacentSize > currentDuctSize) {
-                                proxyLengths.proxy2 = adjacentSize;
-                                
-                            }  
-                        }
-
-                        if(intersection.up == null || intersection.down == null) {
-                            if(intersection.left != null) {
-                                const adjacentSize = this.innerDim[intersection.left.xetoDuct.graphicLocation.size];
-                                if(adjacentSize > currentDuctSize) {
-                                    proxyLengths.proxy2 = adjacentSize;
-                                    proxyLengths.proxyMedian = adjacentSize;                            
-                                }
-                            }
-                        }
-                    }
-                    else if(key == "down") {
-                        const currentDuctSize = this.innerDim[intersection.down.xetoDuct.graphicLocation.size];
-                        proxyLengths.proxy1 = currentDuctSize;
-                        proxyLengths.proxy2 = currentDuctSize;
-                        proxyLengths.proxyMedian = currentDuctSize;
-    
-                        if(intersection.left != null) {
-                            const adjacentSize = this.innerDim[intersection.left.xetoDuct.graphicLocation.size];
-                            if(adjacentSize > currentDuctSize) {
-                                proxyLengths.proxy1 = adjacentSize;
-                            }  
-                        }
-                        if(intersection.right != null) {
-                            const adjacentSize = this.innerDim[intersection.right.xetoDuct.graphicLocation.size];
-                            if(adjacentSize > currentDuctSize) {
-                                proxyLengths.proxy2 = adjacentSize;
-                                proxyLengths.proxyMedian = adjacentSize;                            
-                            }  
-                        }
-
-                        if(intersection.left == null || intersection.right == null) {
-                            if(intersection.down != null) {
-                                const adjacentSize = this.innerDim[intersection.up.xetoDuct.graphicLocation.size];
-                                if(adjacentSize > currentDuctSize) {
-                                    proxyLengths.proxy2 = adjacentSize;
-                                    proxyLengths.proxyMedian = adjacentSize;                            
-                                }
-                            }
-                        }
-                    }
-
-                    if(pairDirection != null) {
-                        proxyLengths.proxy1 = largestGlobalSize;
-                        proxyLengths.proxy2 = largestGlobalSize;
-                    }
+                if(this.xzJointContext != "global") {
+                    this.calculateAdjacentContext(intersection, key, proxyLengths, largestGlobalSize, pairDirection);
                 }
 
                 const innerDimensions = duct.segment.duct.userData.component.object.innerDimensions;
@@ -3667,8 +3638,13 @@ export default class Arithmetics {
                 const proxyOriginal1Geometry = new THREE.BoxGeometry(wallThickness, proxyDepth, wallThickness);
                 const proxyOriginal2Geometry = new THREE.BoxGeometry(wallThickness, proxyDepth, wallThickness);    
                 const proxyMedianGeometry = new THREE.BoxGeometry(wallThickness, proxyDepth, wallThickness);
-                
-                
+
+                this.moveProxyVertices(proxy1Geometry, ductDepth, proxyLengths.proxy1, largestGlobalSize);
+                this.moveProxyVertices(proxy2Geometry, ductDepth, proxyLengths.proxy2, largestGlobalSize);
+                this.moveProxyVertices(proxyMedianGeometry, ductDepth, proxyLengths.proxyMedian, largestGlobalSize);
+                this.moveOriginalProxyVertices(proxyOriginal1Geometry);
+                this.moveOriginalProxyVertices(proxyOriginal2Geometry);
+
                 const proxy1 = new THREE.Mesh(proxy1Geometry, material);
                 proxy1.position.copy(duct.segment.duct.userData.component.object.position);
                 const proxy2 = new THREE.Mesh(proxy2Geometry, material2);
@@ -3676,9 +3652,7 @@ export default class Arithmetics {
                 const proxyOriginal2 = new THREE.Mesh(proxyOriginal2Geometry, material5); 
                 const proxyMedian = new THREE.Mesh(proxyMedianGeometry, material3);
 
-                this.moveProxyVertices(proxy1Geometry, ductDepth, proxyLengths.proxy1, largestGlobalSize);
-                this.moveProxyVertices(proxy2Geometry, ductDepth, proxyLengths.proxy2, largestGlobalSize);
-                this.moveProxyVertices(proxyMedianGeometry, ductDepth, proxyLengths.proxyMedian, largestGlobalSize);
+                
 
                 if(key == "up") {
                     proxy1.position.x += (innerDimensions.x / -2);
@@ -3791,11 +3765,11 @@ export default class Arithmetics {
   
         }
 
-        if(xzJointDirection == "inwards") {
-            this.alignProxyMediansInwards(intersection, xzJointStyle); 
+        if(this.xzJointDirection == "inwards") {
+            this.alignProxyMediansInwards(intersection); 
         }
-        else if(xzJointDirection == "outwards") {
-            this.alignProxyMediansOutwards(intersection,xzJointStyle); 
+        else if(this.xzJointDirection == "outwards") {
+            this.alignProxyMediansOutwards(intersection); 
         }
                          
   
@@ -3837,7 +3811,7 @@ export default class Arithmetics {
         positionAttribute.needsUpdate = true;
     }
 
-    alignProxyMediansOutwards(intersection, xzJointStyle = null) {        
+    alignProxyMediansOutwards(intersection) {        
         let definedIntersectionCount = 0;
         for(const key in intersection) {
             if(intersection[key] != null)  {
@@ -3865,7 +3839,7 @@ export default class Arithmetics {
                 upProxies.proxyMedian.position.z = rightProxies.proxy2.position.z;
                 rightProxies.proxyMedian.position.z = upProxies.proxy2.position.z;
 
-                if(xzJointStyle == "diagonal") {
+                if(this.xzJointStyle == "diagonal") {
                     const distances = {
                         right: {
                             x: Math.abs(rightProxies.proxyMedian.position.x - upProxies.proxy2.position.x),
@@ -3885,7 +3859,7 @@ export default class Arithmetics {
                 downProxies.proxyMedian.position.x = rightProxies.proxy2.position.x;
                 rightProxies.proxyMedian.position.x = downProxies.proxy1.position.x;
 
-                if(xzJointStyle == "diagonal") {
+                if(this.xzJointStyle == "diagonal") {
                     const distances = {
                         down: {
                             x: Math.abs(downProxies.proxyMedian.position.x - downProxies.proxy2.position.x),
@@ -3905,7 +3879,7 @@ export default class Arithmetics {
                 leftProxies.proxyMedian.position.x = upProxies.proxy2.position.x;
                 leftProxies.proxyMedian.position.z = leftProxies.proxy2.position.z;
 
-                if(xzJointStyle == "diagonal") {
+                if(this.xzJointStyle == "diagonal") {
                     const distances = {
                         up: {
                             x: Math.abs(upProxies.proxyMedian.position.x - upProxies.proxy1.position.x),
@@ -3926,7 +3900,7 @@ export default class Arithmetics {
                 downProxies.proxyMedian.position.x = downProxies.proxy2.position.x;
                 downProxies.proxyMedian.position.z = leftProxies.proxy1.position.z;
                 
-                if(xzJointStyle == "diagonal") {
+                if(this.xzJointStyle == "diagonal") {
                     const distances = {
                         left: {
                             x: Math.abs(leftProxies.proxyMedian.position.x - downProxies.proxy1.position.x),
@@ -3956,7 +3930,7 @@ export default class Arithmetics {
                     downProxies.proxyMedian.position.z = upProxies.proxy2.position.z;
                 }
 
-                if(xzJointStyle == "diagonal") {
+                if(this.xzJointStyle == "diagonal") {
                     const distances = {
                         left: {
                             x: Math.abs(leftProxies.proxyMedian.position.x - downProxies.proxy1.position.x),
@@ -3995,7 +3969,7 @@ export default class Arithmetics {
 
                 rightProxies.proxyMedian.position.z = upProxies.proxy2.position.z;   
                 
-                if(xzJointStyle == "diagonal") {
+                if(this.xzJointStyle == "diagonal") {
                     const distances = {
                         down: {
                             x: Math.abs(downProxies.proxyMedian.position.x - downProxies.proxy2.position.x),
@@ -4034,7 +4008,7 @@ export default class Arithmetics {
 
                 rightProxies.proxyMedian.position.z = upProxies.proxy2.position.z;
 
-                if(xzJointStyle == "diagonal") {
+                if(this.xzJointStyle == "diagonal") {
                     const distances = {
                         up: {
                             x: Math.abs(upProxies.proxyMedian.position.x - upProxies.proxy1.position.x),
@@ -4075,7 +4049,7 @@ export default class Arithmetics {
                     rightProxies.proxyMedian.position.x = leftProxies.proxy1.position.x;
                 } 
                 
-                if(xzJointStyle == "diagonal") {
+                if(this.xzJointStyle == "diagonal") {
                     const distances = {
                         down: {
                             x: Math.abs(downProxies.proxyMedian.position.x - downProxies.proxy2.position.x),
@@ -4112,7 +4086,7 @@ export default class Arithmetics {
             // top-right median
             rightProxies.proxyMedian.position.z = upProxies.proxyMedian.position.z;
 
-            if(xzJointStyle == "diagonal") {
+            if(this.xzJointStyle == "diagonal") {
                 const distances = {
                     down: {
                         x: Math.abs(downProxies.proxyMedian.position.x - downProxies.proxy2.position.x),
@@ -4162,8 +4136,8 @@ export default class Arithmetics {
         }
     }
 
-    alignProxyMediansInwards(intersection, xzJointStyle = null) {
-        console.log("alignProxyMediansInwards started:", xzJointStyle);
+    alignProxyMediansInwards(intersection) {
+        console.log("alignProxyMediansInwards started:", this.xzJointStyle);
         let definedIntersectionCount = 0;
         for(const key in intersection) {
             if(intersection[key] != null)  {
@@ -4191,7 +4165,7 @@ export default class Arithmetics {
                 upProxies.proxyMedian.position.z = rightProxies.proxy2.position.z;
                 rightProxies.proxyMedian.position.x = upProxies.proxy2.position.x;
 
-                if(xzJointStyle == "diagonal") {
+                if(this.xzJointStyle == "diagonal") {
                     const distances = {
                         right: {
                             x: Math.abs(rightProxies.proxyMedian.position.x - rightProxies.proxy1.position.x),
@@ -4213,7 +4187,7 @@ export default class Arithmetics {
 
                 rightProxies.proxyMedian.position.x = downProxies.proxy1.position.x;
 
-                if(xzJointStyle == "diagonal") {
+                if(this.xzJointStyle == "diagonal") {
                     const distances = {
                         down: {
                             x: Math.abs(downProxies.proxyMedian.position.x - rightProxies.proxy2.position.x),
@@ -4233,7 +4207,7 @@ export default class Arithmetics {
                 leftProxies.proxyMedian.position.x = upProxies.proxy2.position.x;
                 leftProxies.proxyMedian.position.z = leftProxies.proxy2.position.z;
 
-                if(xzJointStyle == "diagonal") {
+                if(this.xzJointStyle == "diagonal") {
                     const distances = {
                         up: {
                             x: Math.abs(upProxies.proxyMedian.position.x - leftProxies.proxy1.position.x),
@@ -4255,7 +4229,7 @@ export default class Arithmetics {
                 downProxies.proxyMedian.position.x = downProxies.proxy2.position.x;
                 downProxies.proxyMedian.position.z = leftProxies.proxy1.position.z;
 
-                if(xzJointStyle == "diagonal") {
+                if(this.xzJointStyle == "diagonal") {
                     const distances = {
                         left: {
                             x: Math.abs(leftProxies.proxyMedian.position.x - leftProxies.proxy2.position.x),
@@ -4287,7 +4261,7 @@ export default class Arithmetics {
                     downProxies.proxyMedian.position.z = upProxies.proxy2.position.z;
                 }
 
-                if(xzJointStyle == "diagonal") {
+                if(this.xzJointStyle == "diagonal") {
                     const distances = {
                         left: {
                             x: Math.abs(leftProxies.proxyMedian.position.x - leftProxies.proxy2.position.x),
@@ -4327,7 +4301,7 @@ export default class Arithmetics {
 
                 rightProxies.proxyMedian.position.x = upProxies.proxy2.position.x;  
                 
-                if(xzJointStyle == "diagonal") {
+                if(this.xzJointStyle == "diagonal") {
                     const distances = {
                         down: {
                             x: Math.abs(downProxies.proxyMedian.position.x - rightProxies.proxy2.position.x),
@@ -4366,7 +4340,7 @@ export default class Arithmetics {
 
                 rightProxies.proxyMedian.position.x = upProxies.proxy2.position.x;
 
-                if(xzJointStyle == "diagonal") {
+                if(this.xzJointStyle == "diagonal") {
                     const distances = {
                         up: {
                             x: Math.abs(upProxies.proxyMedian.position.x - leftProxies.proxy1.position.x),
@@ -4408,7 +4382,7 @@ export default class Arithmetics {
                     rightProxies.proxyMedian.position.x = leftProxies.proxy1.position.x;
                 }
 
-                if(xzJointStyle == "diagonal") {
+                if(this.xzJointStyle == "diagonal") {
                     const distances = {
                         down: {
                             x: Math.abs(downProxies.proxyMedian.position.x - rightProxies.proxy2.position.x),
@@ -4447,7 +4421,7 @@ export default class Arithmetics {
             // top-right median
             rightProxies.proxyMedian.position.x = upProxies.proxy2.position.x;
 
-            if(xzJointStyle == "diagonal") {
+            if(this.xzJointStyle == "diagonal") {
                 const distances = {
                     down: {
                         x: Math.abs(downProxies.proxyMedian.position.x - rightProxies.proxy2.position.x),

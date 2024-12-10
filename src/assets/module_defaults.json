@@ -132,6 +132,7 @@
                 "style": "orthogonal",
                 "direction": "outwards", 
                 "context": "adjacent",
+                "yDirection": "inwards",
                 "padding": 250
             },
             "XY": {
