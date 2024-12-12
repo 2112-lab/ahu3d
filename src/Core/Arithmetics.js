@@ -41,6 +41,8 @@
 
 import * as THREE from 'three';
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
+import { thickness } from 'three/webgpu';
 
 export default class Arithmetics {
     /**
@@ -1834,28 +1836,240 @@ export default class Arithmetics {
     mesh.userData.component.object.scale.x *= -1;
     }
 
+    createArc(width, length) {
+
+        const scaleFactor = width - 30;
+        const innerRadius = scaleFactor;
+        let outerRadius = 1 + (0.12015 / (scaleFactor / 250));
+        outerRadius *= scaleFactor;
+        const thetaSegments = 8;
+        const thetaStart = 0;
+        const thetaLength = Math.PI / 2;
+        
+        const material = new THREE.MeshStandardMaterial({ 
+            color: 0xAEB9C2, 
+            side: THREE.DoubleSide, 
+            transparent: true, 
+            opacity: 1
+        });
+        
+        const ring1 = new THREE.RingGeometry(innerRadius, outerRadius, thetaSegments, 1, thetaStart, thetaLength);
+        const ring2 = ring1.clone();
+        const outerCylinderGeometry = new THREE.CylinderGeometry(outerRadius, outerRadius, length, thetaSegments, 1, true, thetaStart, thetaLength);
+        const innerCylinderGeometry = new THREE.CylinderGeometry(innerRadius, innerRadius, length, thetaSegments, 1, true, thetaStart, thetaLength);                       
+
+        // Create matrices
+        const matrix = new THREE.Matrix4();
+        const rotationMatrix1 = new THREE.Matrix4();
+        const rotationMatrix2 = new THREE.Matrix4();
+
+        // Transform geometries
+        matrix.makeTranslation(0, 0, length); 
+        rotationMatrix1.makeRotationY(Math.PI / 2); // 90 degrees around Y axis
+        rotationMatrix2.makeRotationY(Math.PI / 2); // 90 degrees around Y axis
+        rotationMatrix1.multiply(new THREE.Matrix4().makeRotationZ(Math.PI / 2)); // 90 degrees around X axis
+        rotationMatrix2.multiply(new THREE.Matrix4().makeRotationZ(Math.PI / 2)); // 90 degrees around X axis  
+        
+        rotationMatrix1.multiply(new THREE.Matrix4().makeTranslation(0, length / 2, 0)); // Translate up by length / 2
+        rotationMatrix2.multiply(new THREE.Matrix4().makeTranslation(0, length / 2, 0)); // Translate up by length / 2
+
+        // Apply rotations to the geometries
+        outerCylinderGeometry.applyMatrix4(rotationMatrix1);
+        innerCylinderGeometry.applyMatrix4(rotationMatrix2);
+        ring2.applyMatrix4(matrix);             
+
+        // Define the ArcCurve
+        const startAngle = 0;
+        const endAngle = Math.PI / 2; // Quarter circle
+        const arcCurve = new THREE.ArcCurve(0, 0, outerRadius, startAngle, endAngle, false);
+
+        // Generate points for the arc
+        let arcPoints = arcCurve.getPoints(8);
+
+        // Define the center point (flipped side apex)
+        const centerPoint = new THREE.Vector2(outerRadius, outerRadius); // Origin
+
+        // Create the shape for the crescent
+        const crescentShape = new THREE.Shape();
+        crescentShape.moveTo(centerPoint.x, centerPoint.y);
+        arcPoints.forEach(point => crescentShape.lineTo(point.x, point.y));
+        crescentShape.lineTo(centerPoint.x, centerPoint.y); // Close the shape back to the center
+
+        // Create a geometry from the shape
+        const crescentGeometry = new THREE.ShapeGeometry(crescentShape);
+
+        // Merge the geometries
+        const mergedGeometry = BufferGeometryUtils.mergeGeometries([
+            ring1, 
+            ring2,
+            outerCylinderGeometry,
+            innerCylinderGeometry,
+            crescentGeometry
+        ], false);
+
+        // Create a single mesh from the merged geometry
+        const arcMesh = new THREE.Mesh(mergedGeometry, material);
+
+        // Add the cylinder to the scene
+        arcMesh.name = "joint";
+        arcMesh.rotation.x = Math.PI / 2;
+        arcMesh.rotation.z = Math.PI / -2;
+        arcMesh.position.x -= 1000;
+        this.sceneHelper.addToScene(arcMesh);
+
+        return arcMesh;
+    }
+
     createCrossJoint(intersection, largestGlobalSize) {
         const geometries = [];
 
-        geometries.push(
-            ...this.connectProxiesDiagonallyUphill(
-                intersection.down.segment.duct.userData.proxyMedianVertices,
-                intersection.right.segment.duct.userData.proxy2Vertices
-                
-            )
-        );
+        if(this.xzJointStyle == "arc") {
+            const upHelpers = intersection.up.segment.duct.userData;
+            const leftHelpers = intersection.left.segment.duct.userData;
+            const downHelpers = intersection.down.segment.duct.userData;
+            const rightHelpers = intersection.right.segment.duct.userData;
+
+            console.log("createCrossJoint started");        
+
+            const upProxyMedian = upHelpers.proxies.proxyMedian;
+            const leftProxyMedian = leftHelpers.proxies.proxyMedian;
+            const downProxyMedian = downHelpers.proxies.proxyMedian;
+            const rightProxyMedian = rightHelpers.proxies.proxyMedian;
+
+            const wallThickness = 30;
+
+            if(upProxyMedian.userData.isDiagonal) {
+                const width = upProxyMedian.userData.diagonalWidth;
+                const length = upHelpers.proxyMedianVertices[7].y - upHelpers.proxyMedianVertices[0].y;
+                const arc = this.createArc(width, length);
+
+                arc.position.copy(upHelpers.proxyMedianVertices[0]);
+                arc.position.x += wallThickness;
+                arc.position.z += width - wallThickness;
+
+                arc.position.y += length;
+            }
+            else {
+                geometries.push(
+                    ...this.connectProxiesDiagonallyUphill(
+                        intersection.up.segment.duct.userData.proxyMedianVertices, 
+                        intersection.up.segment.duct.userData.proxy1Vertices
+                    )
+                );
+            }
+
+            if(leftProxyMedian.userData.isDiagonal) {
+                const width = leftProxyMedian.userData.diagonalWidth;
+                const length = leftHelpers.proxyMedianVertices[7].y - leftHelpers.proxyMedianVertices[0].y;
+                const arc = this.createArc(width, length);
+
+                arc.position.copy(leftHelpers.proxyMedianVertices[0]);
+                arc.rotation.z += Math.PI / 2;
+                arc.position.x += wallThickness;
+                arc.position.z -= width;
+
+                arc.position.y += length;
+            }
+            else {
+                geometries.push(
+                    ...this.connectProxiesDiagonallyDownhill(
+                        intersection.left.segment.duct.userData.proxyMedianVertices,
+                        intersection.down.segment.duct.userData.proxy1Vertices
+                    )  
+                );
+            }
+
+            if(downProxyMedian.userData.isDiagonal) {
+                const width = downProxyMedian.userData.diagonalWidth;
+                const length = downHelpers.proxyMedianVertices[7].y - downHelpers.proxyMedianVertices[0].y;
+                const arc = this.createArc(width, length);
+
+                arc.position.copy(downHelpers.proxyMedianVertices[0]);
+                arc.rotation.z += Math.PI;
+                arc.position.x += width;
+
+                arc.position.y += length;
+            }
+            else {
+                geometries.push(
+                    ...this.connectProxiesDiagonallyUphill(
+                        intersection.down.segment.duct.userData.proxyMedianVertices,
+                        intersection.right.segment.duct.userData.proxy2Vertices
+                    )
+                );
+            }
+
+            if(rightProxyMedian.userData.isDiagonal) {
+                const width = rightProxyMedian.userData.diagonalWidth;
+                const length = rightHelpers.proxyMedianVertices[7].y - rightHelpers.proxyMedianVertices[0].y;
+                const arc = this.createArc(width, length);
+
+                arc.position.copy(rightHelpers.proxyMedianVertices[0]);
+                arc.rotation.z -= Math.PI / 2;
+                arc.position.z += width - wallThickness;
+
+                arc.position.y += length;
+            }
+            else {
+                geometries.push(
+                    ...this.connectProxiesDiagonallyDownhill(
+                        intersection.up.segment.duct.userData.proxy2Vertices, 
+                        intersection.right.segment.duct.userData.proxyMedianVertices
+                    )
+                );
+            }
+        }
+        else {
+            geometries.push(
+                ...this.connectProxiesDiagonallyUphill(
+                    intersection.up.segment.duct.userData.proxyMedianVertices, 
+                    intersection.up.segment.duct.userData.proxy1Vertices
+                )
+            );
+            geometries.push(
+                ...this.connectProxiesDiagonallyDownhill(
+                    intersection.left.segment.duct.userData.proxyMedianVertices,
+                    intersection.down.segment.duct.userData.proxy1Vertices
+                )  
+            );
+            geometries.push(
+                ...this.connectProxiesDiagonallyUphill(
+                    intersection.down.segment.duct.userData.proxyMedianVertices,
+                    intersection.right.segment.duct.userData.proxy2Vertices
+                )
+            );
+            geometries.push(
+                ...this.connectProxiesDiagonallyDownhill(
+                    intersection.up.segment.duct.userData.proxy2Vertices, 
+                    intersection.right.segment.duct.userData.proxyMedianVertices
+                )
+            );
+
+            let backwall = [
+                intersection.up.segment.duct.userData.proxyMedianVertices[4],
+                intersection.up.segment.duct.userData.proxy1Vertices[4],
+                intersection.up.segment.duct.userData.proxy2Vertices[7],
+                intersection.right.segment.duct.userData.proxyMedianVertices[7],
+                intersection.right.segment.duct.userData.proxy1Vertices[7],
+                intersection.right.segment.duct.userData.proxy2Vertices[6],
+                intersection.down.segment.duct.userData.proxyMedianVertices[6],
+                intersection.down.segment.duct.userData.proxy2Vertices[6],
+                intersection.down.segment.duct.userData.proxy1Vertices[5],
+                intersection.left.segment.duct.userData.proxyMedianVertices[5],
+                intersection.left.segment.duct.userData.proxy2Vertices[5],
+                intersection.left.segment.duct.userData.proxy1Vertices[4]
+            ];
+    
+            this.createJointBackwall(backwall, largestGlobalSize);
+        }
+        
         geometries.push(
             ...this.connectProxiesDiagonallyUphill(
                 intersection.down.segment.duct.userData.proxy2Vertices,
                 intersection.down.segment.duct.userData.proxyMedianVertices
             )
         );
-        geometries.push(
-            ...this.connectProxiesDiagonallyDownhill(
-                intersection.left.segment.duct.userData.proxyMedianVertices,
-                intersection.down.segment.duct.userData.proxy1Vertices
-            )  
-        );
+        
         geometries.push(
             ...this.connectProxiesDiagonallyDownhill(
                 intersection.left.segment.duct.userData.proxy2Vertices, 
@@ -1868,39 +2082,14 @@ export default class Arithmetics {
                 intersection.up.segment.duct.userData.proxyMedianVertices
             )
         );
-        geometries.push(
-            ...this.connectProxiesDiagonallyUphill(
-                intersection.up.segment.duct.userData.proxyMedianVertices, 
-                intersection.up.segment.duct.userData.proxy1Vertices
-            )
-        );
-        geometries.push(
-            ...this.connectProxiesDiagonallyDownhill(
-                intersection.up.segment.duct.userData.proxy2Vertices, 
-                intersection.right.segment.duct.userData.proxyMedianVertices
-            )
-        );
+        
+        
         geometries.push(
             ...this.connectProxiesDiagonallyDownhill(
                 intersection.right.segment.duct.userData.proxyMedianVertices, 
                 intersection.right.segment.duct.userData.proxy1Vertices
             )
         );
-
-        let backwall = [
-            intersection.up.segment.duct.userData.proxyMedianVertices[4],
-            intersection.up.segment.duct.userData.proxy1Vertices[4],
-            intersection.up.segment.duct.userData.proxy2Vertices[7],
-            intersection.right.segment.duct.userData.proxyMedianVertices[7],
-            intersection.right.segment.duct.userData.proxy1Vertices[7],
-            intersection.right.segment.duct.userData.proxy2Vertices[6],
-            intersection.down.segment.duct.userData.proxyMedianVertices[6],
-            intersection.down.segment.duct.userData.proxy2Vertices[6],
-            intersection.down.segment.duct.userData.proxy1Vertices[5],
-            intersection.left.segment.duct.userData.proxyMedianVertices[5],
-            intersection.left.segment.duct.userData.proxy2Vertices[5],
-            intersection.left.segment.duct.userData.proxy1Vertices[4]
-        ];
 
         geometries.push(
             ...this.createJointClosure(intersection.up.segment.duct, "horizontal")
@@ -1914,8 +2103,6 @@ export default class Arithmetics {
         geometries.push(
             ...this.createJointClosure(intersection.left.segment.duct, "vertical")
         );
-        
-        this.createJointBackwall(backwall, largestGlobalSize);
 
         this.mergeAndAddToScene(geometries);
 
@@ -3839,7 +4026,7 @@ export default class Arithmetics {
                 upProxies.proxyMedian.position.z = rightProxies.proxy2.position.z;
                 rightProxies.proxyMedian.position.z = upProxies.proxy2.position.z;
 
-                if(this.xzJointStyle == "diagonal") {
+                if(this.xzJointStyle == "diagonal" || this.xzJointStyle == "arc") {
                     const distances = {
                         right: {
                             x: Math.abs(rightProxies.proxyMedian.position.x - upProxies.proxy2.position.x),
@@ -3859,7 +4046,7 @@ export default class Arithmetics {
                 downProxies.proxyMedian.position.x = rightProxies.proxy2.position.x;
                 rightProxies.proxyMedian.position.x = downProxies.proxy1.position.x;
 
-                if(this.xzJointStyle == "diagonal") {
+                if(this.xzJointStyle == "diagonal" || this.xzJointStyle == "arc") {
                     const distances = {
                         down: {
                             x: Math.abs(downProxies.proxyMedian.position.x - downProxies.proxy2.position.x),
@@ -3879,7 +4066,7 @@ export default class Arithmetics {
                 leftProxies.proxyMedian.position.x = upProxies.proxy2.position.x;
                 leftProxies.proxyMedian.position.z = leftProxies.proxy2.position.z;
 
-                if(this.xzJointStyle == "diagonal") {
+                if(this.xzJointStyle == "diagonal" || this.xzJointStyle == "arc") {
                     const distances = {
                         up: {
                             x: Math.abs(upProxies.proxyMedian.position.x - upProxies.proxy1.position.x),
@@ -3900,7 +4087,7 @@ export default class Arithmetics {
                 downProxies.proxyMedian.position.x = downProxies.proxy2.position.x;
                 downProxies.proxyMedian.position.z = leftProxies.proxy1.position.z;
                 
-                if(this.xzJointStyle == "diagonal") {
+                if(this.xzJointStyle == "diagonal" || this.xzJointStyle == "arc") {
                     const distances = {
                         left: {
                             x: Math.abs(leftProxies.proxyMedian.position.x - downProxies.proxy1.position.x),
@@ -3930,7 +4117,7 @@ export default class Arithmetics {
                     downProxies.proxyMedian.position.z = upProxies.proxy2.position.z;
                 }
 
-                if(this.xzJointStyle == "diagonal") {
+                if(this.xzJointStyle == "diagonal" || this.xzJointStyle == "arc") {
                     const distances = {
                         left: {
                             x: Math.abs(leftProxies.proxyMedian.position.x - downProxies.proxy1.position.x),
@@ -3969,7 +4156,7 @@ export default class Arithmetics {
 
                 rightProxies.proxyMedian.position.z = upProxies.proxy2.position.z;   
                 
-                if(this.xzJointStyle == "diagonal") {
+                if(this.xzJointStyle == "diagonal" || this.xzJointStyle == "arc") {
                     const distances = {
                         down: {
                             x: Math.abs(downProxies.proxyMedian.position.x - downProxies.proxy2.position.x),
@@ -4008,7 +4195,7 @@ export default class Arithmetics {
 
                 rightProxies.proxyMedian.position.z = upProxies.proxy2.position.z;
 
-                if(this.xzJointStyle == "diagonal") {
+                if(this.xzJointStyle == "diagonal" || this.xzJointStyle == "arc") {
                     const distances = {
                         up: {
                             x: Math.abs(upProxies.proxyMedian.position.x - upProxies.proxy1.position.x),
@@ -4049,7 +4236,7 @@ export default class Arithmetics {
                     rightProxies.proxyMedian.position.x = leftProxies.proxy1.position.x;
                 } 
                 
-                if(this.xzJointStyle == "diagonal") {
+                if(this.xzJointStyle == "diagonal" || this.xzJointStyle == "arc") {
                     const distances = {
                         down: {
                             x: Math.abs(downProxies.proxyMedian.position.x - downProxies.proxy2.position.x),
@@ -4086,7 +4273,7 @@ export default class Arithmetics {
             // top-right median
             rightProxies.proxyMedian.position.z = upProxies.proxyMedian.position.z;
 
-            if(this.xzJointStyle == "diagonal") {
+            if(this.xzJointStyle == "diagonal" || this.xzJointStyle == "arc") {
                 const distances = {
                     down: {
                         x: Math.abs(downProxies.proxyMedian.position.x - downProxies.proxy2.position.x),
@@ -4107,30 +4294,46 @@ export default class Arithmetics {
                 }
                 if(distances.down.x > distances.down.z) {
                     downProxies.proxyMedian.position.x -= distances.down.z;
+                    downProxies.proxyMedian.userData.isDiagonal = true;
+                    downProxies.proxyMedian.userData.diagonalWidth = distances.down.z;
                 }
                 else if(distances.down.x <= distances.down.z) {
                     downProxies.proxyMedian.position.z += distances.down.x;
+                    downProxies.proxyMedian.userData.isDiagonal = true;
+                    downProxies.proxyMedian.userData.diagonalWidth = distances.down.x;
                 }
 
                 if(distances.right.x > distances.right.z) {
                     rightProxies.proxyMedian.position.x -= distances.right.z;
+                    rightProxies.proxyMedian.userData.isDiagonal = true;
+                    rightProxies.proxyMedian.userData.diagonalWidth = distances.right.z;
                 }
                 else if(distances.right.x <= distances.right.z) {
                     rightProxies.proxyMedian.position.z -= distances.right.x;
+                    rightProxies.proxyMedian.userData.isDiagonal = true;
+                    rightProxies.proxyMedian.userData.diagonalWidth = distances.right.x;
                 }
 
                 if(distances.up.x > distances.up.z) {
                     upProxies.proxyMedian.position.x += distances.up.z;
+                    upProxies.proxyMedian.userData.isDiagonal = true;
+                    upProxies.proxyMedian.userData.diagonalWidth = distances.up.z;
                 }
                 else if(distances.up.x <= distances.up.z) {
                     upProxies.proxyMedian.position.z -= distances.up.x;
+                    upProxies.proxyMedian.userData.isDiagonal = true;
+                    upProxies.proxyMedian.userData.diagonalWidth = distances.up.x;
                 }
 
                 if(distances.left.x > distances.left.z) {
                     leftProxies.proxyMedian.position.x += distances.left.z;
+                    leftProxies.proxyMedian.userData.isDiagonal = true;
+                    leftProxies.proxyMedian.userData.diagonalWidth = distances.left.z;
                 }
                 else if(distances.left.x <= distances.left.z) {
                     leftProxies.proxyMedian.position.z += distances.left.x;
+                    leftProxies.proxyMedian.userData.isDiagonal = true;
+                    leftProxies.proxyMedian.userData.diagonalWidth = distances.left.x;
                 }
             }
         }
@@ -4165,7 +4368,7 @@ export default class Arithmetics {
                 upProxies.proxyMedian.position.z = rightProxies.proxy2.position.z;
                 rightProxies.proxyMedian.position.x = upProxies.proxy2.position.x;
 
-                if(this.xzJointStyle == "diagonal") {
+                if(this.xzJointStyle == "diagonal" || this.xzJointStyle == "arc") {
                     const distances = {
                         right: {
                             x: Math.abs(rightProxies.proxyMedian.position.x - rightProxies.proxy1.position.x),
@@ -4187,7 +4390,7 @@ export default class Arithmetics {
 
                 rightProxies.proxyMedian.position.x = downProxies.proxy1.position.x;
 
-                if(this.xzJointStyle == "diagonal") {
+                if(this.xzJointStyle == "diagonal" || this.xzJointStyle == "arc") {
                     const distances = {
                         down: {
                             x: Math.abs(downProxies.proxyMedian.position.x - rightProxies.proxy2.position.x),
@@ -4207,7 +4410,7 @@ export default class Arithmetics {
                 leftProxies.proxyMedian.position.x = upProxies.proxy2.position.x;
                 leftProxies.proxyMedian.position.z = leftProxies.proxy2.position.z;
 
-                if(this.xzJointStyle == "diagonal") {
+                if(this.xzJointStyle == "diagonal" || this.xzJointStyle == "arc") {
                     const distances = {
                         up: {
                             x: Math.abs(upProxies.proxyMedian.position.x - leftProxies.proxy1.position.x),
@@ -4229,7 +4432,7 @@ export default class Arithmetics {
                 downProxies.proxyMedian.position.x = downProxies.proxy2.position.x;
                 downProxies.proxyMedian.position.z = leftProxies.proxy1.position.z;
 
-                if(this.xzJointStyle == "diagonal") {
+                if(this.xzJointStyle == "diagonal" || this.xzJointStyle == "arc") {
                     const distances = {
                         left: {
                             x: Math.abs(leftProxies.proxyMedian.position.x - leftProxies.proxy2.position.x),
@@ -4261,7 +4464,7 @@ export default class Arithmetics {
                     downProxies.proxyMedian.position.z = upProxies.proxy2.position.z;
                 }
 
-                if(this.xzJointStyle == "diagonal") {
+                if(this.xzJointStyle == "diagonal" || this.xzJointStyle == "arc") {
                     const distances = {
                         left: {
                             x: Math.abs(leftProxies.proxyMedian.position.x - leftProxies.proxy2.position.x),
@@ -4301,7 +4504,7 @@ export default class Arithmetics {
 
                 rightProxies.proxyMedian.position.x = upProxies.proxy2.position.x;  
                 
-                if(this.xzJointStyle == "diagonal") {
+                if(this.xzJointStyle == "diagonal" || this.xzJointStyle == "arc") {
                     const distances = {
                         down: {
                             x: Math.abs(downProxies.proxyMedian.position.x - rightProxies.proxy2.position.x),
@@ -4340,7 +4543,7 @@ export default class Arithmetics {
 
                 rightProxies.proxyMedian.position.x = upProxies.proxy2.position.x;
 
-                if(this.xzJointStyle == "diagonal") {
+                if(this.xzJointStyle == "diagonal" || this.xzJointStyle == "arc") {
                     const distances = {
                         up: {
                             x: Math.abs(upProxies.proxyMedian.position.x - leftProxies.proxy1.position.x),
@@ -4382,7 +4585,7 @@ export default class Arithmetics {
                     rightProxies.proxyMedian.position.x = leftProxies.proxy1.position.x;
                 }
 
-                if(this.xzJointStyle == "diagonal") {
+                if(this.xzJointStyle == "diagonal" || this.xzJointStyle == "arc") {
                     const distances = {
                         down: {
                             x: Math.abs(downProxies.proxyMedian.position.x - rightProxies.proxy2.position.x),
@@ -4421,7 +4624,7 @@ export default class Arithmetics {
             // top-right median
             rightProxies.proxyMedian.position.x = upProxies.proxy2.position.x;
 
-            if(this.xzJointStyle == "diagonal") {
+            if(this.xzJointStyle == "diagonal" || this.xzJointStyle == "arc") {
                 const distances = {
                     down: {
                         x: Math.abs(downProxies.proxyMedian.position.x - rightProxies.proxy2.position.x),
