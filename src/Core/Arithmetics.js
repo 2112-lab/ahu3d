@@ -114,6 +114,7 @@ export default class Arithmetics {
         this.xzJointStyle = this.jointBlockStyle.XZ.style;
         this.xzJointDirection = this.jointBlockStyle.XZ.direction;
         this.xzJointContext = this.jointBlockStyle.XZ.context;
+        this.xzJointPadding = this.jointBlockStyle.XZ.padding;
 
         this.xzJointYStyle = this.jointBlockStyle.XZ.yStyle;
         this.xzJointYDirection = this.jointBlockStyle.XZ.yDirection;
@@ -1836,7 +1837,7 @@ export default class Arithmetics {
     mesh.userData.component.object.scale.x *= -1;
     }
 
-    createArc(width, length) {
+    createArc(width, length, isCorner = false) {
 
         const scaleFactor = width - 30;
         const innerRadius = scaleFactor;
@@ -1886,20 +1887,26 @@ export default class Arithmetics {
         // Generate points for the arc
         let arcPoints = arcCurve.getPoints(8);
 
-        let origin = outerRadius;
-
-        if(this.xzJointDirection == "outwards") {
-            origin *= -1; 
-        }
-
-        // Define the center point (flipped side apex)
-        const centerPoint = new THREE.Vector2(origin, origin); // Origin
-
-        // Create the shape for the crescent
         const crescentShape = new THREE.Shape();
-        crescentShape.moveTo(centerPoint.x, centerPoint.y);
-        arcPoints.forEach(point => crescentShape.lineTo(point.x, point.y));
-        crescentShape.lineTo(centerPoint.x, centerPoint.y); // Close the shape back to the center
+        if(this.xzJointDirection == "outwards" || isCorner) {
+            // Move to the first point of the arc
+            crescentShape.moveTo(arcPoints[0].x, arcPoints[0].y);
+
+            // Connect to all points of the arc
+            arcPoints.forEach(point => crescentShape.lineTo(point.x - 30, point.y));
+
+            // Diagonally connect the last arc point back to the first arc point
+            crescentShape.lineTo(arcPoints[0].x, arcPoints[0].y);  
+        }
+        else {
+            // Define the center point (flipped side apex)
+            const centerPoint = new THREE.Vector2(outerRadius, outerRadius); // Origin
+
+            // Create the shape for the crescent
+            crescentShape.moveTo(centerPoint.x, centerPoint.y);
+            arcPoints.forEach(point => crescentShape.lineTo(point.x, point.y));
+            crescentShape.lineTo(centerPoint.x, centerPoint.y); // Close the shape back to the center
+        }
 
         // Create a geometry from the shape
         const crescentGeometry = new THREE.ShapeGeometry(crescentShape);
@@ -1910,13 +1917,6 @@ export default class Arithmetics {
         crescentMatrix.makeTranslation(0, 0, 30); 
         crescentGeometry2.applyMatrix4(crescentMatrix);
 
-        // let mergedGeometry = BufferGeometryUtils.mergeGeometries([
-        //     ring1, 
-        //     ring2,
-        //     outerCylinderGeometry,
-        //     innerCylinderGeometry
-        // ], false);
-
         let mergedGeometry = BufferGeometryUtils.mergeGeometries([
             ring1, 
             ring2,
@@ -1926,19 +1926,8 @@ export default class Arithmetics {
             crescentGeometry2
         ], false);
 
-        // if(this.xzJointDirection == "inwards") {
-        //     mergedGeometry = BufferGeometryUtils.mergeGeometries([
-        //         ring1, 
-        //         ring2,
-        //         outerCylinderGeometry,
-        //         innerCylinderGeometry,
-        //         crescentGeometry,
-        //         crescentGeometry2
-        //     ], false);
-        // }
-
         const mergedGeometryMatrix = new THREE.Matrix4();
-        mergedGeometryMatrix.makeTranslation(15, 15, 0); 
+        mergedGeometryMatrix.makeTranslation((width / -2) + 15,(width / -2) + 15, 0); 
         mergedGeometry.applyMatrix4(mergedGeometryMatrix);
 
         // Create a single mesh from the merged geometry
@@ -1954,177 +1943,88 @@ export default class Arithmetics {
         return arcMesh;
     }
 
+    calculateJointCenter(intersection) {
+        let leftDuctPosX = 0;
+        let rightDuctPosX = 0;
+
+        let upDuctPosZ = 0;
+        let downDuctPosZ = 0;
+
+        if(intersection.left) {
+            leftDuctPosX = intersection.left.segment.duct.userData.proxyMedianVertices[0].x
+        }
+        else if(intersection.right) {
+            leftDuctPosX = intersection.right.segment.duct.userData.proxyMedianVertices[0].x - 1000
+        }
+        else if(intersection.up) {
+            leftDuctPosX = intersection.up.segment.duct.userData.proxyMedianVertices[0].x - 1000
+        }
+        else if(intersection.down) {
+            leftDuctPosX = intersection.down.segment.duct.userData.proxyMedianVertices[0].x - 1000
+        }
+
+        if(intersection.right) {
+            rightDuctPosX = intersection.right.segment.duct.userData.proxyMedianVertices[0].x
+        }
+        else if(intersection.left) {
+            rightDuctPosX = intersection.left.segment.duct.userData.proxyMedianVertices[0].x + 1000
+        }
+        else if(intersection.up) {
+            rightDuctPosX = intersection.up.segment.duct.userData.proxyMedianVertices[0].x + 1000
+        }
+        else if(intersection.down) {
+            rightDuctPosX = intersection.down.segment.duct.userData.proxyMedianVertices[0].x + 1000
+        }
+
+        if(intersection.up) {
+            upDuctPosZ = intersection.up.segment.duct.userData.proxyMedianVertices[0].z
+        }
+        else if(intersection.left) {
+            upDuctPosZ = intersection.left.segment.duct.userData.proxyMedianVertices[0].z
+        }
+        else if(intersection.right) {
+            upDuctPosZ = intersection.right.segment.duct.userData.proxyMedianVertices[0].z
+        }
+        else if(intersection.down) {
+            upDuctPosZ = intersection.down.segment.duct.userData.proxyMedianVertices[0].z
+        }
+
+        if(intersection.down) {
+            downDuctPosZ = intersection.down.segment.duct.userData.proxyMedianVertices[0].z
+        }
+        else if(intersection.left) {
+            downDuctPosZ = intersection.left.segment.duct.userData.proxyMedianVertices[0].z
+        }
+        else if(intersection.right) {
+            downDuctPosZ = intersection.right.segment.duct.userData.proxyMedianVertices[0].z
+        }
+        else if(intersection.up) {
+            downDuctPosZ = intersection.up.segment.duct.userData.proxyMedianVertices[0].z
+        }
+
+        this.jointCenter = {
+            x: leftDuctPosX + (rightDuctPosX - leftDuctPosX) / 2,
+            z: downDuctPosZ + (upDuctPosZ - downDuctPosZ) / 2
+        }
+
+        // const geometry = new THREE.BoxGeometry(100, 100, 100);
+        // const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+        // const cube = new THREE.Mesh(geometry, material);
+
+        // cube.position.x = this.jointCenter.x;
+        // cube.position.z = this.jointCenter.z;
+
+        // this.sceneHelper.addToScene(cube);
+
+        console.log("jointCenter:", this.jointCenter);
+    }
+
     createCrossJoint(intersection, largestGlobalSize) {
         const geometries = [];
 
-        if(this.xzJointStyle == "arc") {
-            const upHelpers = intersection.up.segment.duct.userData;
-            const leftHelpers = intersection.left.segment.duct.userData;
-            const downHelpers = intersection.down.segment.duct.userData;
-            const rightHelpers = intersection.right.segment.duct.userData;        
+        this.calculateJointCenter(intersection);        
 
-            const upProxyMedian = upHelpers.proxies.proxyMedian;
-            const leftProxyMedian = leftHelpers.proxies.proxyMedian;
-            const downProxyMedian = downHelpers.proxies.proxyMedian;
-            const rightProxyMedian = rightHelpers.proxies.proxyMedian;
-
-            if(upProxyMedian.userData.isDiagonal) {
-                const width = upProxyMedian.userData.diagonalWidth;
-                const length = upHelpers.proxyMedianVertices[7].y - upHelpers.proxyMedianVertices[0].y;
-                const arc = this.createArc(width, length);
-
-                let arcRotation = 0;
-                let xOffset = 0;
-                let zOffset = 0;
-                if(this.xzJointDirection == "outwards") {
-                    arcRotation = Math.PI; 
-                    xOffset = width;
-                    zOffset = width * -1;
-                }
-
-                arc.rotation.z += arcRotation;
-                arc.position.set(
-                    upProxyMedian.userData.arcOrigin.x + xOffset,
-                    upHelpers.proxyMedianVertices[0].y + length,
-                    upProxyMedian.userData.arcOrigin.z + zOffset
-                );
-
-                if(this.xzJointDirection == "outwards"){
-                    geometries.push(
-                        ...this.connectProxiesDiagonallyUphill(
-                            intersection.left.segment.duct.userData.proxy1Vertices,
-                            intersection.up.segment.duct.userData.proxyMedianVertices
-                        )
-                    ); 
-                }
-                else {
-                    geometries.push(
-                        ...this.connectProxiesDiagonallyUphill(
-                            intersection.up.segment.duct.userData.proxyMedianVertices, 
-                            intersection.up.segment.duct.userData.proxy1Vertices
-                        )
-                    );
-                }
-                
-            }
-
-            if(leftProxyMedian.userData.isDiagonal) {
-                const width = leftProxyMedian.userData.diagonalWidth;
-                const length = leftHelpers.proxyMedianVertices[7].y - leftHelpers.proxyMedianVertices[0].y;
-                const arc = this.createArc(width, length);
-
-                let arcRotation = Math.PI / 2;
-                let xOffset = 0;
-                let zOffset = 0;
-                if(this.xzJointDirection == "outwards") {
-                    arcRotation *= -1; 
-                    xOffset = width;
-                    zOffset = width;
-                }
-
-                arc.rotation.z += arcRotation;
-                arc.position.set(
-                    leftProxyMedian.userData.arcOrigin.x + xOffset,
-                    leftHelpers.proxyMedianVertices[0].y + length,
-                    leftProxyMedian.userData.arcOrigin.z + zOffset
-                );
-
-                if(this.xzJointDirection == "outwards"){
-                    geometries.push(
-                        ...this.connectProxiesDiagonallyDownhill(
-                            intersection.left.segment.duct.userData.proxy2Vertices, 
-                            intersection.left.segment.duct.userData.proxyMedianVertices
-                        )
-                    );
-                }
-                else {
-                    geometries.push(
-                        ...this.connectProxiesDiagonallyDownhill(
-                            intersection.left.segment.duct.userData.proxyMedianVertices,
-                            intersection.down.segment.duct.userData.proxy1Vertices
-                        )  
-                    );
-                }
-            }
-
-            if(downProxyMedian.userData.isDiagonal) {
-                const width = downProxyMedian.userData.diagonalWidth;
-                const length = downHelpers.proxyMedianVertices[7].y - downHelpers.proxyMedianVertices[0].y;
-                const arc = this.createArc(width, length);
-
-                let arcRotation = Math.PI;
-                let xOffset = 0;
-                let zOffset = 0;
-                if(this.xzJointDirection == "outwards") {
-                    arcRotation = 0; 
-                    xOffset = width * -1;
-                    zOffset = width;
-                }
-
-                arc.rotation.z += arcRotation;
-                arc.position.set(
-                    downProxyMedian.userData.arcOrigin.x + xOffset,
-                    downHelpers.proxyMedianVertices[0].y + length,
-                    downProxyMedian.userData.arcOrigin.z + zOffset
-                );
-
-                if(this.xzJointDirection == "outwards"){
-                    geometries.push(
-                        ...this.connectProxiesDiagonallyUphill(
-                            intersection.down.segment.duct.userData.proxy2Vertices,
-                            intersection.down.segment.duct.userData.proxyMedianVertices
-                        )
-                    );
-                }
-                else {
-                    geometries.push(
-                        ...this.connectProxiesDiagonallyUphill(
-                            intersection.down.segment.duct.userData.proxyMedianVertices,
-                            intersection.right.segment.duct.userData.proxy2Vertices
-                        )
-                    );
-                }
-            }
-
-            if(rightProxyMedian.userData.isDiagonal) {
-                const width = rightProxyMedian.userData.diagonalWidth;
-                const length = rightHelpers.proxyMedianVertices[7].y - rightHelpers.proxyMedianVertices[0].y;
-                const arc = this.createArc(width, length);
-
-                let arcRotation = Math.PI / -2;
-                let xOffset = 0;
-                let zOffset = 0;
-                if(this.xzJointDirection == "outwards") {
-                    arcRotation *= -1; 
-                    xOffset = width * -1;
-                    zOffset = width * -1;
-                }
-
-                arc.rotation.z += arcRotation;
-                arc.position.set(
-                    rightProxyMedian.userData.arcOrigin.x + xOffset,
-                    rightHelpers.proxyMedianVertices[0].y + length,
-                    rightProxyMedian.userData.arcOrigin.z + zOffset
-                );
-
-                if(this.xzJointDirection == "outwards"){
-                    geometries.push(
-                        ...this.connectProxiesDiagonallyDownhill(
-                            intersection.right.segment.duct.userData.proxyMedianVertices, 
-                            intersection.right.segment.duct.userData.proxy1Vertices
-                        )
-                    );
-                }
-                else {
-                    geometries.push(
-                        ...this.connectProxiesDiagonallyDownhill(
-                            intersection.up.segment.duct.userData.proxy2Vertices, 
-                            intersection.right.segment.duct.userData.proxyMedianVertices
-                        )
-                    );
-                }
-
-            }
+        if(this.xzJointStyle == "arc") {     
 
             let upMidpoint = {
                 x: intersection.up.segment.duct.userData.proxy1Vertices[4].x,
@@ -2145,18 +2045,14 @@ export default class Arithmetics {
 
             let backwall = [
                 intersection.up.segment.duct.userData.proxyMedianVertices[4],
-                upMidpoint,
                 intersection.up.segment.duct.userData.proxy1Vertices[4],
                 intersection.up.segment.duct.userData.proxy2Vertices[7],
-                rightMidpoint,
                 intersection.right.segment.duct.userData.proxyMedianVertices[7],
                 intersection.right.segment.duct.userData.proxy1Vertices[7],
                 intersection.right.segment.duct.userData.proxy2Vertices[6],
-                downMidpoint,
                 intersection.down.segment.duct.userData.proxyMedianVertices[6],
                 intersection.down.segment.duct.userData.proxy2Vertices[6],
                 intersection.down.segment.duct.userData.proxy1Vertices[5],
-                leftMidpoint,
                 intersection.left.segment.duct.userData.proxyMedianVertices[5],
                 intersection.left.segment.duct.userData.proxy2Vertices[5],
                 intersection.left.segment.duct.userData.proxy1Vertices[4]
@@ -2203,59 +2099,6 @@ export default class Arithmetics {
             this.createJointBackwall(backwall, largestGlobalSize);
         }
         else {
-
-            geometries.push(
-                ...this.connectProxiesDiagonallyUphill(
-                    intersection.left.segment.duct.userData.proxy1Vertices,
-                    intersection.up.segment.duct.userData.proxyMedianVertices
-                )
-            ); 
-            geometries.push(
-                ...this.connectProxiesDiagonallyUphill(
-                    intersection.up.segment.duct.userData.proxyMedianVertices, 
-                    intersection.up.segment.duct.userData.proxy1Vertices
-                )
-            );
-
-            geometries.push(
-                ...this.connectProxiesDiagonallyDownhill(
-                    intersection.left.segment.duct.userData.proxy2Vertices, 
-                    intersection.left.segment.duct.userData.proxyMedianVertices
-                )
-            );
-            geometries.push(
-                ...this.connectProxiesDiagonallyDownhill(
-                    intersection.left.segment.duct.userData.proxyMedianVertices,
-                    intersection.down.segment.duct.userData.proxy1Vertices
-                )  
-            );
-
-            geometries.push(
-                ...this.connectProxiesDiagonallyUphill(
-                    intersection.down.segment.duct.userData.proxy2Vertices,
-                    intersection.down.segment.duct.userData.proxyMedianVertices
-                )
-            );
-            geometries.push(
-                ...this.connectProxiesDiagonallyUphill(
-                    intersection.down.segment.duct.userData.proxyMedianVertices,
-                    intersection.right.segment.duct.userData.proxy2Vertices
-                )
-            );
-
-            geometries.push(
-                ...this.connectProxiesDiagonallyDownhill(
-                    intersection.right.segment.duct.userData.proxyMedianVertices, 
-                    intersection.right.segment.duct.userData.proxy1Vertices
-                )
-            );
-            geometries.push(
-                ...this.connectProxiesDiagonallyDownhill(
-                    intersection.up.segment.duct.userData.proxy2Vertices, 
-                    intersection.right.segment.duct.userData.proxyMedianVertices
-                )
-            );
-
             let backwall = [
                 intersection.up.segment.duct.userData.proxyMedianVertices[4],
                 intersection.up.segment.duct.userData.proxy1Vertices[4],
@@ -2273,7 +2116,58 @@ export default class Arithmetics {
     
             this.createJointBackwall(backwall, largestGlobalSize);
         }  
-        
+
+        geometries.push(
+            ...this.connectProxiesDiagonallyUphill(
+                intersection.left.segment.duct.userData.proxy1Vertices,
+                intersection.up.segment.duct.userData.proxyMedianVertices
+            )
+        ); 
+        geometries.push(
+            ...this.connectProxiesDiagonallyUphill(
+                intersection.up.segment.duct.userData.proxyMedianVertices, 
+                intersection.up.segment.duct.userData.proxy1Vertices
+            )
+        );
+
+        geometries.push(
+            ...this.connectProxiesDiagonallyDownhill(
+                intersection.left.segment.duct.userData.proxy2Vertices, 
+                intersection.left.segment.duct.userData.proxyMedianVertices
+            )
+        );
+        geometries.push(
+            ...this.connectProxiesDiagonallyDownhill(
+                intersection.left.segment.duct.userData.proxyMedianVertices,
+                intersection.down.segment.duct.userData.proxy1Vertices
+            )  
+        );
+
+        geometries.push(
+            ...this.connectProxiesDiagonallyUphill(
+                intersection.down.segment.duct.userData.proxy2Vertices,
+                intersection.down.segment.duct.userData.proxyMedianVertices
+            )
+        );
+        geometries.push(
+            ...this.connectProxiesDiagonallyUphill(
+                intersection.down.segment.duct.userData.proxyMedianVertices,
+                intersection.right.segment.duct.userData.proxy2Vertices
+            )
+        );
+
+        geometries.push(
+            ...this.connectProxiesDiagonallyDownhill(
+                intersection.right.segment.duct.userData.proxyMedianVertices, 
+                intersection.right.segment.duct.userData.proxy1Vertices
+            )
+        );
+        geometries.push(
+            ...this.connectProxiesDiagonallyDownhill(
+                intersection.up.segment.duct.userData.proxy2Vertices, 
+                intersection.right.segment.duct.userData.proxyMedianVertices
+            )
+        );        
 
         geometries.push(
             ...this.createJointClosure(intersection.up, "horizontal")
@@ -2294,117 +2188,43 @@ export default class Arithmetics {
 
     createTJoint(intersection, largestGlobalSize) {
         const geometries = [];
+
+        this.calculateJointCenter(intersection);  
+
         if(this.xzJointDirection == "outwards") {
             if(intersection.right == null) {
-                if(this.xzJointStyle == "arc") {
 
-                    const upHelpers = intersection.up.segment.duct.userData;
-                    const upProxyMedian = upHelpers.proxies.proxyMedian;
-                    const leftHelpers = intersection.left.segment.duct.userData;   
-                    const leftProxyMedian = leftHelpers.proxies.proxyMedian;
-                    const downHelpers = intersection.down.segment.duct.userData;
-                    const downProxyMedian = downHelpers.proxies.proxyMedian;
+                geometries.push(
+                    ...this.connectProxiesDiagonallyUphill(
+                        intersection.down.segment.duct.userData.proxy2Vertices, 
+                        intersection.down.segment.duct.userData.proxyMedianVertices
+                    )
+                );
+                geometries.push(
+                    ...this.connectProxiesDiagonallyUphill( 
+                        intersection.up.segment.duct.userData.proxy2Vertices,
+                        intersection.down.segment.duct.userData.proxyMedianVertices
+                    )
+                );
 
-                    let width = upProxyMedian.userData.diagonalWidth;
-                    let length = upHelpers.proxyMedianVertices[7].y - upHelpers.proxyMedianVertices[0].y;
-                    let arc = this.createArc(width, length);
-
-                    let arcRotation = 0;
-                    let xOffset = 0;
-                    let zOffset = 0;
-                    if(this.xzJointDirection == "outwards") {
-                        arcRotation = Math.PI; 
-                        xOffset = width;
-                        zOffset = width * -1;
-                    }
-
-                    arc.rotation.z += arcRotation;
-                    arc.position.set(
-                        upProxyMedian.userData.arcOrigin.x + xOffset,
-                        upHelpers.proxyMedianVertices[0].y + length,
-                        upProxyMedian.userData.arcOrigin.z + zOffset
-                    );
-
-                    width = leftProxyMedian.userData.diagonalWidth;
-                    length = leftHelpers.proxyMedianVertices[7].y - leftHelpers.proxyMedianVertices[0].y;
-                    arc = this.createArc(width, length);
-
-                    arcRotation = Math.PI / 2;
-                    xOffset = 0;
-                    zOffset = 0;
-                    if(this.xzJointDirection == "outwards") {
-                        arcRotation = Math.PI / -2; 
-                        xOffset = width;
-                        zOffset = width;
-                    }
-
-                    arc.rotation.z += arcRotation;
-                    arc.position.set(
-                        leftProxyMedian.userData.arcOrigin.x + xOffset,
-                        leftHelpers.proxyMedianVertices[0].y + length,
-                        leftProxyMedian.userData.arcOrigin.z + zOffset
-                    );
-
-                    width = downProxyMedian.userData.diagonalWidth;
-                    length = downHelpers.proxyMedianVertices[7].y - downHelpers.proxyMedianVertices[0].y;
-                    arc = this.createArc(width, length);
-
-                    arcRotation = Math.PI;
-                    xOffset = 0;
-                    zOffset = 0;
-                    if(this.xzJointDirection == "outwards") {
-                        arcRotation = 0; 
-                        xOffset = width * -1;
-                        zOffset = width;
-                    }
-
-                    arc.rotation.z += arcRotation;
-                    arc.position.set(
-                        downProxyMedian.userData.arcOrigin.x + xOffset,
-                        downHelpers.proxyMedianVertices[0].y + length,
-                        downProxyMedian.userData.arcOrigin.z + zOffset
-                    );
-
-                    geometries.push(
-                        ...this.connectProxiesDiagonallyUphill( 
-                            intersection.up.segment.duct.userData.proxy2Vertices,
-                            intersection.down.segment.duct.userData.proxyMedianVertices
-                        )
-                    );
-                }
-                else {
-                    geometries.push(
-                        ...this.connectProxiesDiagonallyUphill(
-                            intersection.down.segment.duct.userData.proxy2Vertices, 
-                            intersection.down.segment.duct.userData.proxyMedianVertices
-                        )
-                    );
-                    geometries.push(
-                        ...this.connectProxiesDiagonallyUphill( 
-                            intersection.up.segment.duct.userData.proxy2Vertices,
-                            intersection.down.segment.duct.userData.proxyMedianVertices
-                        )
-                    );
-
-                    geometries.push(
-                        ...this.connectProxiesDiagonallyDownhill(
-                            intersection.left.segment.duct.userData.proxy2Vertices, 
-                            intersection.left.segment.duct.userData.proxyMedianVertices
-                        )  
-                    );
-                    geometries.push(
-                        ...this.connectProxiesDiagonallyUphill(
-                            intersection.up.segment.duct.userData.proxyMedianVertices, 
-                            intersection.left.segment.duct.userData.proxy1Vertices
-                        )
-                    );
-                    geometries.push(
-                        ...this.connectProxiesDiagonallyUphill(
-                            intersection.up.segment.duct.userData.proxyMedianVertices, 
-                            intersection.up.segment.duct.userData.proxy1Vertices
-                        ) 
-                    );
-                }
+                geometries.push(
+                    ...this.connectProxiesDiagonallyDownhill(
+                        intersection.left.segment.duct.userData.proxy2Vertices, 
+                        intersection.left.segment.duct.userData.proxyMedianVertices
+                    )  
+                );
+                geometries.push(
+                    ...this.connectProxiesDiagonallyUphill(
+                        intersection.left.segment.duct.userData.proxy1Vertices,
+                        intersection.up.segment.duct.userData.proxyMedianVertices
+                    )
+                );
+                geometries.push(
+                    ...this.connectProxiesDiagonallyUphill(
+                        intersection.up.segment.duct.userData.proxyMedianVertices, 
+                        intersection.up.segment.duct.userData.proxy1Vertices
+                    ) 
+                );
 
                 geometries.push(
                     ...this.connectProxiesDiagonallyDownhill(
@@ -2524,175 +2344,47 @@ export default class Arithmetics {
         }
         else if(this.xzJointDirection == "inwards") {
             if(intersection.right == null) {
-                if(this.xzJointStyle == "arc") {
+                geometries.push(
+                    ...this.connectProxiesDiagonallyUphill(
+                        intersection.down.segment.duct.userData.proxy2Vertices, 
+                        intersection.down.segment.duct.userData.proxyMedianVertices,
+                        true
+                    )
+                );
+                geometries.push(
+                    ...this.connectProxiesDiagonallyUphill(
+                        intersection.up.segment.duct.userData.proxy2Vertices,
+                        intersection.down.segment.duct.userData.proxyMedianVertices
+                    )
+                );
 
-                    const upHelpers = intersection.up.segment.duct.userData;
-                    const upProxyMedian = upHelpers.proxies.proxyMedian;
-                    const leftHelpers = intersection.left.segment.duct.userData;   
-                    const leftProxyMedian = leftHelpers.proxies.proxyMedian;
-                    const downHelpers = intersection.down.segment.duct.userData;
-                    const downProxyMedian = downHelpers.proxies.proxyMedian;
-
-                    let width = upProxyMedian.userData.diagonalWidth;
-                    let length = upHelpers.proxyMedianVertices[7].y - upHelpers.proxyMedianVertices[0].y;
-                    let arc = this.createArc(width, length);
-
-                    let arcRotation = 0;
-                    let xOffset = width * -1;
-                    let zOffset = width;
-                    if(this.xzJointDirection == "outwards") {
-                        arcRotation = Math.PI; 
-                        xOffset = width;
-                        zOffset = width * -1;
-                    }
-
-                    arc.rotation.z += arcRotation;
-                    arc.position.set(
-                        upProxyMedian.userData.arcOrigin.x + xOffset,
-                        upHelpers.proxyMedianVertices[0].y + length,
-                        upProxyMedian.userData.arcOrigin.z + zOffset
-                    );
-
-                    width = leftProxyMedian.userData.diagonalWidth;
-                    length = leftHelpers.proxyMedianVertices[7].y - leftHelpers.proxyMedianVertices[0].y;
-                    arc = this.createArc(width, length);
-
-                    arcRotation = Math.PI / 2;
-                    xOffset = width * -1;
-                    zOffset = width * -1;
-                    if(this.xzJointDirection == "outwards") {
-                        arcRotation = Math.PI / -2; 
-                        xOffset = width;
-                        zOffset = width;
-                    }
-
-                    arc.rotation.z += arcRotation;
-                    arc.position.set(
-                        leftProxyMedian.userData.arcOrigin.x + xOffset,
-                        leftHelpers.proxyMedianVertices[0].y + length,
-                        leftProxyMedian.userData.arcOrigin.z + zOffset
-                    );
-
-                    width = downProxyMedian.userData.diagonalWidth;
-                    length = downHelpers.proxyMedianVertices[7].y - downHelpers.proxyMedianVertices[0].y;
-                    arc = this.createArc(width, length);
-
-                    arcRotation = Math.PI;
-                    xOffset = 0;
-                    zOffset = 0;
-                    if(this.xzJointDirection == "outwards") {
-                        arcRotation = 0; 
-                        xOffset = width * -1;
-                        zOffset = width;
-                    }
-
-                    arc.rotation.z += arcRotation;
-                    arc.position.set(
-                        downProxyMedian.userData.arcOrigin.x + xOffset,
-                        downHelpers.proxyMedianVertices[0].y + length,
-                        downProxyMedian.userData.arcOrigin.z + zOffset
-                    );
-
-                    geometries.push(
-                        ...this.connectProxiesDiagonallyUphill( 
-                            intersection.up.segment.duct.userData.proxy2Vertices,
-                            intersection.down.segment.duct.userData.proxyMedianVertices
-                        )
-                    );
-                    geometries.push(
-                        ...this.connectProxiesDiagonallyDownhill(
-                            intersection.left.segment.duct.userData.proxy2Vertices, 
-                            intersection.left.segment.duct.userData.proxyMedianVertices
-                        )  
-                    );
-                }
-                else {
-                    geometries.push(
-                        ...this.connectProxiesDiagonallyUphill(
-                            intersection.down.segment.duct.userData.proxy2Vertices, 
-                            intersection.down.segment.duct.userData.proxyMedianVertices
-                        )
-                    );
-                    geometries.push(
-                        ...this.connectProxiesDiagonallyUphill( 
-                            intersection.up.segment.duct.userData.proxy2Vertices,
-                            intersection.down.segment.duct.userData.proxyMedianVertices
-                        )
-                    );
-
-                    geometries.push(
-                        ...this.connectProxiesDiagonallyDownhill(
-                            intersection.left.segment.duct.userData.proxy2Vertices, 
-                            intersection.left.segment.duct.userData.proxyMedianVertices
-                        )  
-                    );
-                    geometries.push(
-                        ...this.connectProxiesDiagonallyUphill(
-                            intersection.up.segment.duct.userData.proxyMedianVertices, 
-                            intersection.left.segment.duct.userData.proxy1Vertices
-                        )
-                    );
-                    geometries.push(
-                        ...this.connectProxiesDiagonallyUphill(
-                            intersection.up.segment.duct.userData.proxyMedianVertices, 
-                            intersection.up.segment.duct.userData.proxy1Vertices
-                        ) 
-                    );
-                }
-                // if(this.innerDim[intersection.up.xetoDuct.graphicLocation.size] > this.innerDim[intersection.down.xetoDuct.graphicLocation.size]) {
-                //     geometries.push(
-                //         ...this.connectProxiesHorizontally(
-                //             intersection.down.segment.duct.userData.proxy2Vertices, 
-                //             intersection.down.segment.duct.userData.proxyMedianVertices
-                //         )
-                //     );
-                //     geometries.push(
-                //         ...this.connectProxiesVertically(
-                //             intersection.up.segment.duct.userData.proxy2Vertices,
-                //             intersection.down.segment.duct.userData.proxyMedianVertices
-                //         )
-                //     );
-                // }
-                // else {
-                //     geometries.push(
-                //         ...this.connectProxiesVertically(
-                //             intersection.down.segment.duct.userData.proxy2Vertices, 
-                //             intersection.down.segment.duct.userData.proxyMedianVertices
-                //         )
-                //     );
-                //     geometries.push(
-                //         ...this.connectProxiesHorizontally(
-                //             intersection.up.segment.duct.userData.proxy2Vertices,
-                //             intersection.down.segment.duct.userData.proxyMedianVertices
-                //         )
-                //     );
-                // }
-                // geometries.push(
-                //     ...this.connectProxiesDiagonallyDownhill(
-                //         intersection.down.segment.duct.userData.proxy1Vertices,
-                //         intersection.left.segment.duct.userData.proxyMedianVertices
-                //     )  
-                // );
-                // geometries.push(
-                //     ...this.connectProxiesDiagonallyDownhill(
-                //         intersection.left.segment.duct.userData.proxy2Vertices, 
-                //         intersection.left.segment.duct.userData.proxyMedianVertices
-                //     )
-                // );
-                // geometries.push(
-                //     ...this.connectProxiesDiagonallyUphill(
-                //         intersection.up.segment.duct.userData.proxyMedianVertices, 
-                //         intersection.left.segment.duct.userData.proxy1Vertices
-                //     )
-                // );
-                // geometries.push(
-                //     ...this.connectProxiesDiagonallyUphill(
-                //         intersection.up.segment.duct.userData.proxyMedianVertices, 
-                //         intersection.up.segment.duct.userData.proxy1Vertices
-                //     )
-                // );
+                geometries.push(
+                    ...this.connectProxiesDiagonallyDownhill(
+                        intersection.down.segment.duct.userData.proxy1Vertices,
+                        intersection.left.segment.duct.userData.proxyMedianVertices
+                    )  
+                );
+                geometries.push(
+                    ...this.connectProxiesDiagonallyDownhill(
+                        intersection.left.segment.duct.userData.proxy2Vertices, 
+                        intersection.left.segment.duct.userData.proxyMedianVertices
+                    )
+                );
+                geometries.push(
+                    ...this.connectProxiesDiagonallyUphill(
+                        intersection.up.segment.duct.userData.proxyMedianVertices, 
+                        intersection.left.segment.duct.userData.proxy1Vertices
+                    )
+                );
+                geometries.push(
+                    ...this.connectProxiesDiagonallyUphill(
+                        intersection.up.segment.duct.userData.proxyMedianVertices, 
+                        intersection.up.segment.duct.userData.proxy1Vertices
+                    )
+                );
             }
             else if(intersection.left == null) {
+
                 if(intersection.up.segment.duct.userData.proxyMedianVertices[0].z == intersection.up.segment.duct.userData.proxy1Vertices[0].z) {
                     geometries.push(
                         ...this.connectProxiesHorizontally(
@@ -2881,45 +2573,88 @@ export default class Arithmetics {
     createLJoint(intersection, largestGlobalSize) {
         const geometries = [];
         let diagonalWidth = 0;
+        let backwall = [];
+        let arcRotation = 0;
+        let arcLength = 0;
+        let arcWidth = 0;
+        let xOffset = 0;
+        let zOffset = 0;
+        let xOffsetMedianVertices = [];
+        let zOffsetMedianVertices = [];
+
+        let rightHelpers = intersection.right.segment.duct.userData;
+        let rightProxyMedian = rightHelpers.proxies.proxyMedian;
+        let upHelpers = intersection.up.segment.duct.userData;
+        let upProxyMedian = upHelpers.proxies.proxyMedian;
+
+        let helpers = {};
+
+        const intersectionKeys = ['up', 'down', 'left', 'right'];
+
+        for(const intersectionKey of intersectionKeys) {
+            if(intersection[intersectionKey] != null) {
+                helpers[intersectionKey] = intersection[intersectionKey].segment.duct.userData;
+            }
+        }
+
+        this.calculateJointCenter(intersection); 
 
         if(this.xzJointDirection == "outwards") {
             if(intersection.right != null && intersection.up != null) {
-                if(this.xzJointStyle == "arc") {
+                if(this.xzJointStyle == "arc2") {
                     const rightHelpers = intersection.right.segment.duct.userData;
                     const rightProxyMedian = rightHelpers.proxies.proxyMedian;
                     const upHelpers = intersection.up.segment.duct.userData;
                     const upProxyMedian = upHelpers.proxies.proxyMedian;
 
-                    diagonalWidth = rightProxyMedian.userData.diagonalWidth;
-                    const arcLength = rightHelpers.proxyMedianVertices[7].y - rightHelpers.proxyMedianVertices[0].y;
-                    const arc = this.createArc(diagonalWidth, arcLength);
+                    ///////////////////////////////////////////////////////////////////////
+                    // Far Corner and Backwall
+                    ///////////////////////////////////////////////////////////////////////
 
-                    let arcRotation = Math.PI / -2;
-                    let xOffset = 0;
-                    let zOffset = 0;
-                    if(this.xzJointDirection == "outwards") {
-                        arcRotation = Math.PI / 2; 
-                        xOffset = diagonalWidth * -1;
-                        zOffset = diagonalWidth * -1;
+                    arcWidth = this.innerDim[intersection.right.xetoDuct.graphicLocation.size] + this.xzJointPadding;
+                    xOffsetMedianVertices = upHelpers.proxyMedianVertices;
+                    zOffsetMedianVertices = upHelpers.proxyMedianVertices;
+                    if(this.innerDim[intersection.right.xetoDuct.graphicLocation.size] <= this.innerDim[intersection.up.xetoDuct.graphicLocation.size]) {
+                        for(let xOffsetMedianVertex of xOffsetMedianVertices){
+                            xOffsetMedianVertex.x += arcWidth - 30;
+                        }
+                        geometries.push(
+                            ...this.connectProxiesHorizontally(
+                                xOffsetMedianVertices,
+                                intersection.right.segment.duct.userData.proxy2Vertices
+                            )
+                        );
+                    }
+                    else {
+                        arcWidth = this.innerDim[intersection.up.xetoDuct.graphicLocation.size] + this.xzJointPadding;
+                        for(let zOffsetMedianVertex of zOffsetMedianVertices){
+                            zOffsetMedianVertex.z += arcWidth - 30;
+                        }
+                        geometries.push(
+                            ...this.connectProxiesHorizontally(
+                                zOffsetMedianVertices,
+                                intersection.up.segment.duct.userData.proxy1Vertices
+                            )
+                        );
                     }
 
-                    arc.rotation.z += arcRotation;
-                    arc.position.set(
-                        rightProxyMedian.userData.arcOrigin.x + xOffset,
-                        rightHelpers.proxyMedianVertices[0].y + arcLength,
-                        rightProxyMedian.userData.arcOrigin.z + zOffset
-                    );
+                    let backwall = [
+                        intersection.up.segment.duct.userData.proxy1Vertices[4],
+                        intersection.up.segment.duct.userData.proxy2Vertices[7],
+                        intersection.right.segment.duct.userData.proxyMedianVertices[6],
+                        intersection.right.segment.duct.userData.proxy1Vertices[5],
+                        intersection.right.segment.duct.userData.proxy2Vertices[6],
+                        zOffsetMedianVertices[0]
+                    ];
 
-                    const arc2 = this.createArc(diagonalWidth, arcLength);
+                    this.createJointBackwall(backwall, largestGlobalSize);
 
-                    arcRotation = Math.PI / 2;
-                    xOffset = 0;
-                    zOffset = 0;
-                    if(this.xzJointDirection == "outwards") {
-                        arcRotation = Math.PI / -2; 
-                        xOffset = diagonalWidth;
-                        zOffset = diagonalWidth;
-                    }
+                    arcLength = upHelpers.proxyMedianVertices[7].y - upHelpers.proxyMedianVertices[0].y;
+                    const arc2 = this.createArc(arcWidth, arcLength);
+
+                    arcRotation = Math.PI / -2;
+                    xOffset = arcWidth;
+                    zOffset = arcWidth;
 
                     arc2.rotation.z += arcRotation;
                     arc2.position.set(
@@ -2927,6 +2662,10 @@ export default class Arithmetics {
                         upHelpers.proxyMedianVertices[0].y + arcLength,
                         upProxyMedian.userData.arcOrigin.z + zOffset
                     );
+
+                    ///////////////////////////////////////////////////////////////////////
+                    // End
+                    ///////////////////////////////////////////////////////////////////////
 
                     geometries.push(
                         ...this.connectProxiesDiagonallyDownhill(
@@ -2936,41 +2675,6 @@ export default class Arithmetics {
                     );
 
                     intersection.up.segment.duct.userData.proxies.proxyMedian.visible = false;
-
-                    function createLPanels(xPoint, zPoint, midPoint) {
-                        const xLength = xPoint - (midPoint.x + diagonalWidth);
-                        const zLength = xPoint - (midPoint.x + diagonalWidth);
-                        const panelGeometry = new THREE.BoxGeometry(xLength, arcLength, 30);
-                        const panelGeometry2 = new THREE.BoxGeometry(30, arcLength, zLength);
-
-                        const matrix = new THREE.Matrix4();
-                        const matrix2 = new THREE.Matrix4();
-                        matrix.makeTranslation(
-                            xPoint - (xLength/2), 
-                            0, 
-                            midPoint.z - 15
-                        ); 
-                        matrix2.makeTranslation(
-                            midPoint.x + 15, 
-                            0, 
-                            zPoint - (zLength / 2) - 30
-                        ); 
-                        panelGeometry.applyMatrix4(matrix);
-                        panelGeometry2.applyMatrix4(matrix2);
-
-                        panelGeometry.deleteAttribute('uv');
-                        panelGeometry2.deleteAttribute('uv');
-
-                        return [panelGeometry, panelGeometry2]
-                    }
-
-                    const xPoint = intersection.right.segment.duct.userData.proxy2Vertices[0].x;
-                    const zPoint = intersection.up.segment.duct.userData.proxy1Vertices[0].z;
-                    const midPoint = intersection.up.segment.duct.userData.proxyMedianVertices[0];
-
-                    geometries.push(
-                        ...createLPanels(xPoint, zPoint, midPoint)
-                    )
                 }
                 else {
                     geometries.push(
@@ -3086,78 +2790,100 @@ export default class Arithmetics {
         }
         else if(this.xzJointDirection == "inwards") {
             if(intersection.right != null && intersection.up != null) {
-                if(this.xzJointStyle == "arc") {
-                    
-                    const rightHelpers = intersection.right.segment.duct.userData;
-                    const rightProxyMedian = rightHelpers.proxies.proxyMedian;
-                    const upHelpers = intersection.up.segment.duct.userData;
-                    const upProxyMedian = upHelpers.proxies.proxyMedian;
-
-                    diagonalWidth = rightProxyMedian.userData.diagonalWidth;
-                    const arcLength = rightHelpers.proxyMedianVertices[7].y - rightHelpers.proxyMedianVertices[0].y;
-                    const arc = this.createArc(diagonalWidth, arcLength);
-
-                    arc.rotation.z -= Math.PI / 2;
-
-                    arc.position.set(
-                        rightProxyMedian.userData.arcOrigin.x,
-                        rightHelpers.proxyMedianVertices[0].y + arcLength,
-                        rightProxyMedian.userData.arcOrigin.z
-                    );
-
-                    const arc2 = this.createArc(diagonalWidth, arcLength);
-
-                    arc2.rotation.z += Math.PI / 2;
-
-                    arc2.position.set(
-                        upProxyMedian.userData.arcOrigin.x,
-                        upHelpers.proxyMedianVertices[0].y + arcLength,
-                        upProxyMedian.userData.arcOrigin.z
-                    );
-
-                    // geometries.push(
-                    //     ...this.connectProxiesDiagonallyDownhill(
-                    //         intersection.right.segment.duct.userData.proxyMedianVertices, 
-                    //         intersection.right.segment.duct.userData.proxy1Vertices
-                    //     )
-                    // );
-
+                if(this.xzJointStyle == "arc2") {
                     intersection.up.segment.duct.userData.proxies.proxyMedian.visible = false;
 
-                    function createLPanels(xPoint, zPoint, midPoint) {
-                        const xLength = xPoint - (midPoint.x + diagonalWidth);
-                        const zLength = xPoint - (midPoint.x + diagonalWidth);
-                        const panelGeometry = new THREE.BoxGeometry(xLength, arcLength, 30);
-                        const panelGeometry2 = new THREE.BoxGeometry(30, arcLength, zLength);
+                    ///////////////////////////////////////////////////////////////////////
+                    // Arc 2
+                    ///////////////////////////////////////////////////////////////////////
 
-                        const matrix = new THREE.Matrix4();
-                        const matrix2 = new THREE.Matrix4();
-                        matrix.makeTranslation(
-                            xPoint - (xLength/2), 
-                            0, 
-                            midPoint.z - 15
-                        ); 
-                        matrix2.makeTranslation(
-                            midPoint.x + 15, 
-                            0, 
-                            zPoint - (zLength / 2) - 30
-                        ); 
-                        panelGeometry.applyMatrix4(matrix);
-                        panelGeometry2.applyMatrix4(matrix2);
+                    // if(this.innerDim[intersection.right.xetoDuct.graphicLocation.size] <= this.innerDim[intersection.up.xetoDuct.graphicLocation.size]) {
+                    //     arcWidth = this.innerDim[intersection.right.xetoDuct.graphicLocation.size] + this.xzJointPadding;
+                    // }
+                    // else {
+                    //     arcWidth = this.innerDim[intersection.up.xetoDuct.graphicLocation.size] + this.xzJointPadding;
+                    // }
 
-                        panelGeometry.deleteAttribute('uv');
-                        panelGeometry2.deleteAttribute('uv');
+                    
+                    // arcLength = helpers.up.proxyMedianVertices[7].y - helpers.up.proxyMedianVertices[0].y;
+                    // const arc2 = this.createArc(arcWidth, arcLength, true);
 
-                        return [panelGeometry, panelGeometry2]
+                    // arcRotation = Math.PI / -2;
+                    // xOffset = arcWidth;
+                    // zOffset = arcWidth;
+
+                    // arc2.rotation.z += arcRotation;
+                    // arc2.position.set(
+                    //     helpers.up.proxies.proxyMedian.userData.arcOrigin.x + xOffset,
+                    //     helpers.up.proxyMedianVertices[0].y + arcLength,
+                    //     helpers.up.proxies.proxyMedian.userData.arcOrigin.z + zOffset
+                    // );
+
+                    ///////////////////////////////////////////////////////////////////////
+                    // End
+                    ///////////////////////////////////////////////////////////////////////
+                    ///////////////////////////////////////////////////////////////////////
+                    // Far Corner and Backwall
+                    ///////////////////////////////////////////////////////////////////////
+
+                    const arcPosition = {
+                        x: helpers.up.proxyMedianVertices.x - (diagonalWidth),
+                        y: helpers.up.proxyMedianVertices.y,
+                        z: helpers.up.proxyMedianVertices.z - (diagonalWidth),
                     }
 
-                    const xPoint = intersection.right.segment.duct.userData.proxy2Vertices[0].x;
-                    const zPoint = intersection.up.segment.duct.userData.proxy1Vertices[0].z;
-                    const midPoint = intersection.up.segment.duct.userData.proxyMedianVertices[0];
+                    arcWidth = this.innerDim[intersection.right.xetoDuct.graphicLocation.size] + this.xzJointPadding;
+                    xOffsetMedianVertices = helpers.up.proxyMedianVertices;
+                    zOffsetMedianVertices = helpers.up.proxyMedianVertices;
+                    if(this.innerDim[intersection.right.xetoDuct.graphicLocation.size] <= this.innerDim[intersection.up.xetoDuct.graphicLocation.size]) {
+                        for(let xOffsetMedianVertex of xOffsetMedianVertices){
+                            xOffsetMedianVertex.x += arcWidth - 30;
+                        }
+                        geometries.push(
+                            ...this.connectProxiesHorizontally(
+                                xOffsetMedianVertices,
+                                intersection.right.segment.duct.userData.proxy2Vertices
+                            )
+                        );
 
-                    geometries.push(
-                        ...createLPanels(xPoint, zPoint, midPoint)
-                    )
+                        backwall = [
+                            intersection.up.segment.duct.userData.proxy1Vertices[4],
+                            intersection.up.segment.duct.userData.proxy2Vertices[7],
+                            intersection.right.segment.duct.userData.proxyMedianVertices[6],
+                            arcPosition,
+                            intersection.right.segment.duct.userData.proxy1Vertices[5],
+                            intersection.right.segment.duct.userData.proxy2Vertices[6],
+                            xOffsetMedianVertices[0]
+                        ];
+                    }
+                    else {
+                        arcWidth = this.innerDim[intersection.up.xetoDuct.graphicLocation.size] + this.xzJointPadding;
+                        for(let zOffsetMedianVertex of zOffsetMedianVertices){
+                            zOffsetMedianVertex.z += arcWidth - 30;
+                        }
+                        geometries.push(
+                            ...this.connectProxiesHorizontally(
+                                zOffsetMedianVertices,
+                                intersection.up.segment.duct.userData.proxy1Vertices
+                            )
+                        );
+
+                        backwall = [
+                            intersection.up.segment.duct.userData.proxy1Vertices[4],
+                            intersection.up.segment.duct.userData.proxy2Vertices[7],
+                            intersection.right.segment.duct.userData.proxyMedianVertices[6],
+                            arcPosition,
+                            intersection.right.segment.duct.userData.proxy1Vertices[5],
+                            intersection.right.segment.duct.userData.proxy2Vertices[6],
+                            zOffsetMedianVertices[0]
+                        ];
+                    }
+
+                    // this.createJointBackwall(backwall, largestGlobalSize);
+
+                    ///////////////////////////////////////////////////////////////////////
+                    // End
+                    ///////////////////////////////////////////////////////////////////////
                 }
                 else {
                     geometries.push(
@@ -3284,6 +3010,55 @@ export default class Arithmetics {
         this.mergeAndAddToScene(geometries);
     }
 
+    removeFrontVertices(backwallProxies) {
+        let newBackwallProxies = [];
+        for(let backwallProxy of backwallProxies) {
+            backwallProxy = backwallProxy.slice(4);
+            newBackwallProxies.push(backwallProxy);
+        }
+        return newBackwallProxies;
+    }
+
+    getOuterEdgePoints(arraysOfPoints) {
+        // Flatten the array to get all points in one array
+        const points = arraysOfPoints.flat().map(({ x, z }) => [x, z]);
+    
+        // Convex hull algorithm implementation (Graham's Scan)
+        function convexHull(points) {
+            // Sort points by x-coordinate, breaking ties with z-coordinate
+            points.sort(([x1, z1], [x2, z2]) => x1 - x2 || z1 - z2);
+    
+            const cross = ([x1, z1], [x2, z2], [x3, z3]) =>
+                (x2 - x1) * (z3 - z1) - (z2 - z1) * (x3 - x1);
+    
+            const lower = [];
+            for (const point of points) {
+                while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], point) <= 0) {
+                    lower.pop();
+                }
+                lower.push(point);
+            }
+    
+            const upper = [];
+            for (const point of points.reverse()) {
+                while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], point) <= 0) {
+                    upper.pop();
+                }
+                upper.push(point);
+            }
+    
+            // Remove the last point of each half because it's repeated
+            return lower.slice(0, -1).concat(upper.slice(0, -1));
+        }
+    
+        // Get convex hull points
+        const hull = convexHull(points);
+    
+        // Map back to the original format, adding y (optional or default)
+        const outerEdgePoints = hull.map(([x, z]) => ({ x, y: 515, z }));
+        return outerEdgePoints;
+    }
+
     createTJointBackwall(intersection, largestGlobalSize) {
         if(this.xzJointStyle == "arc") {
             let backwall = [];
@@ -3292,29 +3067,14 @@ export default class Arithmetics {
             let leftMidpoint = {};
             let rightMidpoint = {};
             if(intersection.right == null) {
-                upMidpoint = {
-                    x: intersection.up.segment.duct.userData.proxy1Vertices[4].x,
-                    z: intersection.up.segment.duct.userData.proxyMedianVertices[4].z
-                }
-                downMidpoint = {
-                    x: intersection.down.segment.duct.userData.proxy2Vertices[4].x,
-                    z: intersection.down.segment.duct.userData.proxyMedianVertices[4].z
-                }
-                leftMidpoint = {
-                    x: intersection.left.segment.duct.userData.proxyMedianVertices[4].x,
-                    z: intersection.left.segment.duct.userData.proxy2Vertices[4].z
-                }
                 backwall = [
                     intersection.up.segment.duct.userData.proxyMedianVertices[4],
-                    upMidpoint,
                     intersection.up.segment.duct.userData.proxy1Vertices[4],
                     intersection.up.segment.duct.userData.proxy2Vertices[7],
                     intersection.down.segment.duct.userData.proxyMedianVertices[6],
-                    downMidpoint,
                     intersection.down.segment.duct.userData.proxy2Vertices[6],
                     intersection.down.segment.duct.userData.proxy1Vertices[5],
                     intersection.left.segment.duct.userData.proxyMedianVertices[5],
-                    leftMidpoint,
                     intersection.left.segment.duct.userData.proxy2Vertices[5],
                     intersection.left.segment.duct.userData.proxy1Vertices[4]
                 ];
@@ -3336,7 +3096,6 @@ export default class Arithmetics {
                         intersection.up.segment.duct.userData.proxy1Vertices[4],
                         intersection.up.segment.duct.userData.proxy2Vertices[7],
                         intersection.down.segment.duct.userData.proxyMedianVertices[6],
-                        downMidpoint,
                         intersection.down.segment.duct.userData.proxy2Vertices[6],
                         intersection.down.segment.duct.userData.proxy1Vertices[5],
                         leftMidpoint,
@@ -3346,7 +3105,47 @@ export default class Arithmetics {
                         upMidpoint,
                     ];
                 }
-            } 
+            }
+            else if(intersection.left == null) {
+                backwall = [
+                    intersection.up.segment.duct.userData.proxyMedianVertices[4],
+                    intersection.up.segment.duct.userData.proxy1Vertices[4],
+                    intersection.up.segment.duct.userData.proxy2Vertices[7],
+                    intersection.down.segment.duct.userData.proxyMedianVertices[6],
+                    intersection.down.segment.duct.userData.proxy2Vertices[6],
+                    intersection.down.segment.duct.userData.proxy1Vertices[5],
+                    intersection.right.segment.duct.userData.proxyMedianVertices[5],
+                    intersection.right.segment.duct.userData.proxy2Vertices[5],
+                    intersection.right.segment.duct.userData.proxy1Vertices[4]
+                ];
+                if(this.xzJointDirection == "inwards") {
+                    upMidpoint = {
+                        x: intersection.up.segment.duct.userData.proxy1Vertices[4].x,
+                        z: intersection.right.segment.duct.userData.proxy1Vertices[4].z
+                    }
+                    downMidpoint = {
+                        x: intersection.down.segment.duct.userData.proxy2Vertices[4].x,
+                        z: intersection.down.segment.duct.userData.proxyMedianVertices[4].z
+                    }
+                    rightMidpoint = {
+                        x: intersection.down.segment.duct.userData.proxy1Vertices[4].x,
+                        z: intersection.right.segment.duct.userData.proxy2Vertices[4].z
+                    }
+                    backwall = [
+                        intersection.up.segment.duct.userData.proxyMedianVertices[4],
+                        intersection.up.segment.duct.userData.proxy1Vertices[4],
+                        intersection.up.segment.duct.userData.proxy2Vertices[7],
+                        intersection.down.segment.duct.userData.proxyMedianVertices[6],
+                        intersection.down.segment.duct.userData.proxy2Vertices[6],
+                        intersection.down.segment.duct.userData.proxy1Vertices[5],
+                        rightMidpoint,
+                        intersection.right.segment.duct.userData.proxyMedianVertices[5],
+                        intersection.right.segment.duct.userData.proxy2Vertices[5],
+                        intersection.right.segment.duct.userData.proxy1Vertices[4],
+                        upMidpoint,
+                    ];
+                }
+            }
             
             this.createJointBackwall(backwall, largestGlobalSize);
         }
@@ -3379,39 +3178,17 @@ export default class Arithmetics {
         }
     }
 
-    createLJointBackwall(intersection, largestGlobalSize, diagonalWidth = 0) {
+    createLJointBackwall(intersection, largestGlobalSize) {
         if(this.xzJointStyle == "arc") {
             let backwall = [];
-            if(intersection.down == null && intersection.left == null) {
-                
-                let rightMidpoint = {
-                    x: intersection.up.segment.duct.userData.proxy2Vertices[4].x,
-                    z: intersection.right.segment.duct.userData.proxyMedianVertices[4].z
-                }
-
-                const upPoint1 = {
-                    x: intersection.up.segment.duct.userData.proxyMedianVertices[4].x + diagonalWidth,
-                    z: intersection.up.segment.duct.userData.proxyMedianVertices[4].z
-                }
-                const upMidpoint = {
-                    x: intersection.up.segment.duct.userData.proxyMedianVertices[4].x + diagonalWidth,
-                    z: intersection.up.segment.duct.userData.proxyMedianVertices[4].z + diagonalWidth
-                }
-                const upPoint2 = {
-                    x: intersection.up.segment.duct.userData.proxyMedianVertices[4].x,
-                    z: intersection.up.segment.duct.userData.proxyMedianVertices[4].z + diagonalWidth
-                }
-    
+            if(intersection.down == null && intersection.left == null) {    
                 backwall = [
+                    intersection.up.segment.duct.userData.proxyMedianVertices[4],
                     intersection.up.segment.duct.userData.proxy1Vertices[4],
                     intersection.up.segment.duct.userData.proxy2Vertices[7],
-                    rightMidpoint,
                     intersection.right.segment.duct.userData.proxyMedianVertices[6],
                     intersection.right.segment.duct.userData.proxy1Vertices[5],
                     intersection.right.segment.duct.userData.proxy2Vertices[6],
-                    upPoint1,
-                    upMidpoint,
-                    upPoint2
                 ];
 
                 if(this.xzJointDirection == "inwards") {
@@ -3420,15 +3197,13 @@ export default class Arithmetics {
                         z: intersection.right.segment.duct.userData.proxy1Vertices[4].z
                     }
                     backwall = [
+                        intersection.up.segment.duct.userData.proxyMedianVertices[4],
                         intersection.up.segment.duct.userData.proxy1Vertices[4],
                         intersection.up.segment.duct.userData.proxy2Vertices[7],
                         intersection.right.segment.duct.userData.proxyMedianVertices[6],
                         rightMidpoint,
                         intersection.right.segment.duct.userData.proxy1Vertices[5],
                         intersection.right.segment.duct.userData.proxy2Vertices[6],
-                        upPoint1,
-                        upMidpoint,
-                        upPoint2
                     ];
                 }
             } 
@@ -3591,11 +3366,9 @@ export default class Arithmetics {
         geometries.push(
             this.createGeometryFromPoints(
                 leftProxy[2],
-                rightProxy[2],
+                rightProxy[1],
                 rightProxy[6],
-                leftProxy[6],
-                leftProxy,
-                rightProxy
+                leftProxy[6]
             )
         );
         geometries.push(
@@ -3603,9 +3376,7 @@ export default class Arithmetics {
                 leftProxy[0],
                 rightProxy[0],
                 rightProxy[4],
-                leftProxy[4],
-                leftProxy,
-                rightProxy
+                leftProxy[4]
             )
         );
         geometries.push(
@@ -3613,9 +3384,7 @@ export default class Arithmetics {
                 leftProxy[3],
                 rightProxy[0],
                 rightProxy[1],
-                leftProxy[2],
-                leftProxy,
-                rightProxy
+                leftProxy[2]
             )
         );
         geometries.push(
@@ -3623,9 +3392,7 @@ export default class Arithmetics {
                 leftProxy[4],
                 rightProxy[7],
                 rightProxy[6],
-                leftProxy[5],
-                leftProxy,
-                rightProxy
+                leftProxy[5]
             )
         );
 
@@ -3787,8 +3554,53 @@ export default class Arithmetics {
         return geometries;
     }
 
-    connectProxiesDiagonallyDownhill(leftProxy, rightProxy) {
+    calculateArc(leftProxy, rightProxy, flipArc = false) {
+        if(this.xzJointStyle == "arc" && (leftProxy[0].x != rightProxy[0].x && leftProxy[0].z != rightProxy[0].z)) {
+
+            let jointCenter = {x:0, z:0}
+
+            if(this.jointCenter) {
+                jointCenter = this.jointCenter;
+            }
+
+            let width = Math.abs(leftProxy[0].x - rightProxy[0].x);
+            let length = leftProxy[7].y - leftProxy[0].y;
+            const arc = this.createArc(width, length, flipArc);
+
+            if(leftProxy[0].x > jointCenter.x && leftProxy[0].z > jointCenter.z){
+                arc.rotation.z = Math.PI; // upper-right
+            }
+            else if(leftProxy[0].x > jointCenter.x && leftProxy[0].z < jointCenter.z) {
+                arc.rotation.z = Math.PI / 2; // lower-right
+            }
+            else if(leftProxy[0].x < jointCenter.x && leftProxy[0].z < jointCenter.z) {
+                arc.rotation.z = Math.PI * 2; // lower-left
+            }
+            else {
+                arc.rotation.z = Math.PI / -2; // upper-left
+            }
+
+            if(this.xzJointDirection == "outwards"){
+                arc.rotation.z += Math.PI;
+            }
+
+            if(flipArc) {
+                arc.rotation.z += Math.PI;
+            }
+
+            arc.position.x = Math.min(leftProxy[0].x, rightProxy[0].x) + (Math.abs(leftProxy[0].x - rightProxy[0].x) / 2) + 15;
+            arc.position.z = Math.min(leftProxy[0].z, rightProxy[0].z) + (Math.abs(leftProxy[0].z - rightProxy[0].z) / 2) - 15;
+            arc.position.y = leftProxy[0].y + length;
+        }
+    }
+
+    connectProxiesDiagonallyDownhill(leftProxy, rightProxy, flipArc = false) {
         const geometries = [];
+
+        if(this.xzJointStyle == "arc" && (leftProxy[0].x != rightProxy[0].x && leftProxy[0].z != rightProxy[0].z)) {
+            this.calculateArc(leftProxy, rightProxy, flipArc);
+            return geometries;
+        }
 
         geometries.push(
             this.createGeometryFromPoints(
@@ -3834,8 +3646,13 @@ export default class Arithmetics {
         return geometries;
     }
 
-    connectProxiesDiagonallyUphill(leftProxy, rightProxy) {
+    connectProxiesDiagonallyUphill(leftProxy, rightProxy, flipArc = false) {
         const geometries = [];
+
+        if(this.xzJointStyle == "arc" && (leftProxy[0].x != rightProxy[0].x && leftProxy[0].z != rightProxy[0].z)) {
+            this.calculateArc(leftProxy, rightProxy, flipArc);
+            return geometries;
+        }
 
         const vectors = [leftProxy[0], rightProxy[0]];
 
@@ -4826,52 +4643,20 @@ export default class Arithmetics {
     
                     if(distances.up.x > distances.up.z) {
                         upProxies.proxyMedian.position.x += distances.up.z;
-                        upProxies.proxyMedian.userData.isDiagonal = true;
-                        upProxies.proxyMedian.userData.diagonalWidth = distances.up.z;
-                        upProxies.proxyMedian.userData.arcOrigin = {
-                            x: upProxies.proxyMedian.position.x,
-                            z: upProxies.proxy1.position.z
-                        }
                     }
                     else if(distances.up.x <= distances.up.z) {
                         upProxies.proxyMedian.position.z -= distances.up.x;
-                        upProxies.proxyMedian.userData.isDiagonal = true;
-                        upProxies.proxyMedian.userData.diagonalWidth = distances.up.x;
-                        upProxies.proxyMedian.userData.arcOrigin = {
-                            x: upProxies.proxyMedian.position.x,
-                            z: upProxies.proxy1.position.z
-                        }
                     }
     
                     if(distances.left.x > distances.left.z) {
                         leftProxies.proxyMedian.position.x += distances.left.z;
-                        leftProxies.proxyMedian.userData.isDiagonal = true;
-                        leftProxies.proxyMedian.userData.diagonalWidth = distances.left.z;
-                        leftProxies.proxyMedian.userData.arcOrigin = {
-                            x: leftProxies.proxy2.position.x,
-                            z: leftProxies.proxyMedian.position.z
-                        }
                     }
                     else if(distances.left.x <= distances.left.z) {
                         leftProxies.proxyMedian.position.z += distances.left.x;
-                        leftProxies.proxyMedian.userData.isDiagonal = true;
-                        leftProxies.proxyMedian.userData.diagonalWidth = distances.left.x;
-                        leftProxies.proxyMedian.userData.arcOrigin = {
-                            x: leftProxies.proxy2.position.x,
-                            z: leftProxies.proxyMedian.position.z
-                        }
                     }
 
                     const cornerWidth = downProxies.proxyMedian.position.x - downProxies.proxy2.position.x;
-
                     downProxies.proxyMedian.position.z += cornerWidth;
-
-                    downProxies.proxyMedian.userData.isDiagonal = true;
-                    downProxies.proxyMedian.userData.diagonalWidth = cornerWidth;
-                    downProxies.proxyMedian.userData.arcOrigin = {
-                        x: downProxies.proxyMedian.position.x,
-                        z: downProxies.proxy2.position.z
-                    }
                 }
             }
             else if(intersection.left == null) {
@@ -5024,78 +4809,30 @@ export default class Arithmetics {
                 }
                 if(distances.down.x > distances.down.z) {
                     downProxies.proxyMedian.position.x -= distances.down.z;
-                    downProxies.proxyMedian.userData.isDiagonal = true;
-                    downProxies.proxyMedian.userData.diagonalWidth = distances.down.z;
-                    downProxies.proxyMedian.userData.arcOrigin = {
-                        x: rightProxies.proxy2.position.x,
-                        z: downProxies.proxyMedian.position.z
-                    }
                 }
                 else if(distances.down.x <= distances.down.z) {
                     downProxies.proxyMedian.position.z += distances.down.x;
-                    downProxies.proxyMedian.userData.isDiagonal = true;
-                    downProxies.proxyMedian.userData.diagonalWidth = distances.down.x;
-                    downProxies.proxyMedian.userData.arcOrigin = {
-                        x: rightProxies.proxy2.position.x,
-                        z: downProxies.proxyMedian.position.z
-                    }
                 }
 
                 if(distances.right.x > distances.right.z) {
                     rightProxies.proxyMedian.position.x -= distances.right.z;
-                    rightProxies.proxyMedian.userData.isDiagonal = true;
-                    rightProxies.proxyMedian.userData.diagonalWidth = distances.right.z;
-                    rightProxies.proxyMedian.userData.arcOrigin = {
-                        x: rightProxies.proxyMedian.position.x,
-                        z: upProxies.proxy2.position.z
-                    }
                 }
                 else if(distances.right.x <= distances.right.z) {
                     rightProxies.proxyMedian.position.z -= distances.right.x;
-                    rightProxies.proxyMedian.userData.isDiagonal = true;
-                    rightProxies.proxyMedian.userData.diagonalWidth = distances.right.x;
-                    rightProxies.proxyMedian.userData.arcOrigin = {
-                        x: rightProxies.proxyMedian.position.x,
-                        z: upProxies.proxy2.position.z
-                    }
                 }
 
                 if(distances.up.x > distances.up.z) {
                     upProxies.proxyMedian.position.x += distances.up.z;
-                    upProxies.proxyMedian.userData.isDiagonal = true;
-                    upProxies.proxyMedian.userData.diagonalWidth = distances.up.z;
-                    upProxies.proxyMedian.userData.arcOrigin = {
-                        x: upProxies.proxyMedian.position.x,
-                        z: upProxies.proxy1.position.z
-                    }
                 }
                 else if(distances.up.x <= distances.up.z) {
                     upProxies.proxyMedian.position.z -= distances.up.x;
-                    upProxies.proxyMedian.userData.isDiagonal = true;
-                    upProxies.proxyMedian.userData.diagonalWidth = distances.up.x;
-                    upProxies.proxyMedian.userData.arcOrigin = {
-                        x: upProxies.proxyMedian.position.x,
-                        z: upProxies.proxy1.position.z
-                    }
                 }
 
                 if(distances.left.x > distances.left.z) {
                     leftProxies.proxyMedian.position.x += distances.left.z;
-                    leftProxies.proxyMedian.userData.isDiagonal = true;
-                    leftProxies.proxyMedian.userData.diagonalWidth = distances.left.z;
-                    leftProxies.proxyMedian.userData.arcOrigin = {
-                        x: leftProxies.proxyMedian.position.x,
-                        z: downProxies.proxy1.position.z
-                    }
                 }
                 else if(distances.left.x <= distances.left.z) {
                     leftProxies.proxyMedian.position.z += distances.left.x;
-                    leftProxies.proxyMedian.userData.isDiagonal = true;
-                    leftProxies.proxyMedian.userData.diagonalWidth = distances.left.x;
-                    leftProxies.proxyMedian.userData.arcOrigin = {
-                        x: leftProxies.proxyMedian.position.x,
-                        z: downProxies.proxy1.position.z
-                    }
                 }
             }
         }
@@ -5260,52 +4997,21 @@ export default class Arithmetics {
     
                     if(distances.up.x > distances.up.z) {
                         upProxies.proxyMedian.position.x -= distances.up.z;
-                        upProxies.proxyMedian.userData.isDiagonal = true;
-                        upProxies.proxyMedian.userData.diagonalWidth = distances.up.z;
-                        upProxies.proxyMedian.userData.arcOrigin = {
-                            x: upProxies.proxy1.position.x,
-                            z: leftProxies.proxy1.position.z
-                        }
                     }
                     else if(distances.up.x <= distances.up.z) {
                         upProxies.proxyMedian.position.z += distances.up.x;
-                        upProxies.proxyMedian.userData.isDiagonal = true;
-                        upProxies.proxyMedian.userData.diagonalWidth = distances.up.z;
-                        upProxies.proxyMedian.userData.arcOrigin = {
-                            x: upProxies.proxy1.position.x,
-                            z: leftProxies.proxy1.position.z
-                        }
                     }
     
                     if(distances.left.x > distances.left.z) {
                         leftProxies.proxyMedian.position.x -= distances.left.z;
-                        leftProxies.proxyMedian.userData.isDiagonal = true;
-                        leftProxies.proxyMedian.userData.diagonalWidth = distances.left.z;
-                        leftProxies.proxyMedian.userData.arcOrigin = {
-                            x: downProxies.proxy1.position.x,
-                            z: leftProxies.proxy2.position.z
-                        }
                     }
                     else if(distances.left.x <= distances.left.z) {
                         leftProxies.proxyMedian.position.z -= distances.left.x;
-                        leftProxies.proxyMedian.userData.isDiagonal = true;
-                        leftProxies.proxyMedian.userData.diagonalWidth = distances.left.z;
-                        leftProxies.proxyMedian.userData.arcOrigin = {
-                            x: leftProxies.proxy1.position.x,
-                            z: downProxies.proxy2.position.z
-                        }
                     }
 
                     const cornerWidth = downProxies.proxyMedian.position.x - downProxies.proxy2.position.x;
 
                     downProxies.proxyMedian.position.z += cornerWidth;
-
-                    downProxies.proxyMedian.userData.isDiagonal = true;
-                    downProxies.proxyMedian.userData.diagonalWidth = cornerWidth;
-                    downProxies.proxyMedian.userData.arcOrigin = {
-                        x: downProxies.proxyMedian.position.x,
-                        z: downProxies.proxy2.position.z
-                    }
                 }
 
             }
@@ -5334,16 +5040,51 @@ export default class Arithmetics {
                     }
                     if(distances.down.x > distances.down.z) {
                         downProxies.proxyMedian.position.x += distances.down.z;
+                        downProxies.proxyMedian.userData.isDiagonal = true;
+                        downProxies.proxyMedian.userData.diagonalWidth = distances.down.z;
+                        downProxies.proxyMedian.userData.arcOrigin = {
+                            x: downProxies.proxy1.position.x,
+                            z: downProxies.proxy1.position.z
+                        }
                     }
                     else if(distances.down.x <= distances.down.z) {
                         downProxies.proxyMedian.position.z -= distances.down.x;
+                        downProxies.proxyMedian.userData.isDiagonal = true;
+                        downProxies.proxyMedian.userData.diagonalWidth = distances.down.x;
+                        downProxies.proxyMedian.userData.arcOrigin = {
+                            x: downProxies.proxy1.position.x,
+                            z: downProxies.proxy1.position.z
+                        }
                     }
     
                     if(distances.right.x > distances.right.z) {
                         rightProxies.proxyMedian.position.x += distances.right.z;
+                        rightProxies.proxyMedian.userData.isDiagonal = true;
+                        rightProxies.proxyMedian.userData.diagonalWidth = distances.right.z;
+                        rightProxies.proxyMedian.userData.arcOrigin = {
+                            x: rightProxies.proxy1.position.x,
+                            z: rightProxies.proxy1.position.z
+                        }
                     }
                     else if(distances.right.x <= distances.right.z) {
                         rightProxies.proxyMedian.position.z += distances.right.x;
+                        rightProxies.proxyMedian.userData.isDiagonal = true;
+                        rightProxies.proxyMedian.userData.diagonalWidth = distances.right.x;
+                        rightProxies.proxyMedian.userData.arcOrigin = {
+                            x: rightProxies.proxy1.position.x,
+                            z: rightProxies.proxy1.position.z
+                        }
+                    }
+
+                    const cornerWidth = upProxies.proxyMedian.position.x - upProxies.proxy2.position.x;
+
+                    upProxies.proxyMedian.position.z += cornerWidth;
+
+                    upProxies.proxyMedian.userData.isDiagonal = true;
+                    upProxies.proxyMedian.userData.diagonalWidth = cornerWidth;
+                    upProxies.proxyMedian.userData.arcOrigin = {
+                        x: upProxies.proxyMedian.position.x,
+                        z: upProxies.proxy2.position.z
                     }
                 }
             }
