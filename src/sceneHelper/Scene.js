@@ -619,7 +619,8 @@ class Scene {
           (child) => 
             child.name == 'arrowClone' || 
             child.name == 'textMesh' ||
-            child.name.includes('joint')
+            child.name.includes('joint') ||
+            child.name.includes('duct')
         );
         sceneIndicators.forEach((child) => {
           this.scene.remove(child);
