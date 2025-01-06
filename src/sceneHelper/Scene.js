@@ -197,7 +197,7 @@ class Scene {
             console.warn("Composer is not initialized. Skipping post-processing.");
         }
 
-        // this.updateComposer();
+        this.updateComposer();
         this.labelRenderer.render(this.scene, this.cameras.primary);
         this.animateCachedTargets();
     }

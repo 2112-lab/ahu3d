@@ -332,9 +332,11 @@ export default class Arithmetics {
                 if (startIntersections.length == 0 || endIntersections.length == 0) {
                     if(segment.xetoDuct.blockStyle.ductEnds == 'insert') {
                         ductEnd = this.createParametricInsert(this.innerDim[segment.xetoDuct.graphicLocation.size]);
+                        segment.segment.duct.userData.endHeight = ductEnd.userData.height;
                     }
                     else if(segment.xetoDuct.blockStyle.ductEnds == 'cap') {
                         ductEnd = this.createParametricCap(this.innerDim[segment.xetoDuct.graphicLocation.size]);
+                        segment.segment.duct.userData.endHeight = ductEnd.userData.height;
                     }
                     
                     ductEnd.position.copy(segment.segment.duct.userData.component.object.position);
@@ -460,6 +462,7 @@ export default class Arithmetics {
         
         const mergedMesh = new THREE.Mesh(mergedGeometry, material);
         mergedMesh.name = "ductEnd";
+        mergedMesh.userData.height = height;
         this.sceneHelper.addToScene(mergedMesh);
         
         return mergedMesh;
@@ -498,6 +501,7 @@ export default class Arithmetics {
         
         const mergedMesh = new THREE.Mesh(mergedGeometry, material);
         mergedMesh.name = "ductEnd";
+        mergedMesh.userData.height = 60;
         this.sceneHelper.addToScene(mergedMesh);
         
         return mergedMesh;
@@ -619,6 +623,8 @@ export default class Arithmetics {
         let segmentOrientation = segment.xetoDuct.orientation;        
         
         console.log("createFlowIndicators segmentOrientation:", segmentOrientation);
+        console.log("segment.segment.duct.userData.height:", segment.segment.duct.userData.endHeight);
+        
 
         if(segmentOrientation === "east") {
 
@@ -626,17 +632,20 @@ export default class Arithmetics {
                 object.position.x -= segment.segment.duct.userData.component.object.boundingBox.dimensions.x / 2;
                 object.position.x -= 500;
                 object.position.x -= segment.xetoDuct.blockStyle.helpers.arrow.padding || 0;
+                object.position.x -= segment.segment.duct.userData.endHeight;
             }
             if(intersectionKey === "end") {
                 object.position.x += segment.segment.duct.userData.component.object.boundingBox.dimensions.x / 2;
                 object.position.x += 500;
                 object.position.x += segment.xetoDuct.blockStyle.helpers.arrow.padding || 0;
+                object.position.x += segment.segment.duct.userData.endHeight;
             }
 
             if(indicatorKey == 'textMesh') {
                 object.position.x -= 500; // -500 for an offset
                 object.position.z += 120; // +120 for an offset
                 object.position.x += segment.xetoDuct.blockStyle.helpers.text.padding || 0;
+                object.position.x += segment.segment.duct.userData.endHeight;
             }
         }
 
@@ -649,17 +658,20 @@ export default class Arithmetics {
                 object.position.x += segment.segment.duct.userData.component.object.boundingBox.dimensions.x / 2;
                 object.position.x += 500;
                 object.position.x += segment.xetoDuct.blockStyle.helpers.arrow.padding || 0;
+                object.position.x += segment.segment.duct.userData.endHeight;
             }
             if(intersectionKey === "end") {
                 object.position.x -= segment.segment.duct.userData.component.object.boundingBox.dimensions.x / 2;
                 object.position.x -= 500;
                 object.position.x -= segment.xetoDuct.blockStyle.helpers.arrow.padding || 0;
+                object.position.x -= segment.segment.duct.userData.endHeight;
             }
             
             if(indicatorKey == 'textMesh') {
                 object.position.x -= 500; // -500 for an offset
                 object.position.z += 120; // +120 for an offset
                 object.position.x += segment.xetoDuct.blockStyle.helpers.text.padding || 0;
+                object.position.x += segment.segment.duct.userData.endHeight;
             }
         } 
 
@@ -668,17 +680,20 @@ export default class Arithmetics {
                 object.position.z -= segment.segment.duct.userData.component.object.boundingBox.dimensions.x / 2;
                 object.position.z -= 500;
                 object.position.z -= segment.xetoDuct.blockStyle.helpers.arrow.padding || 0;
+                object.position.z -= segment.segment.duct.userData.endHeight;
             }
             if(intersectionKey === "end") {
                 object.position.z += segment.segment.duct.userData.component.object.boundingBox.dimensions.x / 2;
                 object.position.z += 500;
                 object.position.z += segment.xetoDuct.blockStyle.helpers.arrow.padding || 0;
+                object.position.z += segment.segment.duct.userData.endHeight;
             }
 
             object.rotation.y = THREE.MathUtils.degToRad(-90);
             if(indicatorKey == 'textMesh') {
                 object.position.x += 100; // +100 for an offset
                 object.position.x += segment.xetoDuct.blockStyle.helpers.text.padding || 0;
+                object.position.x += segment.segment.duct.userData.endHeight;
             }
         }
 
@@ -687,17 +702,20 @@ export default class Arithmetics {
                 object.position.z += segment.segment.duct.userData.component.object.boundingBox.dimensions.x / 2;
                 object.position.z += 500;
                 object.position.z += segment.xetoDuct.blockStyle.helpers.arrow.padding || 0;
+                object.position.z += segment.segment.duct.userData.endHeight;
             }
             if(intersectionKey === "end") {
                 object.position.z -= segment.segment.duct.userData.component.object.boundingBox.dimensions.x / 2;
                 object.position.z -= 500;
                 object.position.z -= segment.xetoDuct.blockStyle.helpers.arrow.padding || 0;
+                object.position.z -= segment.segment.duct.userData.endHeight;
             }
 
             object.rotation.y = THREE.MathUtils.degToRad(90);
             if(indicatorKey == 'textMesh') {
                 object.position.x += 100; // +100 for an offset
                 object.position.x += segment.xetoDuct.blockStyle.helpers.text.padding || 0;
+                object.position.x += segment.segment.duct.userData.endHeight;
             }
         } 
 
