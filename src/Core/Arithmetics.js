@@ -2091,84 +2091,53 @@ export default class Arithmetics {
         return arcMesh;
     }
 
-    applyJointCenterOffset(positions, factor) {
-        for(var i = 0; i < positions.length; i++) {
-            positions[i] += this.xzJointPadding * factor;
-        }
-        return positions;
-    }
-
     calculateJointCenter(intersection) {
         let xPositions = [];
         let zPositions = [];
+        let ductKeys = [];
 
         if(intersection.left) {
-            let leftXPositions = [
-                intersection.left.segment.duct.userData.proxyMedianVertices[0].x,
-                intersection.left.segment.duct.userData.proxy1Vertices[0].x,
-                intersection.left.segment.duct.userData.proxy2Vertices[0].x
-            ];
-            let leftZPositions = [
-                intersection.left.segment.duct.userData.proxyMedianVertices[0].z,
-                intersection.left.segment.duct.userData.proxy1Vertices[0].z,
-                intersection.left.segment.duct.userData.proxy2Vertices[0].z
-            ];
-            if(intersection.right == null) {
-                this.applyJointCenterOffset(leftXPositions, 1);
-            }
-            xPositions.push(...leftXPositions);
-            zPositions.push(...leftZPositions);
+            ductKeys.push("left");
+            xPositions.push(intersection.left.segment.duct.userData.component.object.position.x);
+            zPositions.push(intersection.left.segment.duct.userData.component.object.position.z);
         }
         if(intersection.right) {
-            let rightXPositions = [
-                intersection.right.segment.duct.userData.proxyMedianVertices[0].x,
-                intersection.right.segment.duct.userData.proxy1Vertices[0].x,
-                intersection.right.segment.duct.userData.proxy2Vertices[0].x
-            ];
-            let rightZPositions = [
-                intersection.right.segment.duct.userData.proxyMedianVertices[0].z,
-                intersection.right.segment.duct.userData.proxy1Vertices[0].z,
-                intersection.right.segment.duct.userData.proxy2Vertices[0].z
-            ];
-            if(intersection.left == null) {
-                this.applyJointCenterOffset(rightXPositions, -1);
-            }
-            xPositions.push(...rightXPositions);
-            zPositions.push(...rightZPositions);
+            ductKeys.push("right");
+            console.log("calculateJointCenter intersection.right:", intersection.right.xetoDuct);
+            xPositions.push(intersection.right.segment.duct.userData.component.object.position.x);
+            zPositions.push(intersection.right.segment.duct.userData.component.object.position.z);
         }
         if(intersection.up) {
-            let upXPositions = [
-                intersection.up.segment.duct.userData.proxyMedianVertices[0].x,
-                intersection.up.segment.duct.userData.proxy1Vertices[0].x,
-                intersection.up.segment.duct.userData.proxy2Vertices[0].x
-            ];
-            let upZPositions = [
-                intersection.up.segment.duct.userData.proxyMedianVertices[0].z,
-                intersection.up.segment.duct.userData.proxy1Vertices[0].z,
-                intersection.up.segment.duct.userData.proxy2Vertices[0].z
-            ];
-            if(intersection.down == null) {
-                this.applyJointCenterOffset(upZPositions, -1);
-            }
-            xPositions.push(...upXPositions);
-            zPositions.push(...upZPositions);
+            ductKeys.push("up");
+            xPositions.push(intersection.up.segment.duct.userData.component.object.position.x);
+            zPositions.push(intersection.up.segment.duct.userData.component.object.position.z);
         }
         if(intersection.down) {
-            let downXPositions = [
-                intersection.down.segment.duct.userData.proxyMedianVertices[0].x,
-                intersection.down.segment.duct.userData.proxy1Vertices[0].x,
-                intersection.down.segment.duct.userData.proxy2Vertices[0].x
-            ];
-            let downZPositions = [
-                intersection.down.segment.duct.userData.proxyMedianVertices[0].z,
-                intersection.down.segment.duct.userData.proxy1Vertices[0].z,
-                intersection.down.segment.duct.userData.proxy2Vertices[0].z
-            ];
-            if(intersection.up == null) {
-                this.applyJointCenterOffset(downZPositions, 1);
+            ductKeys.push("down");
+            xPositions.push(intersection.down.segment.duct.userData.component.object.position.x);
+            zPositions.push(intersection.down.segment.duct.userData.component.object.position.z);
+        }
+
+        let xCenter = (Math.max(...xPositions) + Math.min(...xPositions)) / 2;
+        let zCenter = (Math.max(...zPositions) + Math.min(...zPositions)) / 2;
+
+        if(xPositions.length == 2) {
+            if(ductKeys.includes("left") && ductKeys.includes("down")) {
+                xCenter = Math.max(...xPositions);
+                zCenter = Math.max(...zPositions);
             }
-            xPositions.push(...downXPositions);
-            zPositions.push(...downZPositions);
+            else if(ductKeys.includes("right") && ductKeys.includes("down")) {
+                xCenter = Math.min(...xPositions);
+                zCenter = Math.max(...zPositions);
+            }
+            else if(ductKeys.includes("left") && ductKeys.includes("up")) {
+                xCenter = Math.max(...xPositions);
+                zCenter = Math.min(...zPositions);
+            }
+            else if(ductKeys.includes("right") && ductKeys.includes("up")) {
+                xCenter = Math.min(...xPositions);
+                zCenter = Math.min(...zPositions);
+            }
         }
 
         // const geometry = new THREE.BoxGeometry(100, 100, 100);
@@ -2187,10 +2156,7 @@ export default class Arithmetics {
         // cube.position.x = xCenter;
         // cube.position.z = zCenter;
         // cube.name = "joint";
-        // this.sceneHelper.addToScene(cube);
-
-        const xCenter = (Math.max(...xPositions) + Math.min(...xPositions)) / 2;
-        const zCenter = (Math.max(...zPositions) + Math.min(...zPositions)) / 2;
+        // this.sceneHelper.addToScene(cube);        
 
         this.jointCenter = {
             x: xCenter,
@@ -4023,11 +3989,7 @@ export default class Arithmetics {
     calculateArc(leftProxy, rightProxy, flipArc = false, overrideRotation) {
         if(this.xzJointStyle == "arc" && (leftProxy[0].x != rightProxy[0].x && leftProxy[0].z != rightProxy[0].z)) {
 
-            let jointCenter = {x:0, z:0}
-
-            if(this.jointCenter) {
-                jointCenter = this.jointCenter;
-            }
+            let jointCenter = this.jointCenter;
 
             let width = Math.abs(leftProxy[0].x - rightProxy[0].x);
             let length = leftProxy[7].y - leftProxy[0].y;
