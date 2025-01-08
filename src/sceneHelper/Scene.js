@@ -191,11 +191,7 @@ class Scene {
             return;
         }
 
-        if (this.composer) {
-            this.composer.render();
-        } else {
-            console.warn("Composer is not initialized. Skipping post-processing.");
-        }
+        
 
         this.updateComposer();
         this.labelRenderer.render(this.scene, this.cameras.primary);
@@ -229,7 +225,11 @@ class Scene {
 
     updateComposer(){
         this.cycleGlowColors();
-        this.composer.render();
+        if (this.composer) {
+            this.composer.render();
+        } else {
+            console.warn("Composer is not initialized. Skipping post-processing.");
+        }
     }
 
     cycleGlowColors() {

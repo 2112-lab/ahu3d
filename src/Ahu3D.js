@@ -280,6 +280,10 @@ class Ahu3D {
         const component = this.components[componentId];
         if (component != undefined) {
 
+            if(component.userData.colorQueue != undefined) {
+                this.removeGlow(componentId);
+            }
+
             // If the component is already in the glowingMeshes array, remove it from the array.
             const index = this.sceneHelper.glowingMeshes.indexOf(component);
             if (index !== -1) {
@@ -325,6 +329,33 @@ class Ahu3D {
             this.sceneHelper.glowingMeshes.push(component);
         }
     }
+
+    removeGlow(componentId) {
+        const component = this.components[componentId];
+        if (!component) {
+            console.warn(`Component not found: ${componentId}`);
+            return;
+        }
+    
+        // Remove the component from the glowingMeshes array
+        const index = this.sceneHelper.glowingMeshes.indexOf(component);
+        if (index !== -1) {
+            this.sceneHelper.glowingMeshes.splice(index, 1);
+        }
+    
+        // Remove the OutlinePass from the composer
+        if (component.userData.outlinePass) {
+            this.sceneHelper.composer.removePass(component.userData.outlinePass);
+            delete component.userData.outlinePass; // Remove reference
+        }
+    
+        // Clear the colorQueue
+        if (component.userData.colorQueue) {
+            component.userData.colorQueue = undefined;
+        }
+    
+        console.log(`Glow removed for component: ${componentId}`);
+    }    
     
     /**
      * Sets the duration for the glow cycle effect across all glowing components in the scene.
@@ -427,7 +458,7 @@ class Ahu3D {
         this.loadedXeto = cleanedXeto;
 
         if(!cleanedXeto) {
-            return;
+            return [];
         }
 
         console.log("cleanedXeto:", cleanedXeto);

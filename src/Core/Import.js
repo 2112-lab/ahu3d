@@ -92,9 +92,10 @@ class Import {
     preprocessXeto(xeto) {
 
         const isValid = this.validator.validateJsonBlocks(xeto);
+        const isValid2 = this.validator.validateComponentIds(xeto);
 
-        if(!isValid) {
-            return isValid;
+        if(!isValid || !isValid2) {
+            return false;
         }
 
         xeto = JSON.parse(JSON.stringify(xeto));

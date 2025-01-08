@@ -394,7 +394,7 @@ export default class Arithmetics {
         }
     }
 
-    moveInsertTopVertices(geometry) {
+    moveInsertTopVertices(geometry, topPosition, moveDistance) {
         // Access the position attribute
         const positionAttribute = geometry.attributes.position;
     
@@ -407,14 +407,13 @@ export default class Arithmetics {
             const z = positionAttribute.getZ(i);
     
             // Check if the vertex is a "top vertex" (based on z-axis height)
-            if (z >= 0.5) { // Adjust the threshold as needed for "top" vertices
+            if (z >= topPosition) { // Adjust the threshold as needed for "top" vertices
                 const vertex = new THREE.Vector3(x, y, z);
     
                 // Calculate the direction vector from the center to the vertex
                 const direction = vertex.clone().sub(center).normalize();
     
                 // Move the vertex outward along the direction vector
-                const moveDistance = 50.0; // Adjust the distance to move
                 const newPosition = vertex.add(direction.multiplyScalar(moveDistance));
     
                 // Update the vertex position
@@ -429,27 +428,27 @@ export default class Arithmetics {
     createParametricInsert(size = 500) {
         const material = new THREE.MeshStandardMaterial({ color: this.primaryColor });
 
-        const height = 100;
+        const sectionHeight = 60;
         
-        const topGeometry = new THREE.BoxGeometry(size + 30, size + 30, height);
-        const leftGeometry = new THREE.BoxGeometry(30, size + 30, height);
-        const rightGeometry = new THREE.BoxGeometry(30, size + 30, height);
-        const backGeometry = new THREE.BoxGeometry(size + 30, 30, height);
+        const topGeometry = new THREE.BoxGeometry(size + 30, size + 30, sectionHeight);
+        const leftGeometry = new THREE.BoxGeometry(30, size + 30, sectionHeight);
+        const rightGeometry = new THREE.BoxGeometry(30, size + 30, sectionHeight);
+        const backGeometry = new THREE.BoxGeometry(size + 30, 30, sectionHeight);
 
         const topGeometryMatrix = new THREE.Matrix4();
         topGeometryMatrix.makeTranslation(0, 0, 30); 
         topGeometry.applyMatrix4(topGeometryMatrix);
 
         const leftGeometryMatrix = new THREE.Matrix4();
-        leftGeometryMatrix.makeTranslation(size/-2, 0, height/2 - 15); 
+        leftGeometryMatrix.makeTranslation(size/-2, 0, sectionHeight/2 - 15); 
         leftGeometry.applyMatrix4(leftGeometryMatrix);
 
         const rightGeometryMatrix = new THREE.Matrix4();
-        rightGeometryMatrix.makeTranslation(size/2, 0, height/2 - 15); 
+        rightGeometryMatrix.makeTranslation(size/2, 0, sectionHeight/2 - 15); 
         rightGeometry.applyMatrix4(rightGeometryMatrix);
 
         const backGeometryMatrix = new THREE.Matrix4();
-        backGeometryMatrix.makeTranslation(0, size/2, height/2 - 15); 
+        backGeometryMatrix.makeTranslation(0, size/2, sectionHeight/2 - 15); 
         backGeometry.applyMatrix4(backGeometryMatrix);
         
         let mergedGeometry = BufferGeometryUtils.mergeGeometries([
@@ -458,11 +457,29 @@ export default class Arithmetics {
             backGeometry
         ], false);
 
-        this.moveInsertTopVertices(mergedGeometry);
+        let mergedGeometry2 = mergedGeometry.clone();
+        let mergedConeGeometry = mergedGeometry.clone();
+
+        const mergedConeGeometryMatrix = new THREE.Matrix4();
+        mergedConeGeometryMatrix.makeTranslation(0, 0, sectionHeight); 
+        mergedConeGeometry.applyMatrix4(mergedConeGeometryMatrix);
+
+        const mergedGeometry2Matrix = new THREE.Matrix4();
+        mergedGeometry2Matrix.makeTranslation(0, 0, sectionHeight * 2); 
+        mergedGeometry2.applyMatrix4(mergedGeometry2Matrix);
+
+        this.moveInsertTopVertices(mergedConeGeometry, sectionHeight, sectionHeight);
+        this.moveInsertTopVertices(mergedGeometry2, sectionHeight, sectionHeight);
+
+        let mergedGeometryTotal = BufferGeometryUtils.mergeGeometries([
+            mergedGeometry,
+            mergedConeGeometry,
+            mergedGeometry2
+        ], false);
         
-        const mergedMesh = new THREE.Mesh(mergedGeometry, material);
+        const mergedMesh = new THREE.Mesh(mergedGeometryTotal, material);
         mergedMesh.name = "ductEnd";
-        mergedMesh.userData.height = height;
+        mergedMesh.userData.height = sectionHeight * 3;
         this.sceneHelper.addToScene(mergedMesh);
         
         return mergedMesh;
@@ -2036,22 +2053,24 @@ export default class Arithmetics {
             innerCylinderGeometry
         ];
 
-        // if(this.xzJointDirection == "inwards" && this.isLJoint) {
-
-        //     this.backwallArcConfigs.push({
-        //         innerRadius: innerRadius, 
-        //         outerRadius: outerRadius, 
-        //         thetaSegments: thetaSegments, 
-        //         phiSegments: 1, 
-        //         thetaStart: thetaStart, 
-        //         thetaLength: thetaLength
-        //     });
-        
-        // }
-        // else {
+        if(this.xzJointDirection == "inwards" && this.isLJoint) {
+            this.backwallArcConfigs.push({
+                innerRadius: innerRadius, 
+                outerRadius: outerRadius, 
+                thetaSegments: thetaSegments, 
+                phiSegments: 1, 
+                thetaStart: thetaStart, 
+                thetaLength: thetaLength,
+                ring2: ring2
+            });
+        }
+        else {
+            this.backwallArcConfigs.push({
+                ring2: ring2
+            });
             geometriesToMerge.push(crescentGeometry);
             geometriesToMerge.push(crescentGeometry2);
-        // }
+        }
 
         let mergedGeometry = BufferGeometryUtils.mergeGeometries(geometriesToMerge, false);
 
@@ -2181,6 +2200,8 @@ export default class Arithmetics {
 
     createCrossJoint(intersection, largestGlobalSize) {
         const geometries = [];
+
+        this.backwallArcConfigs = [];
 
         this.calculateJointCenter(intersection);        
 
@@ -2348,6 +2369,8 @@ export default class Arithmetics {
 
     createTJoint(intersection, largestGlobalSize) {
         const geometries = [];
+
+        this.backwallArcConfigs = [];
 
         this.calculateJointCenter(intersection);  
 
@@ -3215,14 +3238,15 @@ export default class Arithmetics {
             }  
         }
 
-        // if(this.xzJointDirection == "inwards") {
-        //     console.log("createArchedBackwall");
+        if(this.xzJointDirection == "inwards" && this.xzJointStyle == "arc") {
+            console.log("createArchedBackwall");
 
-        //     this.createWallMesh(intersection, largestGlobalSize);
-        // }
-        // else {
+            this.createWallMesh(intersection, largestGlobalSize); 
+            this.patchLJointBackwall(intersection, largestGlobalSize, diagonalWidth);
+        }
+        else {
             this.createLJointBackwall(intersection, largestGlobalSize, diagonalWidth);
-        // }
+        }
 
         geometries.push(
             ...this.createJointClosure(intersection.up, "horizontal")
@@ -3238,11 +3262,16 @@ export default class Arithmetics {
         ); 
 
         this.mergeAndAddToScene(geometries);
+
+        this.isLJoint = false;
     }
 
     createWallMesh(intersection, largestGlobalSize) {
         const mergeLineValue = 5;
-        backwallArcConfigs = this.backwallArcConfigs;
+        const backwallArcConfigs = this.backwallArcConfigs;
+
+        const wallMaterial = new THREE.MeshStandardMaterial({ color: this.primaryColor, side: THREE.DoubleSide });
+
         const backwallGeometry = new THREE.RingGeometry(
             backwallArcConfigs[0].innerRadius + mergeLineValue, 
             backwallArcConfigs[0].outerRadius - mergeLineValue, 
@@ -3261,79 +3290,50 @@ export default class Arithmetics {
             backwallArcConfigs[1].thetaLength
         );
 
-        if(intersection.up != null && intersection.right != null) {
-            const backwallGeometryMatrix = new THREE.Matrix4();
-            backwallGeometryMatrix.makeTranslation(
-                30, 
-                1030, 
-                0
-            ); 
-            backwallGeometry.applyMatrix4(backwallGeometryMatrix);
+        const backwall = new THREE.Mesh(backwallGeometry, wallMaterial);
+        const backwall2 = new THREE.Mesh(backwallGeometry2, wallMaterial);
 
-            const backwallGeometry2Matrix = new THREE.Matrix4();
-            backwallGeometry2Matrix.makeTranslation(
-                30, 
-                30, 
-                0
-            ); 
-            backwallGeometry2.applyMatrix4(backwallGeometry2Matrix);
-        }
+        backwall.position.copy(backwallArcConfigs[0].ring2.userData.position);
+        backwall.rotation.copy(backwallArcConfigs[0].ring2.userData.rotation);
+        backwall2.position.copy(backwallArcConfigs[1].ring2.userData.position);
+        backwall2.rotation.copy(backwallArcConfigs[1].ring2.userData.rotation); 
         
+        const width = backwallArcConfigs[0].ring2.userData.width;
+        const width2 = backwallArcConfigs[1].ring2.userData.width;
 
-        const wallMesh = this.connectWallArcs(backwallGeometry, backwallGeometry2);
-
-        wallMesh.rotation.x = Math.PI / -2;
-        wallMesh.rotation.z = Math.PI / 2;
-
-        let xPosition = 0;
-        let zPosition = 0;
-
-        if(intersection.up != null && intersection.right != null) {
-            xPosition = intersection.right.segment.duct.userData.proxy1Vertices[7].x - intersection.right.segment.duct.userData.proxy1Vertices[4].x;
-            xPosition += intersection.right.segment.duct.userData.proxy1Vertices[4].x;
-
-            zPosition = intersection.up.segment.duct.userData.proxy2Vertices[7].z - intersection.up.segment.duct.userData.proxy2Vertices[6].z;
-            zPosition += intersection.up.segment.duct.userData.proxy2Vertices[6].z;
+        let xFactor = 1;
+        let zFactor = 1;
+        if(intersection.left != null) {
+            xFactor = -1;
+        }
+        if(intersection.down != null) {
+            zFactor = -1;
         }
 
-        wallMesh.position.set(
-            xPosition,
-            wallMesh.position.y + largestGlobalSize / 2 + 15,
-            zPosition
-        );
+        backwall.position.x += ((width / 2) - 15) * xFactor;
+        backwall.position.z += ((width / 2) - 15) * zFactor;
 
-        // let xPosition = 0;
-        //     let zPosition = 0;
-        //     if(intersection.left != null) {
-        //         wallMesh.rotation.x = Math.PI / 2;
-        //         wallMesh.rotation.z = Math.PI / -2;
-        //         xPosition = intersection.left.segment.duct.userData.proxy1Vertices[7].x;
-        //         zPosition = intersection.left.segment.duct.userData.proxy1Vertices[7].z - 500;
-        //         zPosition += this.xzJointPadding; 
-        //     }
-        //     else if(intersection.right != null && intersection.up != null) {
-        //         wallMesh.rotation.x = Math.PI / -2;
-        //         wallMesh.rotation.z = Math.PI / 2;
-        //         if(this.innerDim[intersection.right.xetoDuct.graphicLocation.size] > this.innerDim[intersection.up.xetoDuct.graphicLocation.size]) {
-        //             xPosition = intersection.right.segment.duct.userData.proxy1Vertices[4].x;
-        //             zPosition = intersection.right.segment.duct.userData.proxy1Vertices[4].z - 560;
-        //             zPosition += this.xzJointPadding; 
-        //         }
-        //         else {
-        //             xPosition = intersection.up.segment.duct.userData.proxy1Vertices[4].x + 560;
-        //             zPosition = intersection.up.segment.duct.userData.proxy1Vertices[4].z;
-        //             xPosition += this.xzJointPadding; 
-        //         }
-                
-        //     }                       
+        backwall2.position.x += ((width2 / 2) - 15) * xFactor;
+        backwall2.position.z += ((width2 / 2) - 15) * zFactor;
 
-            // wallMesh.position.x = xPosition;
-            // wallMesh.position.y += largestGlobalSize / 2 + 15;
-            // wallMesh.position.z = zPosition;
-            wallMesh.name = "jointWall";
+        // this.sceneHelper.addToScene(backwall);
+        // this.sceneHelper.addToScene(backwall2);
 
-            // Add to scene
-            this.sceneHelper.addToScene(wallMesh);
+        backwall.updateMatrix();
+        backwall.geometry.applyMatrix4(backwall.matrix);
+
+        backwall2.updateMatrix();
+        backwall2.geometry.applyMatrix4(backwall2.matrix);        
+
+        const wallMesh = this.connectWallArcs(backwall.geometry, backwall2.geometry);
+
+        wallMesh.name = "jointWall";
+
+        // Add to scene
+        this.sceneHelper.addToScene(wallMesh);
+        const wallMesh2 = wallMesh.clone();
+        wallMesh2.position.y -= 30;
+        this.sceneHelper.addToScene(wallMesh2);
     }
 
     connectWallArcs(backwallGeometry, backwallGeometry2) {
@@ -3379,7 +3379,7 @@ export default class Arithmetics {
         wallGeometry.computeVertexNormals(); // Optional: Compute normals for lighting
 
         // Create the mesh
-        const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00, side: THREE.DoubleSide });
+        const wallMaterial = new THREE.MeshStandardMaterial({ color: this.primaryColor, side: THREE.DoubleSide });
         const wallMesh = new THREE.Mesh(wallGeometry, wallMaterial);
 
         // Add to scene
@@ -3640,6 +3640,67 @@ export default class Arithmetics {
         
         if(backwall.length >= 3) {
             this.createJointBackwall(backwall, largestGlobalSize);
+        }
+
+    }
+
+    patchLJointBackwall(intersection, largestGlobalSize) {
+        let backwall = [];
+        if(intersection.up != null && intersection.right != null) {    
+            backwall = [
+                intersection.up.segment.duct.userData.proxyMedianVertices2[4],
+                intersection.up.segment.duct.userData.proxyMedianVertices2[5],
+                intersection.right.segment.duct.userData.proxy2Vertices[6],
+                intersection.right.segment.duct.userData.proxy1Vertices[6],
+                intersection.right.segment.duct.userData.proxy1Vertices[4],
+            ];
+            this.createJointBackwall(backwall, largestGlobalSize);
+            backwall = [
+                intersection.up.segment.duct.userData.proxyMedianVertices[6],
+                intersection.up.segment.duct.userData.proxy2Vertices[6],
+                intersection.up.segment.duct.userData.proxy2Vertices[7],
+                intersection.up.segment.duct.userData.proxy1Vertices[4],
+                intersection.up.segment.duct.userData.proxyMedianVertices[5],
+            ];
+            this.createJointBackwall(backwall, largestGlobalSize);
+        }
+        else if(intersection.up != null && intersection.left != null) {  
+            backwall = [
+                intersection.left.segment.duct.userData.proxyMedianVertices2[7],
+                intersection.left.segment.duct.userData.proxy1Vertices[7],
+                intersection.left.segment.duct.userData.proxy1Vertices[4],
+                intersection.left.segment.duct.userData.proxy2Vertices[5],
+                intersection.left.segment.duct.userData.proxyMedianVertices2[6],
+            ];
+            this.createJointBackwall(backwall, largestGlobalSize);
+            backwall = [
+                intersection.left.segment.duct.userData.proxyMedianVertices[5],
+                intersection.left.segment.duct.userData.proxyMedianVertices[6],
+                intersection.up.segment.duct.userData.proxy2Vertices[7],
+                intersection.up.segment.duct.userData.proxy1Vertices[4],
+                intersection.up.segment.duct.userData.proxy1Vertices[5],
+            ];
+            this.createJointBackwall(backwall, largestGlobalSize);  
+        }
+        else if(intersection.down != null && intersection.right != null) {  
+            backwall = [
+                intersection.right.segment.duct.userData.proxyMedianVertices[7],
+                intersection.right.segment.duct.userData.proxyMedianVertices[4],
+                intersection.down.segment.duct.userData.proxy1Vertices[5],
+                intersection.down.segment.duct.userData.proxy2Vertices[6],
+                intersection.down.segment.duct.userData.proxy2Vertices[7],
+            ];
+            this.createJointBackwall(backwall, largestGlobalSize);
+            backwall = [
+                intersection.right.segment.duct.userData.proxyMedianVertices2[4],
+                intersection.right.segment.duct.userData.proxyMedianVertices2[5],
+                intersection.right.segment.duct.userData.proxy2Vertices[5],
+                intersection.right.segment.duct.userData.proxy2Vertices[6],
+                intersection.right.segment.duct.userData.proxy1Vertices[7],
+            ];
+            this.createJointBackwall(backwall, largestGlobalSize);   
+        }
+        else if(intersection.down != null && intersection.left != null) {    
         }
 
     }
@@ -4000,6 +4061,11 @@ export default class Arithmetics {
             arc.position.x = Math.min(leftProxy[0].x, rightProxy[0].x) + (Math.abs(leftProxy[0].x - rightProxy[0].x) / 2) + 15;
             arc.position.z = Math.min(leftProxy[0].z, rightProxy[0].z) + (Math.abs(leftProxy[0].z - rightProxy[0].z) / 2) - 15;
             arc.position.y = leftProxy[0].y + length;
+
+            this.backwallArcConfigs[this.backwallArcConfigs.length-1].ring2.userData.position = arc.position.clone();
+            this.backwallArcConfigs[this.backwallArcConfigs.length-1].ring2.userData.width = width;
+            this.backwallArcConfigs[this.backwallArcConfigs.length-1].ring2.userData.rotation = arc.rotation;
+            
         }
     }
 

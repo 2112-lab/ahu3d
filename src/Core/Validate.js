@@ -33,63 +33,101 @@ class Validate {
 
     validateJsonBlocks(xeto) {
 
-        let alertMessage = "";
-        let isValid = true;
+      let alertMessage = "";
+      let isValid = true;
 
-        // Track the valid IDs for EdgeBlocks and Components
-        const edgeBlocks = new Set();
-        const components = new Set();
-      
-        // First, gather all IDs for EdgeBlocks and Components
-        xeto.forEach(item => {
-          if (item.spec === 'r:novo.graphics::DuctEdge') {
-            edgeBlocks.add(item.id);
-          }
-          if (item.spec === 'r:novo.graphics::Component') {
-            components.add(item.id);
-          }
-        });
-      
-        // Now validate the structure
-        for (const item of xeto) {
-          if (item.spec === 'r:novo.graphics::AhuGroup') {
-            // Validate ducts (AhuBlock needs to reference valid EdgeBlock)
-            if (item.ducts) {
-              for (const duct of item.ducts) {
-                if (!edgeBlocks.has(duct)) {
-                  if(alertMessage != "") {
-                    alertMessage += "\n\n";
-                  }
-                  alertMessage += `Invalid EdgeBlock reference: ${duct} in AHU Block: ${item.id}`;
-                  isValid = false;
+      // Track the valid IDs for EdgeBlocks and Components
+      const edgeBlocks = new Set();
+      const components = new Set();
+    
+      // First, gather all IDs for EdgeBlocks and Components
+      xeto.forEach(item => {
+        if (item.spec === 'r:novo.graphics::DuctEdge') {
+          edgeBlocks.add(item.id);
+        }
+        if (item.spec === 'r:novo.graphics::Component') {
+          components.add(item.id);
+        }
+      });
+    
+      // Now validate the structure
+      for (const item of xeto) {
+        if (item.spec === 'r:novo.graphics::AhuGroup') {
+          // Validate ducts (AhuBlock needs to reference valid EdgeBlock)
+          if (item.ducts) {
+            for (const duct of item.ducts) {
+              if (!edgeBlocks.has(duct)) {
+                if(alertMessage != "") {
+                  alertMessage += "\n\n";
                 }
-              }
-            }
-          } else if (item.spec === 'r:novo.graphics::DuctEdge') {
-            // Validate components (EdgeBlock needs to reference valid Component)
-            if (item.components) {
-              for (const component of item.components) {
-                if (!components.has(component)) {
-                  if(alertMessage != "") {
-                    alertMessage += "\n\n";
-                  }
-                  alertMessage += `Invalid Component reference: ${component} in Edge Block: ${item.id}`;
-                  isValid = false;
-                }
+                alertMessage += `Invalid EdgeBlock reference: ${duct} in AHU Block: ${item.id}`;
+                isValid = false;
               }
             }
           }
+        } else if (item.spec === 'r:novo.graphics::DuctEdge') {
+          // Validate components (EdgeBlock needs to reference valid Component)
+          if (item.components) {
+            for (const component of item.components) {
+              if (!components.has(component)) {
+                if(alertMessage != "") {
+                  alertMessage += "\n\n";
+                }
+                alertMessage += `Invalid Component reference: ${component} in Edge Block: ${item.id}`;
+                isValid = false;
+              }
+            }
+          }
         }
-
-        if(isValid) {
-          console.log('Validation passed.');
-        }
-        else {
-          alert(alertMessage);
-        }
-        
-        return isValid;        
       }
+
+      if(isValid) {
+        console.log('Validation passed.');
+      }
+      else {
+        alert(alertMessage);
+      }
+      
+      return isValid;        
+    }
+
+    validateComponentIds(xeto) {
+      console.log("validateComponentIds started:", xeto);
+      const ductsList = xeto.filter(child => child.spec.includes('DuctEdge'));
+      console.log("validateComponentIds ductsList:", ductsList);
+
+      let combinedArray = [];
+      for(let duct of ductsList) {
+        combinedArray.push(...duct.components);
+      }
+
+      console.log("validateComponentIds combinedArray:", combinedArray);
+
+      let alertMessage = '';
+
+      function hasDuplicates(arr) {
+        const seen = new Set();
+        for (const item of arr) {
+            if (seen.has(item)) {
+              alertMessage = `Duplicate component ID is found: ${item}`;
+              return true; // Duplicate found
+            }
+            seen.add(item);
+        }
+        return false; // No duplicates
+      }
+
+      const isValid = !hasDuplicates(combinedArray);
+
+      if(isValid) {
+        console.log('validateComponentIds: Validation passed.');
+      }
+      else {
+        alert(alertMessage);
+      }
+
+      return isValid;
+    }
 
     /**
      * propogateBlockStyle
