@@ -2091,7 +2091,7 @@ export default class Arithmetics {
         return arcMesh;
     }
 
-    calculateJointCenter(intersection) {
+    calculateJointCenter(intersection, type) {
         let xPositions = [];
         let zPositions = [];
         let ductKeys = [];
@@ -2103,7 +2103,6 @@ export default class Arithmetics {
         }
         if(intersection.right) {
             ductKeys.push("right");
-            console.log("calculateJointCenter intersection.right:", intersection.right.xetoDuct);
             xPositions.push(intersection.right.segment.duct.userData.component.object.position.x);
             zPositions.push(intersection.right.segment.duct.userData.component.object.position.z);
         }
@@ -2121,7 +2120,25 @@ export default class Arithmetics {
         let xCenter = (Math.max(...xPositions) + Math.min(...xPositions)) / 2;
         let zCenter = (Math.max(...zPositions) + Math.min(...zPositions)) / 2;
 
-        if(xPositions.length == 2) {
+        console.log("calculateJointCenter xPositions:", xPositions);
+        console.log("calculateJointCenter zPositions:", zPositions);
+
+        if(type == "Cross-Joint" || type == "T-Joint") {
+            if(intersection.up) {
+                xCenter = intersection.up.segment.duct.userData.component.object.position.x;
+            }
+            else if(intersection.down) {
+                xCenter = intersection.down.segment.duct.userData.component.object.position.x;
+            }
+            if(intersection.left) {
+                zCenter = intersection.left.segment.duct.userData.component.object.position.z;
+            }
+            else if(intersection.right) {
+                zCenter = intersection.right.segment.duct.userData.component.object.position.z;
+            }
+        }
+
+        else if(type == "L-Joint") {
             if(ductKeys.includes("left") && ductKeys.includes("down")) {
                 xCenter = Math.max(...xPositions);
                 zCenter = Math.max(...zPositions);
@@ -2164,12 +2181,28 @@ export default class Arithmetics {
         }        
     }
 
+    shiftElement(array, index, direction) {
+        // Ensure the index is within bounds
+        if (index < 0 || index >= array.length) return array;
+    
+        // Calculate the target index based on the direction
+        const targetIndex = direction === "up" ? index - 1 : index + 1;
+    
+        // Ensure the target index is within bounds
+        if (targetIndex < 0 || targetIndex >= array.length) return array;
+    
+        // Swap the elements
+        [array[index], array[targetIndex]] = [array[targetIndex], array[index]];
+    
+        return array;
+    }
+
     createCrossJoint(intersection, largestGlobalSize) {
         const geometries = [];
 
         this.backwallArcConfigs = [];
 
-        this.calculateJointCenter(intersection);        
+        this.calculateJointCenter(intersection, "Cross-Joint");        
 
         if(this.xzJointStyle == "arc") {     
 
@@ -2208,36 +2241,59 @@ export default class Arithmetics {
             if(this.xzJointDirection == "inwards") {
                 upMidpoint = {
                     x: intersection.up.segment.duct.userData.proxy1Vertices[4].x,
+                    z: intersection.up.segment.duct.userData.proxyMedianVertices[4].z
+                }
+                let upMidpoint2 = {
+                    x: intersection.up.segment.duct.userData.proxy1Vertices[4].x,
                     z: intersection.left.segment.duct.userData.proxy1Vertices[4].z
                 }
+
                 rightMidpoint = {
+                    x: intersection.up.segment.duct.userData.proxy2Vertices[4].x,
+                    z: intersection.right.segment.duct.userData.proxyMedianVertices[4].z
+                }
+                let rightMidpoint2 = {
                     x: intersection.up.segment.duct.userData.proxy2Vertices[4].x,
                     z: intersection.right.segment.duct.userData.proxy1Vertices[4].z
                 }
-                downMidpoint = {
-                    x: intersection.down.segment.duct.userData.proxy2Vertices[4].x,
-                    z: intersection.right.segment.duct.userData.proxy2Vertices[4].z
-                }
+                
                 leftMidpoint = {
+                    x: intersection.down.segment.duct.userData.proxy1Vertices[4].x,
+                    z: intersection.left.segment.duct.userData.proxyMedianVertices[4].z
+                }
+                let leftMidpoint2 = {
                     x: intersection.down.segment.duct.userData.proxy1Vertices[4].x,
                     z: intersection.left.segment.duct.userData.proxy2Vertices[4].z
                 }
 
+                downMidpoint = {
+                    x: intersection.down.segment.duct.userData.proxyMedianVertices[4].x,
+                    z: intersection.right.segment.duct.userData.proxy2Vertices[4].z
+                }
+                let downMidpoint2 = {
+                    x: intersection.down.segment.duct.userData.proxy2Vertices[4].x,
+                    z: intersection.right.segment.duct.userData.proxy2Vertices[4].z
+                }
+
                 backwall = [
-                    upMidpoint,
+                    upMidpoint2,
                     intersection.up.segment.duct.userData.proxyMedianVertices[4],
+                    upMidpoint,
                     intersection.up.segment.duct.userData.proxy1Vertices[4],
                     intersection.up.segment.duct.userData.proxy2Vertices[7],
-                    intersection.right.segment.duct.userData.proxyMedianVertices[7],
                     rightMidpoint,
+                    intersection.right.segment.duct.userData.proxyMedianVertices[7],
+                    rightMidpoint2,
                     intersection.right.segment.duct.userData.proxy1Vertices[7],
                     intersection.right.segment.duct.userData.proxy2Vertices[6],
-                    intersection.down.segment.duct.userData.proxyMedianVertices[6],
                     downMidpoint,
+                    intersection.down.segment.duct.userData.proxyMedianVertices[6],
+                    downMidpoint2,
                     intersection.down.segment.duct.userData.proxy2Vertices[6],
                     intersection.down.segment.duct.userData.proxy1Vertices[5],
-                    intersection.left.segment.duct.userData.proxyMedianVertices[5],
                     leftMidpoint,
+                    intersection.left.segment.duct.userData.proxyMedianVertices[5],
+                    leftMidpoint2,
                     intersection.left.segment.duct.userData.proxy2Vertices[5],
                     intersection.left.segment.duct.userData.proxy1Vertices[4]
                 ];
@@ -2338,7 +2394,7 @@ export default class Arithmetics {
 
         this.backwallArcConfigs = [];
 
-        this.calculateJointCenter(intersection);  
+        this.calculateJointCenter(intersection, "T-Joint");  
 
         if(this.xzJointDirection == "outwards") {
             if(intersection.right == null) {
@@ -2591,7 +2647,8 @@ export default class Arithmetics {
                 geometries.push(
                     ...this.connectProxiesDiagonallyUphill(
                         intersection.left.segment.duct.userData.proxy2Vertices,
-                        intersection.left.segment.duct.userData.proxyMedianVertices
+                        intersection.left.segment.duct.userData.proxyMedianVertices,
+                        true
                     )
                 );
                 geometries.push(
@@ -2697,7 +2754,7 @@ export default class Arithmetics {
 
         this.isLJoint = true;
 
-        this.calculateJointCenter(intersection); 
+        this.calculateJointCenter(intersection, "L-Joint"); 
 
         if(this.xzJointDirection == "outwards") {
             if(intersection.right != null && intersection.up != null) {
@@ -3432,7 +3489,9 @@ export default class Arithmetics {
             ];
             if(this.xzJointDirection == "inwards" && this.xzJointStyle == "arc") {
                 backwall.splice(6, 0, bottomLeftMidpoint);
+                backwall.splice(8, 0, bottomLeftMidpoint);
                 backwall.splice(0, 0, topLeftMidpoint);
+                backwall.splice(2, 0, topLeftMidpoint);
             }
         }
         else if(intersection.left == null) {
@@ -3460,8 +3519,10 @@ export default class Arithmetics {
                 intersection.down.segment.duct.userData.proxy1Vertices[5],
             ];
             if(this.xzJointDirection == "inwards" && this.xzJointStyle == "arc") {
-                backwall.splice(4, 0, topRightMidpoint);
+                backwall.splice(3, 0, topRightMidpoint);
+                backwall.splice(5, 0, topRightMidpoint);
                 backwall.splice(8, 0, bottomRightMidpoint);
+                backwall.splice(10, 0, bottomRightMidpoint);
             }
         }
         else if(intersection.down == null) {
@@ -3666,7 +3727,23 @@ export default class Arithmetics {
             ];
             this.createJointBackwall(backwall, largestGlobalSize);   
         }
-        else if(intersection.down != null && intersection.left != null) {    
+        else if(intersection.down != null && intersection.left != null) {   
+            backwall = [
+                intersection.down.segment.duct.userData.proxyMedianVertices2[6],
+                intersection.down.segment.duct.userData.proxyMedianVertices2[7],
+                intersection.left.segment.duct.userData.proxy1Vertices[4],
+                intersection.left.segment.duct.userData.proxy2Vertices[5],
+                intersection.left.segment.duct.userData.proxy2Vertices[6],
+            ];
+            this.createJointBackwall(backwall, largestGlobalSize);
+            backwall = [
+                intersection.down.segment.duct.userData.proxyMedianVertices[4],
+                intersection.down.segment.duct.userData.proxy1Vertices[4],
+                intersection.down.segment.duct.userData.proxy1Vertices[5],
+                intersection.down.segment.duct.userData.proxy2Vertices[6],
+                intersection.down.segment.duct.userData.proxyMedianVertices[7],
+            ];
+            this.createJointBackwall(backwall, largestGlobalSize);  
         }
 
     }
