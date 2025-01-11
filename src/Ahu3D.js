@@ -37,6 +37,7 @@ import _ from 'lodash';  // You can use lodash for deep merge
 
 import * as THREE from 'three';
 import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
+import Konva from 'konva';
 
 class Ahu3D {
 
@@ -60,8 +61,6 @@ class Ahu3D {
         this.isLibraryLoaded = false;
         this.components = {};  // This object holds loaded assembly components
         this.loadedXeto = [];  // This object holds xeto
-
-        console.log("ahu3d init started");
     }
 
     createDuct(size, type = "duct") {
