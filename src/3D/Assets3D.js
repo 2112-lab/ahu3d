@@ -1,38 +1,33 @@
-//////////////////////////////////////////////////////////////////////////////////////
-//
-//	AHU3D - A Javascript Module for Parametric Design Tool for Air Handling Units.
-//
-//
-//	    LIMITED TEMPORARY LICENSE FOR DEMO PURPOSES ONLY - EXPIRES 2025/01/01
-//
-//
-//		   NOT AUTHORIZED FOR PRODUCTION DEPLOYENT OR REDISTRIBUTION.
-//
-//
-//				PROPERTY OF COGNITIVE DYNAMICS LTD.
-//
-//
-//				    ALL RIGHTS RESERVED - 2024.
-//
-//////////////////////////////////////////////////////////////////////////////////////
-
-/*
- * Object3DLoader.js
- * 
- * Author: Caleb Ebers
- * Date: 9/06/2024
- * 
- * This class handles loading 3D objects and animations, integrating them with the scene, 
- * and managing memory resources effectively for smooth performance.
- * 
- */
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
-class Object3DLoader {
-    constructor(sceneHelper) {
+class Assets3D {
+
+    constructor(sceneHelper, library, assetConfigs) {
         this.sceneHelper = sceneHelper;
-        this.assetConfigs = null;
+        this.library = library;
+        this.assetConfigs = assetConfigs;
+    }
+
+    /**
+     * Loads component instances into the instanceSet object by importing 3D mesh data.
+     * 
+     * @returns {Promise<Object>} A dictionary of loaded component instances.
+     */
+    async loadInstanceSet() {
+        console.log("loadInstanceSet started");
+        let instanceSet = {};
+    
+        // Create an array of promises for loading each component's 3D mesh
+        const loadPromises = Object.keys(this.library).map(async (key) => {
+        const mesh = await this.loadComponent(this.library[key], false);
+        instanceSet[this.library[key].componentName] = mesh; // Store mesh in instanceSet
+        });
+    
+        // Wait for all promises to resolve
+        await Promise.all(loadPromises);
+    
+        this.sceneHelper.instanceSet = instanceSet;
     }
 
     /**
@@ -69,7 +64,6 @@ class Object3DLoader {
      * @returns {Promise<Object>} A promise that resolves to the loaded GLTF model.
      */
     loadModel(url) {
-        console.log("loadModel started:", url);
         return new Promise((resolve, reject) => {
             const loader = new GLTFLoader(); // Create a new GLTFLoader instance.
             loader.load(url, gltf => resolve(gltf), null, reject); // Load the model and resolve or reject the promise.
@@ -183,6 +177,7 @@ class Object3DLoader {
         const suffixPattern = /\.\d{3}$/; // Define a pattern to match a suffix (e.g., .001).
         return name.replace(suffixPattern, ''); // Remove the suffix and return the result.
     }
+
 }
 
-export default Object3DLoader;
+export default Assets3D;

@@ -28,7 +28,7 @@
  * 
  */
 /*
- * Arithmetic.js
+ * _Arithmetic.js
  * 
  * Author: Caleb Ebers
  * Date: 8/16/2024
@@ -41,8 +41,13 @@
 
 import * as THREE from 'three';
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
-import { thickness } from 'three/webgpu';
+
+import Ahu from "./Ahu.js";
+import Ends from "./Ends.js";
+import Ducts from "./Ducts.js";
+import Joints from "./Joints.js";
+import Mesh3D from "../3D/Mesh3D.js";
+import Helpers from "./Helpers.js";
 
 export default class Arithmetics {
     /**
@@ -51,35 +56,31 @@ export default class Arithmetics {
      * Initializes the Arithmetics class with the component library entries and cleaned assembly data.
      * Precalculates the assembly segments and returns them.
      * 
-     * @param {Object} componentLibEntries - The library entries for the HVAC components.
+     * @param {Object} componentLibrary - The library entries for the HVAC components.
      * @returns {Array} The precalculated assembly segments.
      */
-    constructor(componentLibEntries, sceneHelper) {
+    constructor(componentLibrary, sceneHelper) {
         this.sceneHelper = sceneHelper;
-        console.log("componentLibEntries:", componentLibEntries);
-        this.componentLibEntries = componentLibEntries; // Store the component library entries.
-        this.ductEntry = this.componentLibEntries['LinearDuctSliced']; // Retrieve the duct component from the library.
-        this.TJointEntry = this.componentLibEntries['TJointSliced']; // Retrieve the T-Joint component from the library.
-        this.LJointEntry = this.componentLibEntries['LJointSliced']; // Retrieve the L-Joint component from the library.
-        this.CrossJointEntry = this.componentLibEntries['CrossJointSliced']; // Retrieve the Cross-Joint component from the library.
-        this.InsertEndEntry = this.componentLibEntries['InsertEndSliced']; // Retrieve the Insert End component from the library.
-        this.CapEndEntry = this.componentLibEntries['CapEndSliced']; // Retrieve the Cap End component from the library.
+        console.log("componentLibrary:", componentLibrary);
+        this.componentLibrary = componentLibrary; // Store the component library entries.
+        this.ductEntry = this.componentLibrary['LinearDuctSliced']; // Retrieve the duct component from the library.
         this.assemblySegments = []; // Initialize an empty array to store assembly segments.
         this.assemblyDimensions = { width: 0, height: 0 }; // Initialize assembly dimensions.
 
         this.primaryColor = 0xAEB9C2;
 
-        // this.joints = new Joints(sceneHelper);
-
-        this.innerDim = {
+        this.innerDuctDimensions = {
             small: 500,
             medium: 1000,
             large: 1500
-        }   
+        }  
 
-        // const assemblySegments = this.calculateAssembly(); // Precalculate the assembly segments.
-
-        // return assemblySegments; // Return the precalculated segments.
+        this.Ahu = new Ahu();
+        
+        this.Ends = new Ends(this.innerDuctDimensions, this.sceneHelper, this.primaryColor);
+        this.Joints = new Joints();
+        this.Mesh3D = new Mesh3D(componentLibrary);
+        this.Helpers = new Helpers();
     }
 
     /**
@@ -99,6 +100,8 @@ export default class Arithmetics {
 
         delete cleanedXeto[0]
 
+        this.Ducts = new Ducts(this.innerDuctDimensions, this.ductsDictionary, this.primaryColor);
+
         this.cleanedXeto = cleanedXeto; // Store the cleaned assembly data.
         this.ahuGroup = cleanedXeto.filter(child => child.spec.includes('AhuGroup'))[0];
         this.assemblyGridBounds = this.ahuGroup.graphicLocation; // Get the grid bounds for the AHU group.
@@ -112,8 +115,6 @@ export default class Arithmetics {
 
         this.xzJointYStyle = this.jointBlockStyle.XZ.yStyle;
         this.xzJointYDirection = this.jointBlockStyle.XZ.yDirection;
-
-        const ductsList = this.cleanedXeto.filter(child => child.spec.includes('DuctEdge')); // Filter the ducts from the cleaned assembly.
 
         let xetoDuctKeys = this.cleanedXeto.filter(child => child.spec.includes('AhuGroup'))[0].ducts; // Retrieve the list of duct keys.
 
@@ -132,589 +133,31 @@ export default class Arithmetics {
 
             let xetoDuct = this.cleanedXeto.filter(child => child.id.includes(xetoDuctKey))[0]; // Find the corresponding duct in the assembly.
             
-            const segment = await this.buildAssembly(duct, xetoDuct); // Build the assembly segment for the duct.
+            const segment = await this.initializeDuctSegment(duct, xetoDuct); // Build the assembly segment for the duct.
 
             this.assemblySegments.push({ xetoDuct: xetoDuct, segment: segment }); // Add the segment to the assembly segments array.
-        }
+        }        
 
-        
-
-        const primaryKey = this.getPrimaryKey();
+        const primaryKey = this.Ducts.getPrimaryKey();
+        console.log("primaryKey:", primaryKey);
 
         this.assemblySegments = await this.placeSegments(primaryKey); // Place the segments in the correct positions.
 
         this.assemblyDimensions = this.getAssemblyDimensions(this.assemblyGridBounds); // Calculate the dimensions of the assembly.
 
-        // for (const segment of this.assemblySegments) { // Iterate over each segment.
-        //     this.translateAssemblySegment(segment.segment, 'x', ((this.assemblyDimensions.width / 2) - 50)); // Translate the segment on the x-axis.
-        //     this.translateAssemblySegment(segment.segment, 'z', this.assemblyDimensions.height + 200); // Translate the segment on the z-axis.
-
-        //     this.setGuideline(segment);
-        // }
+        // this.Ahu.translate(this.assemblySegments);
 
         this.determineFlowDirections(this.assemblySegments); // Determine and adjust flow directions for ducts
 
-        this.createDuctEnds(); // Create the ends for the ducts.
+        this.Ends.createDuctEnds(this.assemblySegments); // Create the ends for the ducts.
 
-        this.createFlowIndicators(); // Create arrows for the ducts with open ends.
+        this.Helpers.createFlowHelpers(this.assemblySegments); // Create arrows for the ducts with open ends.
 
         return this.assemblySegments; // Return the assembly segments.
     }
 
-    getPrimaryKey() {
-        for(const key in this.ductsDictionary) {
-            if(this.ductsDictionary[key].length == 1) {
-                return key;
-            }
-        }
-    }
-
-    setGuideline(segmentBlock) {
-        const pos = segmentBlock.segment.duct.userData.component.object.position;
-        const length = segmentBlock.segment.duct.userData.component.object.boundingBox.dimensions.x;
-
-        segmentBlock.segment.duct.guideline = null;
-        
-        if(segmentBlock.segment.duct.isVertical == false) {
-            segmentBlock.segment.duct.guideline = {
-                start: {
-                    x: pos.x - length/2,
-                    z: pos.z
-                },
-                end: {
-                    x: pos.x + length/2,
-                    z: pos.z
-                }
-            }
-        }
-        else {
-            segmentBlock.segment.duct.guideline = {
-                start: {
-                    x: pos.x,
-                    z: pos.z - (length/2)
-                },
-                end: {
-                    x: pos.x,
-                    z: pos.z + (length/2)
-                }
-            }
-        }
-    }
-
-    computeIntersection(line1, line2) {
-        // down part of intersection point formula
-        let p1 = line1.start
-        let p2 = line1.end
-        let p3 = line2.start
-        let p4 = line2.end
-    
-        var d1 = (p1.x - p2.x) * (p3.y - p4.y); // (x1 - x2) * (y3 - y4)
-        var d2 = (p1.y - p2.y) * (p3.x - p4.x); // (y1 - y2) * (x3 - x4)
-        var d = d1 - d2;
-    
-        if (d == 0) {
-          return this.status = "zero_or_infinity";
-        }
-    
-        // upper part of intersection point formula
-        var u1 = p1.x * p2.y - p1.y * p2.x; // (x1 * y2 - y1 * x2)
-        var u4 = p3.x * p4.y - p3.y * p4.x; // (x3 * y4 - y3 * x4)
-    
-        var u2x = p3.x - p4.x; // (x3 - x4)
-        var u3x = p1.x - p2.x; // (x1 - x2)
-        var u2y = p3.y - p4.y; // (y3 - y4)
-        var u3y = p1.y - p2.y; // (y1 - y2)
-    
-        // intersection point formula
-        var px = (u1 * u2x - u3x * u4) / d;
-        var py = (u1 * u2y - u3y * u4) / d;
-    
-        var p = { x: px, y: py };
-        this.xPoint.setXY(Number(Number(px).toFixed(2)), Number(Number(py).toFixed(2)))
-    
-        this.lines.push(line1)
-        this.lines.push(line2)
-    
-        const isIntersection = this.checkLineIntersection(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y, p4.x, p4.y);
-    
-        if (!isIntersection) {
-          return this.status = "no_intersection";
-        }
-    
-        this.status = "computed";
-    
-        return p;
-    }
-    
-    checkLineIntersection(p1x, p1y, p2x, p2y, p3x, p3y, p4x, p4y) {
-        var denominator = (p4y - p3y) * (p2x - p1x) - (p4x - p3x) * (p2y - p1y);
-        if (denominator == 0) {
-            return false;
-        }
-    
-        var ua = ((p4x - p3x) * (p1y - p3y) - (p4y - p3y) * (p1x - p3x)) / denominator;
-        var ub = ((p2x - p1x) * (p1y - p3y) - (p2y - p1y) * (p1x - p3x)) / denominator;
-    
-        if (ua >= 0 && ua <= 1 && ub >= 0 && ub <= 1) {
-            return true;
-        }
-        return false;
-    }
-
     /**
-     * createDuctEnds
-     * 
-     * Creates the necessary duct ends based on the segment's orientation and style,
-     * and positions them correctly within the assembly.
-     */
-    createDuctEnds() {
-        console.log("createDuctEnds started:", this.assemblySegments);
-        for (const segment of this.assemblySegments) { // Iterate over each segment.
-
-            const ductEndTypes = ['cap', 'insert'];
-
-            if (ductEndTypes.includes(segment.xetoDuct.blockStyle.ductEnds)) { // Check if the segment has defined duct ends.
-
-                const segmentLoc = segment.xetoDuct.graphicLocation; // Get the segment's graphic location.
-
-                const startIntersections = this.assemblySegments.filter(child => 
-                    segmentLoc.start === child.xetoDuct.graphicLocation.start &&
-                    segment != child ||
-                    segmentLoc.start === child.xetoDuct.graphicLocation.end &&
-                    segment != child
-                ); // Find intersections at the start of the segment.
-
-                const endIntersections = this.assemblySegments.filter(child => 
-                    segmentLoc.end === child.xetoDuct.graphicLocation.start &&
-                    segment != child ||
-                    segmentLoc.end === child.xetoDuct.graphicLocation.end &&
-                    segment != child
-                ); // Find intersections at the end of the segment.
-
-                let segmentOrientation = segment.xetoDuct.orientation
-                let ductEnd = null;
-                console.log("createDuctEnds startIntersections.length == 0:", startIntersections.length == 0);
-                console.log("createDuctEnds segmentOrientation:", segmentOrientation);
-                console.log("createDuctEnds segment position:", segment.segment.duct.userData.component.object.position);
-
-                if (startIntersections.length == 0 || endIntersections.length == 0) {
-                    if(segment.xetoDuct.blockStyle.ductEnds == 'insert') {
-                        ductEnd = this.createParametricInsert(this.innerDim[segment.xetoDuct.graphicLocation.size]);
-                        segment.segment.duct.userData.endHeight = ductEnd.userData.height;
-                    }
-                    else if(segment.xetoDuct.blockStyle.ductEnds == 'cap') {
-                        ductEnd = this.createParametricCap(this.innerDim[segment.xetoDuct.graphicLocation.size]);
-                        segment.segment.duct.userData.endHeight = ductEnd.userData.height;
-                    }
-                    
-                    ductEnd.position.copy(segment.segment.duct.userData.component.object.position);
-                }
-
-                let ductHalfLength = 500;
-                let halfWallThickness = 15;
-
-                if (startIntersections.length == 0) {
-                    if (segmentOrientation == 'west') {
-                        ductEnd.rotation.y = THREE.MathUtils.degToRad(90);
-                        ductHalfLength = segment.segment.duct.userData.component.attributes.length.value / 2;
-                        ductEnd.position.x += ductHalfLength + halfWallThickness;
-                    } 
-                    else if (segmentOrientation == 'east') {
-                        ductEnd.rotation.y = THREE.MathUtils.degToRad(270);
-                        ductHalfLength = segment.segment.duct.userData.component.attributes.length.value / -2;
-                        ductEnd.position.x += ductHalfLength - halfWallThickness;
-                    } 
-                    else if (segmentOrientation == 'north') {
-                        ductEnd.rotation.y = THREE.MathUtils.degToRad(180);
-                        ductHalfLength = segment.segment.duct.userData.component.attributes.length.value / -2;
-                        ductEnd.position.z += ductHalfLength - halfWallThickness;
-                    } 
-                    else if (segmentOrientation == 'south') {
-                        ductEnd.rotation.y = THREE.MathUtils.degToRad(0);
-                        ductHalfLength = segment.segment.duct.userData.component.attributes.length.value / 2;
-                        ductEnd.position.z += ductHalfLength + halfWallThickness;
-                    }
-                }
-
-                if (endIntersections.length == 0) {
-                    if (segmentOrientation == 'west') {
-                        ductEnd.rotation.y = THREE.MathUtils.degToRad(270);
-                        ductHalfLength = segment.segment.duct.userData.component.attributes.length.value / -2;
-                        ductEnd.position.x += ductHalfLength - halfWallThickness;
-                    } 
-                    else if (segmentOrientation == 'east') {
-                        ductEnd.rotation.y = THREE.MathUtils.degToRad(90);
-                        ductHalfLength = segment.segment.duct.userData.component.attributes.length.value / 2;
-                        ductEnd.position.x += ductHalfLength + halfWallThickness;
-                    } 
-                    else if (segmentOrientation == 'north') {
-                        ductEnd.rotation.y = THREE.MathUtils.degToRad(0);
-                        ductHalfLength = segment.segment.duct.userData.component.attributes.length.value / 2;
-                        ductEnd.position.z += ductHalfLength + halfWallThickness;
-                    } 
-                    else if (segmentOrientation == 'south') {
-                        ductEnd.rotation.y = THREE.MathUtils.degToRad(180);
-                        ductHalfLength = segment.segment.duct.userData.component.attributes.length.value / -2;
-                        ductEnd.position.z += ductHalfLength - halfWallThickness;
-                    }
-                }
-            }
-        }
-    }
-
-    moveInsertTopVertices(geometry, topPosition, moveDistance) {
-        // Access the position attribute
-        const positionAttribute = geometry.attributes.position;
-    
-        // Create a center point for reference
-        const center = new THREE.Vector3(0, 0, 0);
-    
-        for (let i = 0; i < positionAttribute.count; i++) {
-            const x = positionAttribute.getX(i);
-            const y = positionAttribute.getY(i);
-            const z = positionAttribute.getZ(i);
-    
-            // Check if the vertex is a "top vertex" (based on z-axis height)
-            if (z >= topPosition) { // Adjust the threshold as needed for "top" vertices
-                const vertex = new THREE.Vector3(x, y, z);
-    
-                // Calculate the direction vector from the center to the vertex
-                const direction = vertex.clone().sub(center).normalize();
-    
-                // Move the vertex outward along the direction vector
-                const newPosition = vertex.add(direction.multiplyScalar(moveDistance));
-    
-                // Update the vertex position
-                positionAttribute.setXYZ(i, newPosition.x, newPosition.y, newPosition.z);
-            }
-        }
-    
-        // Mark the position attribute as needing an update
-        positionAttribute.needsUpdate = true;
-    }
-
-    createParametricInsert(size = 500) {
-        const material = new THREE.MeshStandardMaterial({ color: this.primaryColor });
-
-        const sectionHeight = 60;
-        
-        const topGeometry = new THREE.BoxGeometry(size + 30, size + 30, sectionHeight);
-        const leftGeometry = new THREE.BoxGeometry(30, size + 30, sectionHeight);
-        const rightGeometry = new THREE.BoxGeometry(30, size + 30, sectionHeight);
-        const backGeometry = new THREE.BoxGeometry(size + 30, 30, sectionHeight);
-
-        const topGeometryMatrix = new THREE.Matrix4();
-        topGeometryMatrix.makeTranslation(0, 0, 30); 
-        topGeometry.applyMatrix4(topGeometryMatrix);
-
-        const leftGeometryMatrix = new THREE.Matrix4();
-        leftGeometryMatrix.makeTranslation(size/-2, 0, sectionHeight/2 - 15); 
-        leftGeometry.applyMatrix4(leftGeometryMatrix);
-
-        const rightGeometryMatrix = new THREE.Matrix4();
-        rightGeometryMatrix.makeTranslation(size/2, 0, sectionHeight/2 - 15); 
-        rightGeometry.applyMatrix4(rightGeometryMatrix);
-
-        const backGeometryMatrix = new THREE.Matrix4();
-        backGeometryMatrix.makeTranslation(0, size/2, sectionHeight/2 - 15); 
-        backGeometry.applyMatrix4(backGeometryMatrix);
-        
-        let mergedGeometry = BufferGeometryUtils.mergeGeometries([
-            leftGeometry,
-            rightGeometry,
-            backGeometry
-        ], false);
-
-        let mergedGeometry2 = mergedGeometry.clone();
-        let mergedConeGeometry = mergedGeometry.clone();
-
-        const mergedConeGeometryMatrix = new THREE.Matrix4();
-        mergedConeGeometryMatrix.makeTranslation(0, 0, sectionHeight); 
-        mergedConeGeometry.applyMatrix4(mergedConeGeometryMatrix);
-
-        const mergedGeometry2Matrix = new THREE.Matrix4();
-        mergedGeometry2Matrix.makeTranslation(0, 0, sectionHeight * 2); 
-        mergedGeometry2.applyMatrix4(mergedGeometry2Matrix);
-
-        this.moveInsertTopVertices(mergedConeGeometry, sectionHeight, sectionHeight);
-        this.moveInsertTopVertices(mergedGeometry2, sectionHeight, sectionHeight);
-
-        let mergedGeometryTotal = BufferGeometryUtils.mergeGeometries([
-            mergedGeometry,
-            mergedConeGeometry,
-            mergedGeometry2
-        ], false);
-        
-        const mergedMesh = new THREE.Mesh(mergedGeometryTotal, material);
-        mergedMesh.name = "ductEnd";
-        mergedMesh.userData.height = sectionHeight * 3;
-        this.sceneHelper.addToScene(mergedMesh);
-        
-        return mergedMesh;
-    }
-
-    createParametricCap(size = 500) {
-        const material = new THREE.MeshStandardMaterial({ color: this.primaryColor });
-        
-        const topGeometry = new THREE.BoxGeometry(size + 30, size + 30, 30);
-        const leftGeometry = new THREE.BoxGeometry(30, size + 30, 30);
-        const rightGeometry = new THREE.BoxGeometry(30, size + 30, 30);
-        const backGeometry = new THREE.BoxGeometry(size + 30, 30, 30);
-
-        const topGeometryMatrix = new THREE.Matrix4();
-        topGeometryMatrix.makeTranslation(0, 0, 30); 
-        topGeometry.applyMatrix4(topGeometryMatrix);
-
-        const leftGeometryMatrix = new THREE.Matrix4();
-        leftGeometryMatrix.makeTranslation(size/-2, 0, 0); 
-        leftGeometry.applyMatrix4(leftGeometryMatrix);
-
-        const rightGeometryMatrix = new THREE.Matrix4();
-        rightGeometryMatrix.makeTranslation(size/2, 0, 0); 
-        rightGeometry.applyMatrix4(rightGeometryMatrix);
-
-        const backGeometryMatrix = new THREE.Matrix4();
-        backGeometryMatrix.makeTranslation(0, size/2, 0); 
-        backGeometry.applyMatrix4(backGeometryMatrix);
-        
-        let mergedGeometry = BufferGeometryUtils.mergeGeometries([
-            topGeometry,
-            leftGeometry,
-            rightGeometry,
-            backGeometry
-        ], false);
-        
-        const mergedMesh = new THREE.Mesh(mergedGeometry, material);
-        mergedMesh.name = "ductEnd";
-        mergedMesh.userData.height = 60;
-        this.sceneHelper.addToScene(mergedMesh);
-        
-        return mergedMesh;
-    }
-
-    createFlowIndicators() {
-        console.log("createFlowIndicators started");
-        for (const segment of this.assemblySegments) { // Iterate over each segment.
-
-            if (segment.xetoDuct.blockStyle.helpers &&
-                segment.xetoDuct.blockStyle.helpers.arrow && 
-                segment.xetoDuct.blockStyle.helpers.arrow.display ||
-                segment.xetoDuct.blockStyle.helpers &&
-                segment.xetoDuct.blockStyle.helpers.text &&
-                segment.xetoDuct.blockStyle.helpers.text.display) {
-                console.log("createFlowIndicators segment:", segment);
-
-                const segmentLoc = segment.xetoDuct.graphicLocation; // Get the segment's graphic location.
-
-                const startIntersections = this.assemblySegments.filter(child => 
-                    segmentLoc.start === child.xetoDuct.graphicLocation.start &&
-                    segment != child ||
-                    segmentLoc.start === child.xetoDuct.graphicLocation.end &&
-                    segment != child
-                ); // Find intersections at the start of the segment.
-
-                const endIntersections = this.assemblySegments.filter(child => 
-                    segmentLoc.end === child.xetoDuct.graphicLocation.start &&
-                    segment != child ||
-                    segmentLoc.end === child.xetoDuct.graphicLocation.end &&
-                    segment != child
-                ); // Find intersections at the end of the segment.
-
-                if (startIntersections.length == 0) { // If no start intersections are found.
-                    console.log("createFlowIndicators: 0 starts found");
-
-                    if(segment.xetoDuct.blockStyle.helpers.arrow) {
-                        if (segment.xetoDuct.blockStyle.helpers.arrow.display) {
-                            this.calcArrow(segment, "start");
-                        }
-                    }
-                    if(segment.xetoDuct.blockStyle.helpers.text) {
-                        if (segment.xetoDuct.blockStyle.helpers.text.display) {
-                            this.calcTextMesh(segment, "start");                      
-                        }
-                    }
-                }
-
-                if (endIntersections.length == 0) { // If no end intersections are found.
-                    console.log("createFlowIndicators: 0 ends found");   
-
-                    if(segment.xetoDuct.blockStyle.helpers.arrow) {
-                        if (segment.xetoDuct.blockStyle.helpers.arrow.display) {
-                            this.calcArrow(segment, "end");
-                        }
-                    }
-                    if(segment.xetoDuct.blockStyle.helpers.text) {
-                        if (segment.xetoDuct.blockStyle.helpers.text.display) {
-                            this.calcTextMesh(segment, "end");             
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    calcArrow(segment, intersectionKey) {
-        console.log("calcArrow started");
-
-        let arrow = {
-            userData: {
-                component: {
-                    object: {}
-                }
-            }
-        }
-
-        let object = this.calcIndicator(segment, "arrow", intersectionKey);
-
-        arrow.userData.component.object = object;
-
-        segment.segment.arrows.push(arrow);
-    }
-
-    calcTextMesh(segment, intersectionKey) {
-        console.log("calcTextMesh started");
-
-        let textMesh = {
-            userData: {
-                component: {
-                    object: {}
-                }
-            }
-        }
-
-        let object = this.calcIndicator(segment, "textMesh", intersectionKey);
-
-        textMesh.userData.component.object.position = object.position;
-
-        segment.segment.textMeshes.push(textMesh);
-    }
-
-    calcIndicator(segment, indicatorKey, intersectionKey) {
-
-        let object = {
-            position: {
-                x: segment.segment.duct.userData.component.object.position.x,
-                y: segment.segment.duct.userData.component.object.position.y,
-                z: segment.segment.duct.userData.component.object.position.z
-            },
-            rotation: {
-                x: 0,
-                y: 0,
-                z: 0
-            }
-        }
-
-        // let segmentOrientation = this.getOrientation(segment.xetoDuct.graphicLocation.start, segment.xetoDuct.graphicLocation.end);
-        let segmentOrientation = segment.xetoDuct.orientation;        
-        
-        console.log("createFlowIndicators segmentOrientation:", segmentOrientation);
-        console.log("segment.segment.duct.userData.height:", segment.segment.duct.userData.endHeight);
-        
-
-        if(segmentOrientation === "east") {
-
-            if(intersectionKey === "start") {
-                object.position.x -= segment.segment.duct.userData.component.object.boundingBox.dimensions.x / 2;
-                object.position.x -= 500;
-                object.position.x -= segment.xetoDuct.blockStyle.helpers.arrow.padding || 0;
-                object.position.x -= segment.segment.duct.userData.endHeight;
-            }
-            if(intersectionKey === "end") {
-                object.position.x += segment.segment.duct.userData.component.object.boundingBox.dimensions.x / 2;
-                object.position.x += 500;
-                object.position.x += segment.xetoDuct.blockStyle.helpers.arrow.padding || 0;
-                object.position.x += segment.segment.duct.userData.endHeight;
-            }
-
-            if(indicatorKey == 'textMesh') {
-                object.position.x -= 500; // -500 for an offset
-                object.position.z += 120; // +120 for an offset
-                object.position.x += segment.xetoDuct.blockStyle.helpers.text.padding || 0;
-                object.position.x += segment.segment.duct.userData.endHeight;
-            }
-        }
-
-        if(segmentOrientation === "west") {
-            if(indicatorKey == 'arrow') {
-                object.rotation.y += THREE.MathUtils.degToRad(180); 
-            }
-
-            if(intersectionKey === "start") {
-                object.position.x += segment.segment.duct.userData.component.object.boundingBox.dimensions.x / 2;
-                object.position.x += 500;
-                object.position.x += segment.xetoDuct.blockStyle.helpers.arrow.padding || 0;
-                object.position.x += segment.segment.duct.userData.endHeight;
-            }
-            if(intersectionKey === "end") {
-                object.position.x -= segment.segment.duct.userData.component.object.boundingBox.dimensions.x / 2;
-                object.position.x -= 500;
-                object.position.x -= segment.xetoDuct.blockStyle.helpers.arrow.padding || 0;
-                object.position.x -= segment.segment.duct.userData.endHeight;
-            }
-            
-            if(indicatorKey == 'textMesh') {
-                object.position.x -= 500; // -500 for an offset
-                object.position.z += 120; // +120 for an offset
-                object.position.x += segment.xetoDuct.blockStyle.helpers.text.padding || 0;
-                object.position.x += segment.segment.duct.userData.endHeight;
-            }
-        } 
-
-        if(segmentOrientation === "north") {
-            if(intersectionKey === "start") {
-                object.position.z -= segment.segment.duct.userData.component.object.boundingBox.dimensions.x / 2;
-                object.position.z -= 500;
-                object.position.z -= segment.xetoDuct.blockStyle.helpers.arrow.padding || 0;
-                object.position.z -= segment.segment.duct.userData.endHeight;
-            }
-            if(intersectionKey === "end") {
-                object.position.z += segment.segment.duct.userData.component.object.boundingBox.dimensions.x / 2;
-                object.position.z += 500;
-                object.position.z += segment.xetoDuct.blockStyle.helpers.arrow.padding || 0;
-                object.position.z += segment.segment.duct.userData.endHeight;
-            }
-
-            object.rotation.y = THREE.MathUtils.degToRad(-90);
-            if(indicatorKey == 'textMesh') {
-                object.position.x += 100; // +100 for an offset
-                object.position.x += segment.xetoDuct.blockStyle.helpers.text.padding || 0;
-                object.position.x += segment.segment.duct.userData.endHeight;
-            }
-        }
-
-        if(segmentOrientation === "south") {
-            if(intersectionKey === "start") {
-                object.position.z += segment.segment.duct.userData.component.object.boundingBox.dimensions.x / 2;
-                object.position.z += 500;
-                object.position.z += segment.xetoDuct.blockStyle.helpers.arrow.padding || 0;
-                object.position.z += segment.segment.duct.userData.endHeight;
-            }
-            if(intersectionKey === "end") {
-                object.position.z -= segment.segment.duct.userData.component.object.boundingBox.dimensions.x / 2;
-                object.position.z -= 500;
-                object.position.z -= segment.xetoDuct.blockStyle.helpers.arrow.padding || 0;
-                object.position.z -= segment.segment.duct.userData.endHeight;
-            }
-
-            object.rotation.y = THREE.MathUtils.degToRad(90);
-            if(indicatorKey == 'textMesh') {
-                object.position.x += 100; // +100 for an offset
-                object.position.x += segment.xetoDuct.blockStyle.helpers.text.padding || 0;
-                object.position.x += segment.segment.duct.userData.endHeight;
-            }
-        } 
-
-        if(segment.xetoDuct.blockStyle.flowDirection == "endToStart") {
-            if(indicatorKey == 'arrow') {
-                object.rotation.y += THREE.MathUtils.degToRad(180); 
-            }
-        }
-
-        return object;
-    }
-
-    /**
-     * buildAssembly
+     * initializeDuctSegment
      * 
      * Builds an assembly segment by loading component meshes, positioning them, and 
      * calculating the required duct length and positioning of components within the duct.
@@ -723,8 +166,8 @@ export default class Arithmetics {
      * @param {Array} components - The components to be included in the assembly.
      * @returns {Object} The built assembly segment containing the duct and its components.
      */
-    async buildAssembly(duct, xetoDuct) {
-        console.log("buildAssembly started:", duct, xetoDuct);
+    async initializeDuctSegment(duct, xetoDuct) {
+        console.log("initializeDuctSegment started:", duct, xetoDuct);
 
         let components = xetoDuct.components; 
 
@@ -734,7 +177,7 @@ export default class Arithmetics {
 
         console.log("xetoDuct:", xetoDuct);
 
-        // const size = this.innerDim[xetoDuct.graphicLocation.size];
+        // const size = this.innerDuctDimensions[xetoDuct.graphicLocation.size];
         const size = 1000;
 
         duct.userData.component.object.boundingBox.dimensions.x = size;
@@ -748,7 +191,7 @@ export default class Arithmetics {
         };
 
         try {
-            const meshes = await this.loadAssemblyMeshes(components); // Load the component meshes for the assembly.
+            const meshes = await this.Mesh3D.loadAssemblyMeshes(this.cleanedXeto, components); // Load the component meshes for the assembly.
 
             if(meshes.length > 0) {
                 for (const i in meshes) { // Iterate over each mesh.
@@ -758,7 +201,7 @@ export default class Arithmetics {
                 }
             }
             
-            const componentScale = this.innerDim[xetoDuct.graphicLocation.size] / 1000;
+            const componentScale = this.innerDuctDimensions[xetoDuct.graphicLocation.size] / 1000;
             for (const mesh of meshes) {
                 mesh.userData.component.object.scale.x *= componentScale;
                 mesh.userData.component.object.scale.y *= componentScale;
@@ -784,16 +227,16 @@ export default class Arithmetics {
                 xetoDuct.graphicLocation.size = "medium"
             }
 
-            const innerDimension = this.innerDim[xetoDuct.graphicLocation.size];
-            if(innerDimension == null) {
+            const innerDuctDimensionsension = this.innerDuctDimensions[xetoDuct.graphicLocation.size];
+            if(innerDuctDimensionsension == null) {
                 alert(`Duct ${xetoDuct.id}'s size (${xetoDuct.graphicLocation.size}) is not valid.`)
             }
-            let ductSize = innerDimension;  
+            let ductSize = innerDuctDimensionsension;  
 
             duct.userData.component.object.scale.x = attributes.length.value / ductSize; // Scale the duct's x-dimension.
             duct.userData.component.object.boundingBox.dimensions.x = attributes.length.value; // Update the duct's bounding box x-dimension.
 
-            duct.userData.component.object.innerDimensions = xetoDuct.isVertical ? 
+            duct.userData.component.object.innerDuctDimensionsensions = xetoDuct.isVertical ? 
                 {
                     x: (duct.userData.component.object.boundingBox.dimensions.z - 60) * componentScale, 
                     y: duct.userData.component.object.boundingBox.dimensions.y, 
@@ -860,12 +303,12 @@ export default class Arithmetics {
                 
             }
 
-            // console.log("buildAssembly duct:", duct.userData.component.object.position.z);
+            // console.log("initializeDuctSegment duct:", duct.userData.component.object.position.z);
 
             return { duct: duct, meshes: meshes, joints: [], ends: [], arrows: [], textMeshes: [] }; // Return the built assembly segment.
         } 
         catch (error) {
-            console.error("Error in buildAssembly:", error); // Log any errors that occur during the build process.
+            console.error("Error in initializeDuctSegment:", error); // Log any errors that occur during the build process.
             throw error; // Re-throw the error for further handling.
         }
     }
@@ -888,7 +331,7 @@ export default class Arithmetics {
             )); // Clone the component block.
             const componentBlockId = componentBlock.componentId.split("r:novo.graphics::")[1];
             const libEntry = JSON.parse(JSON.stringify(
-                this.componentLibEntries[componentBlockId]
+                this.componentLibrary[componentBlockId]
             )); // Clone the corresponding library entry.
             libEntry.componentId = componentId;
             meshes.unshift({
@@ -1084,8 +527,8 @@ export default class Arithmetics {
             const downSize = intersectSegments.down.xetoDuct.graphicLocation.size;
             const leftSize = intersectSegments.left.xetoDuct.graphicLocation.size;
             const rightSize = intersectSegments.right.xetoDuct.graphicLocation.size;
-            let maxHalfWidth = this.innerDim[upSize] > this.innerDim[downSize] ? this.innerDim[upSize] / 2 : this.innerDim[downSize] / 2;
-            let maxHalfHeight = this.innerDim[rightSize] > this.innerDim[leftSize] ? this.innerDim[rightSize] / 2 : this.innerDim[leftSize] / 2;
+            let maxHalfWidth = this.innerDuctDimensions[upSize] > this.innerDuctDimensions[downSize] ? this.innerDuctDimensions[upSize] / 2 : this.innerDuctDimensions[downSize] / 2;
+            let maxHalfHeight = this.innerDuctDimensions[rightSize] > this.innerDuctDimensions[leftSize] ? this.innerDuctDimensions[rightSize] / 2 : this.innerDuctDimensions[leftSize] / 2;
 
             if(intersectSegments.left == fixedSegment) {
                 length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
@@ -1275,8 +718,8 @@ export default class Arithmetics {
                 const upSize = intersectSegments.up.xetoDuct.graphicLocation.size;
                 const downSize = intersectSegments.down.xetoDuct.graphicLocation.size;
                 const rightSize = intersectSegments.right.xetoDuct.graphicLocation.size;
-                let maxHalfWidth = this.innerDim[upSize] > this.innerDim[downSize] ? this.innerDim[upSize] / 2 : this.innerDim[downSize] / 2;
-                let maxHalfHeight = this.innerDim[rightSize] / 2;
+                let maxHalfWidth = this.innerDuctDimensions[upSize] > this.innerDuctDimensions[downSize] ? this.innerDuctDimensions[upSize] / 2 : this.innerDuctDimensions[downSize] / 2;
+                let maxHalfHeight = this.innerDuctDimensions[rightSize] / 2;
 
                 if(fixedSegment == intersectSegments.right) {
                     length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
@@ -1342,8 +785,8 @@ export default class Arithmetics {
                 const downSize = intersectSegments.down.xetoDuct.graphicLocation.size;
                 const leftSize = intersectSegments.left.xetoDuct.graphicLocation.size;
 
-                let maxHalfWidth = this.innerDim[upSize] > this.innerDim[downSize] ? this.innerDim[upSize] / 2 : this.innerDim[downSize] / 2;
-                let maxHalfHeight = this.innerDim[leftSize] / 2;
+                let maxHalfWidth = this.innerDuctDimensions[upSize] > this.innerDuctDimensions[downSize] ? this.innerDuctDimensions[upSize] / 2 : this.innerDuctDimensions[downSize] / 2;
+                let maxHalfHeight = this.innerDuctDimensions[leftSize] / 2;
 
                 if(fixedSegment == intersectSegments.left) {
                     length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
@@ -1409,8 +852,8 @@ export default class Arithmetics {
                 const leftSize = intersectSegments.left.xetoDuct.graphicLocation.size;
                 const rightSize = intersectSegments.right.xetoDuct.graphicLocation.size;
                 
-                let maxHalfWidth = this.innerDim[upSize] / 2;
-                let maxHalfHeight = this.innerDim[leftSize] > this.innerDim[rightSize] ? this.innerDim[leftSize] / 2 : this.innerDim[rightSize] / 2;
+                let maxHalfWidth = this.innerDuctDimensions[upSize] / 2;
+                let maxHalfHeight = this.innerDuctDimensions[leftSize] > this.innerDuctDimensions[rightSize] ? this.innerDuctDimensions[leftSize] / 2 : this.innerDuctDimensions[rightSize] / 2;
 
                 if(fixedSegment == intersectSegments.left) {
                     length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
@@ -1476,8 +919,8 @@ export default class Arithmetics {
                 const leftSize = intersectSegments.left.xetoDuct.graphicLocation.size;
                 const rightSize = intersectSegments.right.xetoDuct.graphicLocation.size;
                 
-                let maxHalfWidth = this.innerDim[downSize] / 2;
-                let maxHalfHeight = this.innerDim[leftSize] > this.innerDim[rightSize] ? this.innerDim[leftSize] / 2 : this.innerDim[rightSize] / 2;
+                let maxHalfWidth = this.innerDuctDimensions[downSize] / 2;
+                let maxHalfHeight = this.innerDuctDimensions[leftSize] > this.innerDuctDimensions[rightSize] ? this.innerDuctDimensions[leftSize] / 2 : this.innerDuctDimensions[rightSize] / 2;
 
                 if(fixedSegment == intersectSegments.left) {
                     length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
@@ -1622,43 +1065,43 @@ export default class Arithmetics {
             }
             else if(fixedSegment.xetoDuct.isVertical != currentSegment.xetoDuct.isVertical) {
                 if(fixedSegment.relativePosition == "left") {
-                    length = ((fixedSegment.segment.duct.userData.component.attributes.length.value) / 2) + this.innerDim[currentSegment.xetoDuct.graphicLocation.size] / 2;
+                    length = ((fixedSegment.segment.duct.userData.component.attributes.length.value) / 2) + this.innerDuctDimensions[currentSegment.xetoDuct.graphicLocation.size] / 2;
                     length += xzJointPadding;
                     this.translateAssemblySegment(currentSegment.segment, "x", (length * 1) + 15);
                 }
                 else if(fixedSegment.relativePosition == "right") {
-                    length = ((fixedSegment.segment.duct.userData.component.attributes.length.value) / 2) + this.innerDim[currentSegment.xetoDuct.graphicLocation.size] / 2;
+                    length = ((fixedSegment.segment.duct.userData.component.attributes.length.value) / 2) + this.innerDuctDimensions[currentSegment.xetoDuct.graphicLocation.size] / 2;
                     length += xzJointPadding;
                     this.translateAssemblySegment(currentSegment.segment, "x", (length * -1) - 15);
                 }
                 if(fixedSegment.relativePosition == "up") {
-                    length = ((fixedSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDim[currentSegment.xetoDuct.graphicLocation.size] / 2);
+                    length = ((fixedSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDuctDimensions[currentSegment.xetoDuct.graphicLocation.size] / 2);
                     length += xzJointPadding;
                     this.translateAssemblySegment(currentSegment.segment, 'z', (length * -1) - 15);
                 }
                 else if(fixedSegment.relativePosition == "down") {
-                    length = ((fixedSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDim[currentSegment.xetoDuct.graphicLocation.size] / 2);
+                    length = ((fixedSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDuctDimensions[currentSegment.xetoDuct.graphicLocation.size] / 2);
                     length += xzJointPadding;
                     this.translateAssemblySegment(currentSegment.segment, 'z', (length * 1) + 15);
                 }
 
                 if(currentSegment.relativePosition == "up") {
-                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDim[fixedSegment.xetoDuct.graphicLocation.size] / 2);
+                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDuctDimensions[fixedSegment.xetoDuct.graphicLocation.size] / 2);
                     length += xzJointPadding;
                     this.translateAssemblySegment(currentSegment.segment, 'z', (length * 1) + 15);
                 }
                 else if(currentSegment.relativePosition == "down") {
-                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDim[fixedSegment.xetoDuct.graphicLocation.size] / 2);
+                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDuctDimensions[fixedSegment.xetoDuct.graphicLocation.size] / 2);
                     length += xzJointPadding;
                     this.translateAssemblySegment(currentSegment.segment, 'z', (length * -1) - 15);
                 }
                 else if(currentSegment.relativePosition == "left") {
-                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDim[fixedSegment.xetoDuct.graphicLocation.size] / 2);
+                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDuctDimensions[fixedSegment.xetoDuct.graphicLocation.size] / 2);
                     length += xzJointPadding;
                     this.translateAssemblySegment(currentSegment.segment, 'x', (length * -1) - 15);
                 }
                 else if(currentSegment.relativePosition == "right") {
-                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDim[fixedSegment.xetoDuct.graphicLocation.size] / 2);
+                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDuctDimensions[fixedSegment.xetoDuct.graphicLocation.size] / 2);
                     length += xzJointPadding;
                     this.translateAssemblySegment(currentSegment.segment, 'x', (length * 1) + 15);
                 }
@@ -1748,27 +1191,6 @@ export default class Arithmetics {
      */
     getRow(location) {
         return parseInt(location.slice(1, location.length)); // Parse and return the row number from the location string.
-    }
-
-    /**
-     * getJointEntry
-     * 
-     * Determines the appropriate joint entry based on the number of intersections.
-     * 
-     * @param {Array} intersections - The list of intersecting segments.
-     * @returns {Object} The joint entry for the intersections.
-     */
-    getJointEntry(intersections) {
-        switch (intersections.length) { // Determine the joint type based on the number of intersections.
-            case 1:
-                return JSON.parse(JSON.stringify(this.LJointEntry)); // Return the L-Joint entry for one intersection.
-            case 2:
-                return JSON.parse(JSON.stringify(this.TJointEntry)); // Return the T-Joint entry for two intersections.
-            case 3:
-                return JSON.parse(JSON.stringify(this.CrossJointEntry)); // Return the Cross-Joint entry for three intersections.
-            default:
-                return JSON.parse(JSON.stringify(this.LJointEntry)); // Default to the L-Joint entry.
-        }
     }
 
     /**
@@ -4567,39 +3989,39 @@ export default class Arithmetics {
         if(this.xzJointYStyle == "diagonal") {
             for(const key in intersection) {
                 if(intersection[key] != null) {
-                    const currentSize = this.innerDim[intersection[key].xetoDuct.graphicLocation.size];
+                    const currentSize = this.innerDuctDimensions[intersection[key].xetoDuct.graphicLocation.size];
                     intersection[key].proxyLengths.proxy1 = currentSize;
                     intersection[key].proxyLengths.proxy2 = currentSize;
                 }
             }
 
             if(intersection.up != null && intersection.left != null) {
-                ductSize1 = this.innerDim[intersection.up.xetoDuct.graphicLocation.size];
-                ductSize2 = this.innerDim[intersection.left.xetoDuct.graphicLocation.size];
+                ductSize1 = this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size];
+                ductSize2 = this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size];
     
                 compareSizes(sizes, ductSize1, ductSize2);
                 intersection.up.proxyLengths.proxyMedian = sizes[selectedSize];
             }
 
             if(intersection.left != null && intersection.down != null) {
-                ductSize1 = this.innerDim[intersection.left.xetoDuct.graphicLocation.size];
-                ductSize2 = this.innerDim[intersection.down.xetoDuct.graphicLocation.size];
+                ductSize1 = this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size];
+                ductSize2 = this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size];
     
                 compareSizes(sizes, ductSize1, ductSize2);
                 intersection.left.proxyLengths.proxyMedian = sizes[selectedSize];
             }
 
             if(intersection.down != null && intersection.right != null) {
-                ductSize1 = this.innerDim[intersection.down.xetoDuct.graphicLocation.size];
-                ductSize2 = this.innerDim[intersection.right.xetoDuct.graphicLocation.size];
+                ductSize1 = this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size];
+                ductSize2 = this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size];
     
                 compareSizes(sizes, ductSize1, ductSize2);
                 intersection.down.proxyLengths.proxyMedian = sizes[selectedSize];
             }
 
             if(intersection.right != null && intersection.up != null) {
-                ductSize1 = this.innerDim[intersection.right.xetoDuct.graphicLocation.size];
-                ductSize2 = this.innerDim[intersection.up.xetoDuct.graphicLocation.size];
+                ductSize1 = this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size];
+                ductSize2 = this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size];
     
                 compareSizes(sizes, ductSize1, ductSize2);
                 intersection.right.proxyLengths.proxyMedian = sizes[selectedSize];
@@ -4615,8 +4037,8 @@ export default class Arithmetics {
                 // up-left proxies
                 //////////////////
     
-                ductSize1 = this.innerDim[intersection.up.xetoDuct.graphicLocation.size];
-                ductSize2 = this.innerDim[intersection.left.xetoDuct.graphicLocation.size];
+                ductSize1 = this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size];
+                ductSize2 = this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size];
     
                 compareSizes(sizes, ductSize1, ductSize2);
     
@@ -4628,8 +4050,8 @@ export default class Arithmetics {
                 // down-left proxies
                 //////////////////
                 
-                ductSize1 = this.innerDim[intersection.left.xetoDuct.graphicLocation.size];
-                ductSize2 = this.innerDim[intersection.down.xetoDuct.graphicLocation.size];
+                ductSize1 = this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size];
+                ductSize2 = this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size];
     
                 compareSizes(sizes, ductSize1, ductSize2)
     
@@ -4641,8 +4063,8 @@ export default class Arithmetics {
                 // down-right proxies
                 //////////////////
                 
-                ductSize1 = this.innerDim[intersection.down.xetoDuct.graphicLocation.size];
-                ductSize2 = this.innerDim[intersection.right.xetoDuct.graphicLocation.size];
+                ductSize1 = this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size];
+                ductSize2 = this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size];
     
                 compareSizes(sizes, ductSize1, ductSize2);
     
@@ -4654,8 +4076,8 @@ export default class Arithmetics {
                 // up-right proxies
                 //////////////////
                 
-                ductSize1 = this.innerDim[intersection.right.xetoDuct.graphicLocation.size];
-                ductSize2 = this.innerDim[intersection.up.xetoDuct.graphicLocation.size];
+                ductSize1 = this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size];
+                ductSize2 = this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size];
     
                 compareSizes(sizes, ductSize1, ductSize2);
     
@@ -4670,8 +4092,8 @@ export default class Arithmetics {
                 //////////////////
     
                 if(intersection.up != null && intersection.left != null) {
-                    ductSize1 = this.innerDim[intersection.up.xetoDuct.graphicLocation.size];
-                    ductSize2 = this.innerDim[intersection.left.xetoDuct.graphicLocation.size];
+                    ductSize1 = this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size];
+                    ductSize2 = this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size];
     
                     compareSizes(sizes, ductSize1, ductSize2);
     
@@ -4685,8 +4107,8 @@ export default class Arithmetics {
                 //////////////////
     
                 if(intersection.left != null && intersection.down != null) {
-                    ductSize1 = this.innerDim[intersection.left.xetoDuct.graphicLocation.size];
-                    ductSize2 = this.innerDim[intersection.down.xetoDuct.graphicLocation.size];
+                    ductSize1 = this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size];
+                    ductSize2 = this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size];
     
                     compareSizes(sizes, ductSize1, ductSize2)
     
@@ -4700,8 +4122,8 @@ export default class Arithmetics {
                 //////////////////
     
                 if(intersection.down != null && intersection.right != null) {
-                    ductSize1 = this.innerDim[intersection.down.xetoDuct.graphicLocation.size];
-                    ductSize2 = this.innerDim[intersection.right.xetoDuct.graphicLocation.size];
+                    ductSize1 = this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size];
+                    ductSize2 = this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size];
     
                     compareSizes(sizes, ductSize1, ductSize2);
     
@@ -4715,8 +4137,8 @@ export default class Arithmetics {
                 //////////////////
     
                 if(intersection.right != null && intersection.up != null) {
-                    ductSize1 = this.innerDim[intersection.right.xetoDuct.graphicLocation.size];
-                    ductSize2 = this.innerDim[intersection.up.xetoDuct.graphicLocation.size];
+                    ductSize1 = this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size];
+                    ductSize2 = this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size];
     
                     compareSizes(sizes, ductSize1, ductSize2);
     
@@ -4730,8 +4152,8 @@ export default class Arithmetics {
                 //////////////////
     
                 if(intersection.left == null) {
-                    ductSize1 = this.innerDim[intersection.up.xetoDuct.graphicLocation.size];
-                    ductSize2 = this.innerDim[intersection.down.xetoDuct.graphicLocation.size];
+                    ductSize1 = this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size];
+                    ductSize2 = this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size];
     
                     compareSizes(sizes, ductSize1, ductSize2);
     
@@ -4740,8 +4162,8 @@ export default class Arithmetics {
                     intersection.up.proxyLengths.proxy2 = sizes[selectedSize];
                 }
                 // if(intersection.up != null && intersection.down != null) {
-                //     ductSize1 = this.innerDim[intersection.up.xetoDuct.graphicLocation.size];
-                //     ductSize2 = this.innerDim[intersection.down.xetoDuct.graphicLocation.size];
+                //     ductSize1 = this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size];
+                //     ductSize2 = this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size];
     
                 //     compareSizes(sizes, ductSize1, ductSize2);
     
@@ -4755,8 +4177,8 @@ export default class Arithmetics {
                 //////////////////
     
                 if(intersection.down == null) {
-                    ductSize1 = this.innerDim[intersection.left.xetoDuct.graphicLocation.size];
-                    ductSize2 = this.innerDim[intersection.right.xetoDuct.graphicLocation.size];
+                    ductSize1 = this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size];
+                    ductSize2 = this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size];
     
                     compareSizes(sizes, ductSize1, ductSize2);
     
@@ -4765,8 +4187,8 @@ export default class Arithmetics {
                     intersection.right.proxyLengths.proxy2 = sizes[selectedSize];
                 }
                 else if(intersection.up == null) {
-                    ductSize1 = this.innerDim[intersection.left.xetoDuct.graphicLocation.size];
-                    ductSize2 = this.innerDim[intersection.right.xetoDuct.graphicLocation.size];
+                    ductSize1 = this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size];
+                    ductSize2 = this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size];
     
                     compareSizes(sizes, ductSize1, ductSize2);
     
@@ -4783,8 +4205,8 @@ export default class Arithmetics {
                 //////////////////
     
                 if(intersection.up != null && intersection.left != null) {
-                    ductSize1 = this.innerDim[intersection.up.xetoDuct.graphicLocation.size];
-                    ductSize2 = this.innerDim[intersection.left.xetoDuct.graphicLocation.size];
+                    ductSize1 = this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size];
+                    ductSize2 = this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size];
     
                     compareSizes(sizes, ductSize1, ductSize2);
     
@@ -4798,8 +4220,8 @@ export default class Arithmetics {
                 //////////////////
     
                 if(intersection.left != null && intersection.down != null) {
-                    ductSize1 = this.innerDim[intersection.left.xetoDuct.graphicLocation.size];
-                    ductSize2 = this.innerDim[intersection.down.xetoDuct.graphicLocation.size];
+                    ductSize1 = this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size];
+                    ductSize2 = this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size];
     
                     compareSizes(sizes, ductSize1, ductSize2)
     
@@ -4813,8 +4235,8 @@ export default class Arithmetics {
                 //////////////////
     
                 if(intersection.down != null && intersection.right != null) {
-                    ductSize1 = this.innerDim[intersection.down.xetoDuct.graphicLocation.size];
-                    ductSize2 = this.innerDim[intersection.right.xetoDuct.graphicLocation.size];
+                    ductSize1 = this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size];
+                    ductSize2 = this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size];
     
                     compareSizes(sizes, ductSize1, ductSize2);
     
@@ -4828,8 +4250,8 @@ export default class Arithmetics {
                 //////////////////
     
                 if(intersection.right != null && intersection.up != null) {
-                    ductSize1 = this.innerDim[intersection.right.xetoDuct.graphicLocation.size];
-                    ductSize2 = this.innerDim[intersection.up.xetoDuct.graphicLocation.size];
+                    ductSize1 = this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size];
+                    ductSize2 = this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size];
     
                     compareSizes(sizes, ductSize1, ductSize2);
     
@@ -4864,12 +4286,12 @@ export default class Arithmetics {
           
         const wallThickness = 30;
   
-        let largestGlobalSize = this.innerDim["small"];
+        let largestGlobalSize = this.innerDuctDimensions["small"];
         for(const key in intersection) {
             let duct = intersection[key];
             if(duct != null) {
-                if(this.innerDim[duct.xetoDuct.graphicLocation.size] > largestGlobalSize) {
-                    largestGlobalSize = this.innerDim[duct.xetoDuct.graphicLocation.size];
+                if(this.innerDuctDimensions[duct.xetoDuct.graphicLocation.size] > largestGlobalSize) {
+                    largestGlobalSize = this.innerDuctDimensions[duct.xetoDuct.graphicLocation.size];
                 }
             }
         }
@@ -4905,11 +4327,11 @@ export default class Arithmetics {
             let duct = intersection[key];
 
             if(duct != null) {
-                const innerDimensions = duct.segment.duct.userData.component.object.innerDimensions;
+                const innerDuctDimensionsensions = duct.segment.duct.userData.component.object.innerDuctDimensionsensions;
 
-                const ductDepth = this.innerDim[duct.xetoDuct.graphicLocation.size];
+                const ductDepth = this.innerDuctDimensions[duct.xetoDuct.graphicLocation.size];
 
-                const proxyDepth = this.innerDim[duct.xetoDuct.graphicLocation.size] + y_offset;
+                const proxyDepth = this.innerDuctDimensions[duct.xetoDuct.graphicLocation.size] + y_offset;
 
                 const proxy1Geometry = new THREE.BoxGeometry(wallThickness, proxyDepth, wallThickness);
                 const proxy2Geometry = new THREE.BoxGeometry(wallThickness, proxyDepth, wallThickness);
@@ -4933,32 +4355,32 @@ export default class Arithmetics {
                 
 
                 if(key == "up") {
-                    proxy1.position.x += (innerDimensions.x / -2);
-                    proxy1.position.z += (innerDimensions.z) / -2;
+                    proxy1.position.x += (innerDuctDimensionsensions.x / -2);
+                    proxy1.position.z += (innerDuctDimensionsensions.z) / -2;
         
                     proxy2.position.copy(proxy1.position);
-                    proxy2.position.x += (innerDimensions.x);
+                    proxy2.position.x += (innerDuctDimensionsensions.x);
                 }
                 else if(key == "down") {
-                    proxy1.position.x += (innerDimensions.x / -2);
-                    proxy1.position.z += (innerDimensions.z) / 2;
+                    proxy1.position.x += (innerDuctDimensionsensions.x / -2);
+                    proxy1.position.z += (innerDuctDimensionsensions.z) / 2;
         
                     proxy2.position.copy(proxy1.position);
-                    proxy2.position.x += (innerDimensions.x);
+                    proxy2.position.x += (innerDuctDimensionsensions.x);
                 }
                 else if(key == "left") {
-                    proxy1.position.x += (innerDimensions.x / 2);
-                    proxy1.position.z += (innerDimensions.z) / 2;
+                    proxy1.position.x += (innerDuctDimensionsensions.x / 2);
+                    proxy1.position.z += (innerDuctDimensionsensions.z) / 2;
         
                     proxy2.position.copy(proxy1.position);
-                    proxy2.position.z += (innerDimensions.z * -1);
+                    proxy2.position.z += (innerDuctDimensionsensions.z * -1);
                 }
                 else if(key == "right") {
-                    proxy1.position.x += (innerDimensions.x / -2);
-                    proxy1.position.z += (innerDimensions.z) / 2;
+                    proxy1.position.x += (innerDuctDimensionsensions.x / -2);
+                    proxy1.position.z += (innerDuctDimensionsensions.z) / 2;
         
                     proxy2.position.copy(proxy1.position);
-                    proxy2.position.z += (innerDimensions.z * -1);
+                    proxy2.position.z += (innerDuctDimensionsensions.z * -1);
                 }   
 
                 proxyMedian.position.copy(proxy1.position);
@@ -5163,8 +4585,8 @@ export default class Arithmetics {
                     }
 
                     let medianOffset = Math.min(
-                        this.innerDim[intersection.right.xetoDuct.graphicLocation.size],
-                        this.innerDim[intersection.up.xetoDuct.graphicLocation.size]
+                        this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size],
+                        this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size]
                     );
                     medianOffset += this.xzJointPadding;
                     const medianClone = upProxies.proxyMedian.clone();
@@ -5196,8 +4618,8 @@ export default class Arithmetics {
                     }
 
                     let medianOffset = Math.min(
-                        this.innerDim[intersection.right.xetoDuct.graphicLocation.size],
-                        this.innerDim[intersection.down.xetoDuct.graphicLocation.size]
+                        this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size],
+                        this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size]
                     );
                     medianOffset += this.xzJointPadding;
                     const medianClone = rightProxies.proxyMedian.clone();
@@ -5229,8 +4651,8 @@ export default class Arithmetics {
                     }
 
                     let medianOffset = Math.min(
-                        this.innerDim[intersection.left.xetoDuct.graphicLocation.size],
-                        this.innerDim[intersection.up.xetoDuct.graphicLocation.size]
+                        this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size],
+                        this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size]
                     );
                     medianOffset += this.xzJointPadding;
                     const medianClone = leftProxies.proxyMedian.clone();
@@ -5262,8 +4684,8 @@ export default class Arithmetics {
                     }
 
                     let medianOffset = Math.min(
-                        this.innerDim[intersection.left.xetoDuct.graphicLocation.size],
-                        this.innerDim[intersection.down.xetoDuct.graphicLocation.size]
+                        this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size],
+                        this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size]
                     );
                     medianOffset += this.xzJointPadding;
                     const medianClone = downProxies.proxyMedian.clone();
@@ -5283,7 +4705,7 @@ export default class Arithmetics {
                 leftProxies.proxyMedian.position.x = downProxies.proxy1.position.x;
                 leftProxies.proxyMedian.position.z = leftProxies.proxy2.position.z;
 
-                if(this.innerDim[intersection.up.xetoDuct.graphicLocation.size] > this.innerDim[intersection.down.xetoDuct.graphicLocation.size]) {
+                if(this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size] > this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size]) {
                     downProxies.proxyMedian.position.x = upProxies.proxy2.position.x;
                 }
                 else {
@@ -5331,7 +4753,7 @@ export default class Arithmetics {
 
             }
             else if(intersection.left == null) {
-                if(this.innerDim[intersection.up.xetoDuct.graphicLocation.size] > this.innerDim[intersection.down.xetoDuct.graphicLocation.size]) {
+                if(this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size] > this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size]) {
                     upProxies.proxyMedian.position.z = downProxies.proxy2.position.z;
                 }
                 else {
@@ -5380,7 +4802,7 @@ export default class Arithmetics {
                 }
             }
             else if(intersection.down == null) {
-                if(this.innerDim[intersection.left.xetoDuct.graphicLocation.size] > this.innerDim[intersection.right.xetoDuct.graphicLocation.size]) {
+                if(this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size] > this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size]) {
                     leftProxies.proxyMedian.position.x = rightProxies.proxy2.position.x;
                     leftProxies.proxyMedian.position.z = leftProxies.proxy2.position.z;
                 }
@@ -5438,7 +4860,7 @@ export default class Arithmetics {
                 downProxies.proxyMedian.position.x = downProxies.proxy2.position.x;
                 downProxies.proxyMedian.position.z = rightProxies.proxy2.position.z;
 
-                if(this.innerDim[intersection.left.xetoDuct.graphicLocation.size] > this.innerDim[intersection.right.xetoDuct.graphicLocation.size]) {
+                if(this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size] > this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size]) {
                     rightProxies.proxyMedian.position.z = leftProxies.proxy1.position.z;
                 }
                 else {
@@ -5639,8 +5061,8 @@ export default class Arithmetics {
                     }
 
                     let medianOffset = Math.min(
-                        this.innerDim[intersection.right.xetoDuct.graphicLocation.size],
-                        this.innerDim[intersection.up.xetoDuct.graphicLocation.size]
+                        this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size],
+                        this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size]
                     );
                     medianOffset += this.xzJointPadding;
                     const medianClone = upProxies.proxyMedian.clone();
@@ -5671,8 +5093,8 @@ export default class Arithmetics {
                     }
 
                     let medianOffset = Math.min(
-                        this.innerDim[intersection.right.xetoDuct.graphicLocation.size],
-                        this.innerDim[intersection.down.xetoDuct.graphicLocation.size]
+                        this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size],
+                        this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size]
                     );
                     medianOffset += this.xzJointPadding;
                     const medianClone = rightProxies.proxyMedian.clone();
@@ -5704,8 +5126,8 @@ export default class Arithmetics {
                     }
 
                     let medianOffset = Math.min(
-                        this.innerDim[intersection.left.xetoDuct.graphicLocation.size],
-                        this.innerDim[intersection.up.xetoDuct.graphicLocation.size]
+                        this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size],
+                        this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size]
                     );
                     medianOffset += this.xzJointPadding;
                     const medianClone = leftProxies.proxyMedian.clone();
@@ -5736,8 +5158,8 @@ export default class Arithmetics {
                     }
 
                     let medianOffset = Math.min(
-                        this.innerDim[intersection.left.xetoDuct.graphicLocation.size],
-                        this.innerDim[intersection.down.xetoDuct.graphicLocation.size]
+                        this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size],
+                        this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size]
                     );
                     medianOffset += this.xzJointPadding;
                     const medianClone = downProxies.proxyMedian.clone();
@@ -5755,7 +5177,7 @@ export default class Arithmetics {
                 upProxies.proxyMedian.position.x = leftProxies.proxyMedian.position.x;
                 leftProxies.proxyMedian.position.z = downProxies.proxyMedian.position.z;
 
-                if(this.innerDim[intersection.up.xetoDuct.graphicLocation.size] > this.innerDim[intersection.down.xetoDuct.graphicLocation.size]) {
+                if(this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size] > this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size]) {
                     downProxies.proxyMedian.position.x = upProxies.proxy2.position.x;
                 }
                 else {
@@ -5802,7 +5224,7 @@ export default class Arithmetics {
                 }
             }
             else if(intersection.left == null) {
-                if(this.innerDim[intersection.up.xetoDuct.graphicLocation.size] > this.innerDim[intersection.down.xetoDuct.graphicLocation.size]) {
+                if(this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size] > this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size]) {
                     upProxies.proxyMedian.position.z = downProxies.proxy2.position.z;
                 }
                 else {
@@ -5851,7 +5273,7 @@ export default class Arithmetics {
                 }
             }
             else if(intersection.down == null) {
-                if(this.innerDim[intersection.left.xetoDuct.graphicLocation.size] > this.innerDim[intersection.right.xetoDuct.graphicLocation.size]) {
+                if(this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size] > this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size]) {
                     leftProxies.proxyMedian.position.x = rightProxies.proxy2.position.x;
                     leftProxies.proxyMedian.position.z = leftProxies.proxy2.position.z;
                 }
@@ -5908,7 +5330,7 @@ export default class Arithmetics {
                 downProxies.proxyMedian.position.z = downProxies.proxy2.position.z;
                 downProxies.proxyMedian.position.x = rightProxies.proxy2.position.x;
 
-                if(this.innerDim[intersection.left.xetoDuct.graphicLocation.size] > this.innerDim[intersection.right.xetoDuct.graphicLocation.size]) {
+                if(this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size] > this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size]) {
                     rightProxies.proxyMedian.position.z = leftProxies.proxy1.position.z;
                 }
                 else {

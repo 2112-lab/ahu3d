@@ -28,7 +28,7 @@
  */
 import * as THREE from 'three';
 
-class Materials {
+class Materials3D {
     constructor() {
         this.createStandardMaterial();
     }
@@ -37,4 +37,4 @@ class Materials {
     }
 }
 
-export default Materials;
+export default Materials3D;

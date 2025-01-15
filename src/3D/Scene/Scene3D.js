@@ -27,23 +27,28 @@
  * 
  */
 import * as THREE from 'three';
-import Lights from "./Lights.js";
-import Cameras from "./Cameras.js";
-import Materials from "./Materials.js";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+
+import Lights from './Lights3D.js';
+import Cameras from './Cameras3D.js';
+import Materials from './Materials3D.js';
+
+import tooltipTemplate from '../../assets/tooltip.html';
+
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
-import tooltipTemplate from '../assets/tooltip.html';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js';
 
-class Scene {
+class Scene3D {
 
     constructor(moduleConfigs) {
         this.moduleConfigs = moduleConfigs;
         this.isDisposed = false;
+        
+        this.instanceSet = null;
 
         this.boxHelpers = null;
 
@@ -672,4 +677,4 @@ class Scene {
     
 }
 
-export default Scene;
+export default Scene3D;

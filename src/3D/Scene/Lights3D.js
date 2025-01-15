@@ -27,9 +27,9 @@
  * 
  */
 import * as THREE from 'three';
-import moduleDefaults from '../assets/module_defaults.json';
+import moduleDefaults from '../../assets/module_defaults.json';
 
-class Lights {
+class Lights3D {
     constructor(lightConfigs) {
         this.setupLights(lightConfigs);
     }
@@ -70,4 +70,4 @@ class Lights {
     }
 }
 
-export default Lights;
+export default Lights3D;

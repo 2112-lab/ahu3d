@@ -17,7 +17,7 @@
 //////////////////////////////////////////////////////////////////////////////////////
 
 /*
- * Utils.js
+ * Utils3D.js
  * 
  * Author: Caleb Ebers
  * Date: 9/06/2024
@@ -30,12 +30,11 @@ import * as THREE from 'three';
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 
-export default class Utils {
+export default class Utils3D {
   constructor(sceneHelper) {
-    this.instanceSet = null;
+    
     this.sceneHelper = sceneHelper;
     this.library = null;
-    this.object3DLoader = null;
     this.arrowInstance = this.createArrowInstance();
   }
 
@@ -179,31 +178,7 @@ export default class Utils {
     ahuComponent[methodKey](attributeValue);
   }
 
-  /**
-   * Loads component instances into the instanceSet object by importing 3D mesh data.
-   * 
-   * @returns {Promise<Object>} A dictionary of loaded component instances.
-   */
-  async loadInstanceSet() {
-    let instanceSet = {};
-  
-    // Create an array of promises for loading each component's 3D mesh
-    const loadPromises = Object.keys(this.library).map(async (key) => {
-      const mesh = await this.object3DLoader.loadComponent(this.library[key], false);
-      instanceSet[this.library[key].componentName] = mesh; // Store mesh in instanceSet
-    });
-  
-    // Wait for all promises to resolve
-    await Promise.all(loadPromises);
-  
-    this.instanceSet = instanceSet;
-    console.log("this.instanceSet:", this.instanceSet);
-  }
-
   createDuct(segment) {
-
-    console.log("segment createDuct:", segment);
-
     const userData = segment.segment.duct.userData;
     const name = segment.xetoDuct.id;
 
@@ -318,19 +293,13 @@ export default class Utils {
   
       // Clone and position meshes
       for (const mesh of segment.segment.meshes) {
-        const instance = this.instanceSet[mesh.userData.component.componentName];
+        const instance = this.sceneHelper.instanceSet[mesh.userData.component.componentName];
         clonePromises.push(this.cloneInstance(mesh.userData, instance, mesh.userData.component.componentName));
       }
   
-      // Clone and position joints
-      // for (const joint of segment.segment.joints) {
-      //   const instance = this.instanceSet[joint.userData.component.componentName];
-      //   clonePromises.push(this.cloneInstance(joint.userData, instance, joint.userData.component.componentName));
-      // }
-  
       // Clone and position ends
       for (const end of segment.segment.ends) {
-        const instance = this.instanceSet[end.userData.component.componentName];
+        const instance = this.sceneHelper.instanceSet[end.userData.component.componentName];
         clonePromises.push(this.cloneInstance(end.userData, instance, end.userData.component.componentName));
       }
   

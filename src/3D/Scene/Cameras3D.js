@@ -17,7 +17,7 @@
 //////////////////////////////////////////////////////////////////////////////////////
 
 /*
- * Cameras.js
+ * Cameras3D.js
  * 
  * Author: Caleb Ebers
  * Date: 9/06/2024
@@ -28,7 +28,7 @@
  */
 import * as THREE from 'three';
 
-class Cameras {
+class Cameras3D {
     constructor(cameraConfigs, size) {
         this.cameraConfigs = cameraConfigs;
         this.size = size;
@@ -46,4 +46,4 @@ class Cameras {
     }
 }
 
-export default Cameras;
+export default Cameras3D;

@@ -17,7 +17,7 @@
 //////////////////////////////////////////////////////////////////////////////////////
 
 /*
- * Analyze.js
+ * Analysis.js
  * 
  * Author: Caleb Ebers
  * Date: 9/06/2024
@@ -27,16 +27,11 @@
  * 
  * 
  */
-class Analyze {
+class Analysis {
     analyzeAndTransform(xetoDictionary) {
         console.log("analyzeAndTransform started");
         
-        let primaryDuct = this.getPrimaryDuct(xetoDictionary.ductsList);
-
-        let currentDuct = primaryDuct;
-        
-        // Align the primary duct with its adjacent duct so that the end value of the primary duct equals the start value of the previous duct.
-        // this.alignPrimaryDuct(xetoDictionary.ductsList, currentDuct);
+        let currentDuct = this.getPrimaryDuct(xetoDictionary.ductsList);    
 
         // Recursively traverse the tree of ducts.
         // Align the secondary ducts so that the start value of each duct equals the end value of the previous duct.
@@ -289,49 +284,6 @@ class Analyze {
     }
 
     /**
-     * consolidateRedundantDucts
-     * 
-     * Consolidates redundant ducts by merging them when they have the same orientation
-     * and updating their end locations and components.
-     * 
-     * @param {Array} ductsList - List of all ducts in the assembly.
-     */
-    consolidateRedundantDucts(ductsList) {
-        for(let currentDuct of ductsList) {
-            let currentDuctOrientation = this.getOrientation(
-                currentDuct.graphicLocation.start, 
-                currentDuct.graphicLocation.end
-            );
-
-            let intersectedDucts = ductsList.filter(child => 
-                currentDuct.graphicLocation.end === child.graphicLocation.start && 
-                child != currentDuct
-            );
-            while(intersectedDucts.length == 1) {
-                let intersectionOrientation = this.getOrientation(
-                    intersectedDucts[0].graphicLocation.start, 
-                    intersectedDucts[0].graphicLocation.end
-                );
-                if(intersectionOrientation == currentDuctOrientation) {
-                    currentDuct.components.push(...intersectedDucts[0].components);
-                    currentDuct.graphicLocation.end = intersectedDucts[0].graphicLocation.end;
-                    currentDuct.id = currentDuct.id + ", " + intersectedDucts[0].id;
-
-                    intersectedDucts[0].delete = true;
-                    intersectedDucts = ductsList.filter(child => 
-                        intersectedDucts[0].graphicLocation.end === child.graphicLocation.start && 
-                        child != currentDuct
-                    );
-                }
-                else {
-                    intersectedDucts = [];
-                }
-                
-            } 
-        }
-    }
-
-    /**
      * getOrientation
      * 
      * Determines the orientation of a duct based on the start and end graphic locations.
@@ -370,4 +322,4 @@ class Analyze {
     }
 }
 
-export default Analyze;
+export default Analysis;

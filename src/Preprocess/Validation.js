@@ -17,7 +17,7 @@
 //////////////////////////////////////////////////////////////////////////////////////
 
 /*
- * Validate.js
+ * Validation.js
  * 
  * Author: Caleb Ebers
  * Date: 9/06/2024
@@ -26,7 +26,7 @@
  * necessary components and parameters are correctly defined and structured.
  * 
  */
-class Validate {
+class Validation {
     constructor(componentLibEntries) {
         this.componentLibEntries = componentLibEntries;
     }
@@ -214,4 +214,4 @@ class Validate {
     }
 }
 
-export default Validate;
+export default Validation;

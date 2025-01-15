@@ -17,154 +17,70 @@
 //////////////////////////////////////////////////////////////////////////////////////
 
 /*
- * Ahu3D.js
+ * Ahu3D-API.js
  * 
  * Author: Caleb Ebers
  * Date: 9/06/2024
  * 
- * This class manages the 3D representation of an AHU (Air Handling Unit) within the scene, 
- * handling loading of models, animations, and interactions within the 3D environment.
  * 
  */
 
-import Scene from "./sceneHelper/Scene.js"
-import Import from "./Core/Import.js"
-import Object3DLoader from "./Core/Object3DLoader.js"
-import Arithmetics from "./Core/Arithmetics.js"
-import Utils from "./Core/Utils.js"
-import moduleDefaults from './assets/module_defaults.json';
-import _ from 'lodash';  // You can use lodash for deep merge
-
 import * as THREE from 'three';
 import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
-import Konva from 'konva';
 
-class Ahu3D {
+import axios from 'axios';
 
-    /**
-     * Creates an instance of Ahu3D and initializes the scene and loaders.
-     * 
-     * @param {Object} [moduleConfigs=moduleDefaults] - Configuration options for the AHU 3D module.
-     */
-    constructor(moduleConfigs = moduleDefaults) {
-        this.moduleConfigs = _.merge({}, moduleDefaults, moduleConfigs);
-        console.log("this.moduleConfigs:", this.moduleConfigs);
+import Arithmetics from "../Arithmetics/_Arithmetics.js"
+import Preprocess from "../Preprocess/_Preprocess.js"
+import Assets3D from "../3D/Assets3D.js"
 
-        this.sceneHelper = new Scene(this.moduleConfigs);
-        this.imports = new Import(this.moduleConfigs);
-        this.utils = new Utils(this.sceneHelper);
-        this.object3DLoader = new Object3DLoader(this.sceneHelper);
-        this.library = null;
-        this.assetConfigs = null;
-        this.instanceSet = null;
+class Ahu3DAPI {
+    constructor(ahu3DInstance) {
+        this.ahu3D = ahu3DInstance;     
         this.libraryLoadInitiated = false;
-        this.isLibraryLoaded = false;
-        this.components = {};  // This object holds loaded assembly components
-        this.loadedXeto = [];  // This object holds xeto
     }
 
-    createDuct(size, type = "duct") {
+    /**
+     * loadLibrary
+     * 
+     * Loads component library entries from the specified asset configurations by sending asynchronous
+     * requests to fetch JSON files and store their data.
+     * 
+     * @param {Object} assetConfigs - Configuration object with paths to assets and component list.
+     * @returns {Object} The loaded files object.
+     */
+    async loadLibrary(assetConfigs) {
 
-        const id = { // inner-dimensions
-            small: 500,
-            medium: 1000,
-            large: 1500
-        }
+        this.libraryLoadInitiated = true;
 
-        const wt = 30; // wall-thickness
+        const files = {};
+        const jsonFiles = assetConfigs.componentList;
+        const assetsPath = assetConfigs.assetsPath;
 
-        // Create the geometries with the specified dimensions
-        const ceilingGeometry = new THREE.BoxGeometry(
-            id[size], 
-            id[size] + wt, 
-            wt
-        );
-        const backWallGeometry = new THREE.BoxGeometry(
-            id[size], 
-            wt, 
-            id[size]
-        );
-        const floorGeometry = new THREE.BoxGeometry(
-            id[size], 
-            id[size] + wt, 
-            wt
-        );
+        const requests = jsonFiles.map(fileName => {
+            const requestPath = `${assetsPath}${fileName}/${fileName}.json`;
+            return axios.get(requestPath) // Return the promise here
+                .then(response => {
+                    // console.log(`Loaded ${fileName}.json successfully`);
+                    files[fileName] = response.data;
+                })
+                .catch(error => {
+                    console.error(`Failed to load ${fileName}.json:`, error);
+                });
+        });
 
-        // Create materials (using a basic color for now)
-        const material1 = new THREE.MeshStandardMaterial({ color: 0xff0000, wireframe: false });
-        const material2 = new THREE.MeshStandardMaterial({ color: 0x00ff00, wireframe: false });
-        const material3 = new THREE.MeshStandardMaterial({ color: 0x0000ff, wireframe: false });
-        const whiteMaterial = new THREE.MeshStandardMaterial({ color: 0xAEB9C2, wireframe: false });
+        await Promise.all(requests); // Wait for all promises to resolve
 
-        // Create the meshes
-        const ceiling = new THREE.Mesh(ceilingGeometry, whiteMaterial);
-        const backWall = new THREE.Mesh(backWallGeometry, whiteMaterial);
-        const floor = new THREE.Mesh(floorGeometry, whiteMaterial);
+        this.library = files;
+        // this.validator = new Validate(this.library);  
 
-        // Position the cubes to make them appear joined
-        ceiling.position.set(
-            0,
-            0,
-            wt/2
-        );
-        backWall.position.set(
-            0,
-            id[size]/2,
-            id[size]/-2
-        );
-        floor.position.set(
-            0,
-            0,
-            id[size]*-1 -15
-        );        
+        this.Assets3D = new Assets3D(this.sceneHelper, this.library, assetConfigs);
+        await this.Assets3D.loadInstanceSet();
 
-        // Create an empty Object3D container (works as an empty mesh or group)
-        const parentObject = new THREE.Object3D();
+        this.preprocess = new Preprocess(this.library);
+        this.arithmetics = new Arithmetics(this.library, this.sceneHelper); 
 
-        let leftWall = null;
-        let rightWall = null;
-
-        if(type.includes("joint")) {
-            const leftWallGeometry = new THREE.BoxGeometry(
-                wt, 
-                id[size], 
-                id[size]
-            );
-            const rightWallGeometry = new THREE.BoxGeometry(
-                wt, 
-                id[size], 
-                id[size]
-            );
-            leftWall = new THREE.Mesh(leftWallGeometry, whiteMaterial);
-            rightWall = new THREE.Mesh(rightWallGeometry, whiteMaterial);
-            leftWall.position.set(
-                id[size]/-2 - 15,
-                0,
-                id[size]/-2
-            );
-            rightWall.position.set(
-                id[size]/ 2 + 15,
-                0,
-                id[size]/-2
-            );
-            
-        }
-
-        // Add the cubes to the parent object
-        if(type != ("l-joint")) {
-            parentObject.add(ceiling);
-        }
-        parentObject.add(backWall);
-        parentObject.add(floor);
-        if(type.includes("joint")) {
-            parentObject.add(leftWall);
-            parentObject.add(rightWall); 
-        }   
-
-        parentObject.position.z += id[size];
-
-        // Add the cubes to the scene
-        this.sceneHelper.addToScene(parentObject);
+        return this.library;
     }
 
     /**
@@ -187,79 +103,6 @@ class Ahu3D {
         }
         return 0;
     }
-
-    // Private method for XZ translation
-    // translateXZ(componentId, translateValue) {
-    //     const component = this.components[componentId];
-    //     if (component != undefined) {
-
-    //         let ductOfComponent = null;
-    //         outerLoop:
-    //         for(const block of this.loadedXeto) {
-    //             if(block.components) {
-    //                 for(const component of block.components) {
-    //                     if(component.includes(componentId)) {
-    //                         ductOfComponent = block;
-    //                         break outerLoop;
-    //                     }
-    //                 }
-    //             }
-    //         }
-
-    //         for(const i in ductOfComponent.components) {
-    //             ductOfComponent.components[i] = ductOfComponent.components[i].split("::")[1] || ductOfComponent.components[i];
-    //         }
-
-    //         const componentIndex = ductOfComponent.components.indexOf(componentId);
-
-    //         const orientation = this.utils.getOrientation(ductOfComponent.graphicLocation.start, ductOfComponent.graphicLocation.end);
-
-    //         const axis = orientation == 'east' || orientation == 'west' ? 'x' : 'z';
-
-    //         if(translateValue === 0) {
-    //             return 0;
-    //         }
-    //         else if(translateValue > 0) {
-    //             const adjacentComponentIndex = componentIndex - 1;
-    //             console.log("translate() componentIndex:", componentIndex);
-    //             console.log("translate() ductOfComponent:", ductOfComponent);
-    //             const adjacentComponentId = ductOfComponent.components[adjacentComponentIndex];
-    //             const adjacentComponent = this.components[adjacentComponentId];
-    //             console.log("translate() adjacentComponent:", adjacentComponent);
-
-    //             const adjacentSpace = adjacentComponent ? adjacentComponent.userData.xeto.blockStyle.componentPadding.startSpace : 0;
-    //             const componentSpace = component.userData.xeto.blockStyle.componentPadding.endSpace;
-
-    //             const componentPairPadding = componentSpace + adjacentSpace;
-    //             translateValue = Math.min(translateValue, componentPairPadding);
-    //             component.position[axis] += translateValue;
-
-    //             component.userData.xeto.blockStyle.componentPadding.startSpace += translateValue;
-    //             component.userData.xeto.blockStyle.componentPadding.endSpace -= translateValue;
-    //         }
-    //         else if(translateValue < 0) {
-    //             const adjacentComponentIndex = componentIndex + 1;
-    //             console.log("translate() componentIndex:", componentIndex);
-    //             const adjacentComponentId = ductOfComponent.components[adjacentComponentIndex];
-    //             let adjacentComponent = this.components[adjacentComponentId];
-    //             console.log("translate() adjacentComponent:", adjacentComponent);
-
-    //             const adjacentSpace = adjacentComponent ? adjacentComponent.userData.xeto.blockStyle.componentPadding.endSpace : 0;
-    //             const componentSpace = component.userData.xeto.blockStyle.componentPadding.startSpace;
-
-    //             const componentPairPadding = componentSpace + adjacentSpace;
-    //             translateValue = Math.min(translateValue * -1, componentPairPadding) * -1;
-    //             component.position[axis] += translateValue;
-
-    //             component.userData.xeto.blockStyle.componentPadding.startSpace += translateValue;
-    //             component.userData.xeto.blockStyle.componentPadding.endSpace -= translateValue;
-    //         }
-
-    //         return translateValue;
-    //     }
-
-    //     return 0;
-    // }
     
     /**
      * Sets a glowing effect on a specific component within the 3D scene.
@@ -385,42 +228,6 @@ class Ahu3D {
     }
 
     /**
-     * Loads the asset library from the application using provided configurations.
-     * 
-     * @param {Object} assetConfigs - Configuration object for loading assets.
-     * @returns {Promise<Object>} The loaded library.
-     * 
-     * @example
-     * const assetConfigs = {
-     *   "assetsPath": "https://novo-assets.s3.amazonaws.com/assets/",
-     *   "componentList": ["Filter", "Fan", "Damper"]
-     * };
-     * ahu3d.loadLibrary(assetConfigs).then((library) => {
-     *   console.log("Library loaded:", library);
-     * });
-     */
-    async loadLibrary(assetConfigs) {
-        this.libraryLoadInitiated = true;
-
-        this.assetConfigs = assetConfigs;
-        this.object3DLoader.assetConfigs = assetConfigs;
-
-        this.library = await this.imports.loadLibrary(assetConfigs);
-
-        this.utils.library = this.library;
-        this.utils.object3DLoader = this.object3DLoader;
-
-        await this.utils.loadInstanceSet();
-        console.log('Instances are ready')
-
-        this.arithmetics = new Arithmetics(this.library, this.sceneHelper);
-
-        this.isLibraryLoaded = true;
-
-        return this.library;
-    }
-
-    /**
      * Loads and processes a XETO model for the AHU and renders it in the scene.
      * 
      * @param {Object} xeto - The XETO model data to be loaded.
@@ -452,7 +259,7 @@ class Ahu3D {
             });
         }        
 
-        const cleanedXeto = this.imports.preprocessXeto(xeto);
+        const cleanedXeto = this.preprocess.preprocessXeto(xeto);
 
         this.loadedXeto = cleanedXeto;
 
@@ -551,6 +358,10 @@ class Ahu3D {
         }
     }
 
+    loadComponent(component, isVisible = true, hvacOpacity = 1){
+        this.Assets3D.loadComponent(component, isVisible, hvacOpacity);
+    }
+
     dispose() {
         console.log("Disposing Ahu3D...");
         
@@ -566,7 +377,6 @@ class Ahu3D {
         // Nullify utility references
         this.imports = null;
         this.utils = null;
-        this.object3DLoader = null;
 
         // Nullify other references
         this.library = null;
@@ -577,4 +387,4 @@ class Ahu3D {
 
 }
 
-export default Ahu3D;
+export default Ahu3DAPI;

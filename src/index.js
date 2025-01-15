@@ -26,9 +26,9 @@
  * and setting up the environment for rendering the 3D scene.
  * 
  */
-import _Ahu3D from "./Ahu3D.js"
+import Ahu3D from "./Ahu3D/_Ahu3D.js"
 
-export const Ahu3D = _Ahu3D;
+export { Ahu3D };
 
 export default Ahu3D;
 
