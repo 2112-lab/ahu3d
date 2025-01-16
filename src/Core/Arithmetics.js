@@ -871,6 +871,17 @@ export default class Arithmetics {
     }
 
     /**
+     * flipMesh
+     * 
+     * Flips a given mesh by rotating it 180 degrees around the Z-axis.
+     * 
+     * @param {Object} mesh - The 3D mesh to be flipped
+     */
+    flipMesh(mesh) {
+        mesh.userData.component.object.scale.x *= -1;
+    }
+
+    /**
      * loadAssemblyMeshes
      * 
      * Loads the component meshes for the given components and returns them.

@@ -33,11 +33,13 @@ import axios from 'axios';
 import Arithmetics from "../Arithmetics/_Arithmetics.js"
 import Preprocess from "../Preprocess/_Preprocess.js"
 import Assets3D from "../3D/Assets3D.js"
+import Mesh3D from "../3D/Mesh3D.js"
 
 class Ahu3DAPI {
     constructor(ahu3DInstance) {
         this.ahu3D = ahu3DInstance;     
         this.libraryLoadInitiated = false;
+        this.Mesh3D = new Mesh3D(this.sceneHelper);
     }
 
     /**
@@ -273,7 +275,7 @@ class Ahu3DAPI {
 
         const assembly = await this.arithmetics.calculateAssembly(cleanedXeto);
 
-        const renderedAssembly = await this.utils.renderAssembly(assembly);
+        const renderedAssembly = await this.Mesh3D.renderAssembly(assembly, this.sceneHelper);
 
         this.sceneHelper.fitAssemblyIntoView();
 
