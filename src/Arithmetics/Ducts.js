@@ -1,7 +1,10 @@
 import * as THREE from 'three';
 import {getSegmentDirection, seperateByDirections, translateAssemblySegment, orientAssemblySegment} from "./Basic.js";
 import Joints from "./Joints.js";
-import Joints3D_L from "../3D/Geometry/Joints/Joints3D-L.js";
+import Geometry_3D_Joints_Cross from "../3D/Geometry/Joints/Geometry_3D_Joints_Cross.js";
+import Geometry_3D_Joints_T from "../3D/Geometry/Joints/Geometry_3D_Joints_T.js";
+import Geometry_3D_Joints_L from "../3D/Geometry/Joints/Geometry_3D_Joints_L.js";
+import Geometry_3D_Joints_Colinear from "../3D/Geometry/Joints/Geometry_3D_Joints_Colinear.js";
 
 export default class Ducts {
     constructor(
@@ -22,7 +25,10 @@ export default class Ducts {
         this.ahuGroup = ahuGroup;
         
         this.Joints = new Joints(this.ahuGroup, this.innerDuctDimensions, sceneHelper, primaryColor);
-        this.Joints3D_L = new Joints3D_L();
+        this.Geometry_3D_Joints_Cross = new Geometry_3D_Joints_Cross();
+        this.Geometry_3D_Joints_T = new Geometry_3D_Joints_T();
+        this.Geometry_3D_Joints_L = new Geometry_3D_Joints_L();
+        this.Geometry_3D_Joints_Colinear = new Geometry_3D_Joints_Colinear();
     }
 
     async initializeAllDuctSegments(cleanedXeto) {
@@ -456,7 +462,7 @@ export default class Ducts {
             }
                 
             const largestGlobalSize = this.Joints.createJointProxies(intersectSegments, null);
-            this.Joints.createCrossJoint(intersectSegments, largestGlobalSize);
+            this.Geometry_3D_Joints_Cross.createCrossJoint(intersectSegments, largestGlobalSize);
             
 
         }
@@ -798,7 +804,7 @@ export default class Ducts {
             }
 
             const largestGlobalSize = this.Joints.createJointProxies(intersectSegments, null);
-            this.Joints.createTJoint(intersectSegments, largestGlobalSize);
+            this.Geometry_3D_Joints_T.createTJoint(intersectSegments, largestGlobalSize);
     
         }
         else if(this.ductsDictionary[key].length == 2) {
@@ -925,10 +931,10 @@ export default class Ducts {
 
             const largestGlobalSize = this.Joints.createJointProxies(intersectSegments, pairDirection);
             if(pairDirection) {
-                this.Joints.createParallelJoint(intersectSegments, pairDirection);
+                this.Geometry_3D_Joints_Colinear.createParallelJoint(intersectSegments, pairDirection);
             }
             else {
-                this.Joints.createLJoint(intersectSegments, largestGlobalSize);
+                this.Geometry_3D_Joints_L.createLJoint(intersectSegments, largestGlobalSize);
             }
             
         }

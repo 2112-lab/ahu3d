@@ -1,8 +1,7 @@
 import * as THREE from 'three';
-
 import Canvas2D from "../2D/Canvas2D.js"
-import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
-import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
+
+import { createTextMesh } from "./Geometry/Helpers/Geometry_Text.js"
 
 export default class Mesh3D {
     constructor(sceneHelper){
@@ -65,6 +64,18 @@ export default class Mesh3D {
             const instance = sceneHelper.instanceSet[end.userData.component.componentName];
             clonePromises.push(this.cloneInstance(end.userData, instance, end.userData.component.componentName));
           }
+
+          // Render Proxies
+          for (const key in segment.segment.duct.userData.proxies) {
+            const proxy = segment.segment.duct.userData.proxies[key];
+            this.sceneHelper.addToScene(proxy);
+            if(proxy.userData.vertexIndicators){
+              for (const vertexIndicator of proxy.userData.vertexIndicators) {
+                this.sceneHelper.addToScene(vertexIndicator);
+              }
+            }
+            
+          }
       
           // Create position a parametric duct
           const instance = this.createDuct(segment, "duct");
@@ -80,7 +91,7 @@ export default class Mesh3D {
     
           // Render textMeshes
           for (const i in segment.segment.textMeshes) {
-            this.renderTextMesh(segment); 
+            const textMesh = createTextMesh(segment, sceneHelper); 
           }
       
           // Add the cloned instances to the rendered assembly
@@ -220,103 +231,57 @@ export default class Mesh3D {
         clonedArrow.visible = true;
         this.sceneHelper.addToScene(clonedArrow);
     }
-    
-    renderTextMesh(segment) {
-        const textValue = segment.xetoDuct.blockStyle.helpers.text.value || "Default";
-    
-        const loader = new FontLoader();
-        loader.load('https://ahu3d-assets.s3.amazonaws.com/helvetiker_regular.typeface.json', (font) => {
-          const textGeo = new TextGeometry(textValue, {
-              font: font,
-              size: 100,
-              depth: 0.05,
-              curveSegments: 12,
-              bevelEnabled: true,
-              bevelThickness: 10,
-              bevelSize: 0.02,
-              bevelSegments: 5
-          });
-    
-          // Set up the material for the main mesh.
-          const textMaterial = new THREE.MeshStandardMaterial({ 
-              transparent: true, 
-              opacity: 1,
-              depthWrite: true,
-          });
-    
-          const textMesh = new THREE.Mesh(textGeo, textMaterial);
-          textMesh.name = "textMesh";
-    
-          const material = segment.xetoDuct.blockStyle.helpers.text.material || { color: "#AAAAAA", opacity: 1 };
-          const color = material.color || '#AAAAAA';
-          const opacity = material.opacity || 1;
-    
-          textMesh.material.color = new THREE.Color(color);
-          textMesh.material.opacity = opacity;
-    
-          textMesh.position.x = segment.segment.textMeshes[0].userData.component.object.position.x;
-          textMesh.position.y = segment.segment.textMeshes[0].userData.component.object.position.y;
-          textMesh.position.z = segment.segment.textMeshes[0].userData.component.object.position.z;
-      
-          textMesh.rotation.x = THREE.MathUtils.degToRad(90);
-      
-          // Add to scene
-          this.sceneHelper.addToScene(textMesh);
-    
-          textMesh.visible = true;
-        });
-    }
 
     /**
-       * cloneInstance
-       * 
-       * Clones a component instance, applies transformations, and adds it to the scene.
-       * 
-       * Functions Invoked:
-       * - instance.clone
-       * - sceneHelper.addInScene
-       * 
-       * @param {Object} userData - The data associated with the component
-       * @param {Object} instance - The component instance to be cloned
-       * @param {String} name - The name of the component being cloned
-       */
-      async cloneInstance(userData, instance, name) {
-        const clonedInstance = instance.clone(); // Clone the original instance
-        clonedInstance.userData = userData; // Copy user data to the cloned instance
-    
-        // Apply position transformations to the cloned instance
-        clonedInstance.position.x = userData.component.object.position.x;
-        clonedInstance.position.y = userData.component.object.position.y;
-        clonedInstance.position.z = userData.component.object.position.z;
-    
-        // Apply rotation transformations to the cloned instance
-        clonedInstance.rotation.z = userData.component.object.rotation.z;
-        clonedInstance.rotation.y = userData.component.object.rotation.y;
-    
-        // Apply scale transformations to the cloned instance
-        clonedInstance.scale.x = userData.component.object.scale.x;
-        clonedInstance.scale.y = userData.component.object.scale.y;
-        clonedInstance.scale.z = userData.component.object.scale.z;
-    
-        // Assign the component's name to the cloned instance
-        clonedInstance.userData.component.componentName = name;
-    
-        // Clone the materials of all children of the cloned instance
-        clonedInstance.traverse(child => {
-            if (child.isMesh && child.material) {  // Ensure child is a mesh and has a material
-                child.material = child.material.clone(); // Clone the material
-            }
-        });
-    
-        clonedInstance.sceneHelper = this.sceneHelper;
-    
-        this.extendObject3D(clonedInstance); 
-    
-        // Add the cloned instance to the scene and make it visible
-        this.sceneHelper.addToScene(clonedInstance);
-        clonedInstance.visible = true;
-    
-        return clonedInstance;
+     * cloneInstance
+     * 
+     * Clones a component instance, applies transformations, and adds it to the scene.
+     * 
+     * Functions Invoked:
+     * - instance.clone
+     * - sceneHelper.addInScene
+     * 
+     * @param {Object} userData - The data associated with the component
+     * @param {Object} instance - The component instance to be cloned
+     * @param {String} name - The name of the component being cloned
+     */
+    async cloneInstance(userData, instance, name) {
+      const clonedInstance = instance.clone(); // Clone the original instance
+      clonedInstance.userData = userData; // Copy user data to the cloned instance
+  
+      // Apply position transformations to the cloned instance
+      clonedInstance.position.x = userData.component.object.position.x;
+      clonedInstance.position.y = userData.component.object.position.y;
+      clonedInstance.position.z = userData.component.object.position.z;
+  
+      // Apply rotation transformations to the cloned instance
+      clonedInstance.rotation.z = userData.component.object.rotation.z;
+      clonedInstance.rotation.y = userData.component.object.rotation.y;
+  
+      // Apply scale transformations to the cloned instance
+      clonedInstance.scale.x = userData.component.object.scale.x;
+      clonedInstance.scale.y = userData.component.object.scale.y;
+      clonedInstance.scale.z = userData.component.object.scale.z;
+  
+      // Assign the component's name to the cloned instance
+      clonedInstance.userData.component.componentName = name;
+  
+      // Clone the materials of all children of the cloned instance
+      clonedInstance.traverse(child => {
+          if (child.isMesh && child.material) {  // Ensure child is a mesh and has a material
+              child.material = child.material.clone(); // Clone the material
+          }
+      });
+  
+      clonedInstance.sceneHelper = this.sceneHelper;
+  
+      this.extendObject3D(clonedInstance); 
+  
+      // Add the cloned instance to the scene and make it visible
+      this.sceneHelper.addToScene(clonedInstance);
+      clonedInstance.visible = true;
+  
+      return clonedInstance;
     }
 
     /**

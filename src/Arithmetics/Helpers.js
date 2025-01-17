@@ -96,11 +96,7 @@ export default class Helpers {
         }
 
         // let segmentOrientation = this.getOrientation(segment.xetoDuct.graphicLocation.start, segment.xetoDuct.graphicLocation.end);
-        let segmentOrientation = segment.xetoDuct.orientation;        
-        
-        console.log("createFlowHelpers segmentOrientation:", segmentOrientation);
-        console.log("segment.segment.duct.userData.height:", segment.segment.duct.userData.endHeight);
-        
+        let segmentOrientation = segment.xetoDuct.orientation;
 
         if(segmentOrientation === "east") {
 

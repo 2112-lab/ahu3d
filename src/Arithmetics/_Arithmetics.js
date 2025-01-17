@@ -57,6 +57,7 @@ export default class Arithmetics {
      */
     constructor(componentLibrary, sceneHelper) {
         this.componentLibrary = componentLibrary; // Store the component library entries.
+        console.log("demo componentLibrary:", componentLibrary);
         this.sceneHelper = sceneHelper;
 
         this.primaryColor = 0xAEB9C2;
@@ -84,11 +85,14 @@ export default class Arithmetics {
      * @returns {Array} The calculated assembly segments.
      */
     async calculateAssembly(cleanedXeto) {
+        console.log("demo cleanedXeto:", cleanedXeto);
 
         this.cleanedXeto = cleanedXeto; // Store the cleaned assembly data.
 
         this.ductsDictionary = this.cleanedXeto[0];
         delete this.cleanedXeto[0];
+
+        console.log("demo this.ductsDictionary:", this.ductsDictionary);
 
         this.ahuGroup = this.cleanedXeto.filter(child => child.spec.includes('AhuGroup'))[0];
 
@@ -106,12 +110,15 @@ export default class Arithmetics {
 
         this.assemblySegments = await this.Ducts.placeSegments(this.assemblySegments); // Place the segments in the correct positions.
 
-        // this.assemblyGridBounds = this.ahuGroup.graphicLocation; // Get the grid bounds for the AHU group.
+        this.assemblyGridBounds = this.ahuGroup.graphicLocation; // Get the grid bounds for the AHU group.
+        console.log("demo this.assemblyGridBounds:", this.assemblyGridBounds);
         // this.assemblyDimensions = this.getAssemblyDimensions(this.assemblyGridBounds); // Calculate the dimensions of the assembly.
         // this.Ahu.translate(this.assemblySegments);
 
         this.Ends.createDuctEnds(this.assemblySegments); // Create the ends for the ducts.
         this.Helpers.createFlowHelpers(this.assemblySegments); // Create arrows for the ducts with open ends.
+
+        console.log("demo this.assemblySegments:", this.assemblySegments);
 
         return this.assemblySegments; // Return the assembly segments.
     }
