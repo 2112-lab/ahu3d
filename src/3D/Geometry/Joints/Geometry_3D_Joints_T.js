@@ -4,9 +4,9 @@ import {
     connectProxiesDiagonallyUphill, 
     connectProxiesDiagonallyDownhill,
     createJointClosure,
-    mergeAndAddToScene,
-    sharedData
+    mergeAndAddToScene
 } from "./Geometry_3D_Joints_Utils.js";
+import { sharedData } from "../../../Ahu3D/globals.js";
 
 export default class Geometry_3D_Joints_T {
     createTJoint(intersection, largestGlobalSize) {

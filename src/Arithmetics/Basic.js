@@ -37,19 +37,44 @@ export function getSegmentDirection(queriedSegment, key) {
     queriedSegment.relativePosition = relativePosition;
 }
 
-/**
- * seperateByDirections
- * 
- * Separates a list of segments into groups based on their direction (e.g., "north", "south", "east", "west").
- * 
- * @param {Array} segments - The array of segments to separate.
- * @returns {Object} An object grouping segments by their directions.
- */
+export function getDuctDirection(queriedSegment, key) {
+    console.log("getDuctDirection started:", queriedSegment, key);
+    let joiningLocation;
+    let secondaryLocation;
+    if(queriedSegment.graphicLocation.start == key) {
+        joiningLocation = queriedSegment.graphicLocation.start;
+        secondaryLocation = queriedSegment.graphicLocation.end;
+    }
+    else {
+        joiningLocation = queriedSegment.graphicLocation.end;
+        secondaryLocation = queriedSegment.graphicLocation.start;
+    }
+
+    let relativePosition = "none";
+    if(secondaryLocation[0] < joiningLocation[0]) {
+        relativePosition = "left";
+    }
+    else if(secondaryLocation[0] > joiningLocation[0]) {
+        relativePosition = "right";
+    }
+    else if(secondaryLocation[1] > joiningLocation[1]) {
+        relativePosition = "down";
+    }
+    else if(secondaryLocation[1] < joiningLocation[1]) {
+        relativePosition = "up";
+    }
+
+    return relativePosition;
+}
+
 export function seperateByDirections(intersectSegments, adjacentSegment, currentSegments) {
     for(const currentSegment of currentSegments) {
+        
         intersectSegments[currentSegment.relativePosition] = currentSegment;
     }
     intersectSegments[adjacentSegment.relativePosition] = adjacentSegment;
+
+    console.log("seperateByDirections intersectSegments:", intersectSegments);
 }
 
 /**
@@ -76,6 +101,10 @@ export function translateAssemblySegment(assemblySegment, translationKey, transl
         }
     }
     assemblySegment.duct.userData.component.object.position[translationKey] += translationValue; // Translate the duct's position.
+}
+
+export function translateDuct(duct, translationKey, translationValue) {
+    duct.position[translationKey] += translationValue;
 }
 
 /**
@@ -161,5 +190,17 @@ export function orientAssemblySegment(assemblySegment, orientation) {
         //         end.userData.component.object.position.z += 530; // Adjust the end's z-position.
         //     }
         // }
+    }
+}
+
+export function orientDuct(duct, orientation) {
+    if (orientation == 'north') { // If the orientation is 'north'.
+        duct.rotation.y = -90;
+    }
+    else if (orientation == 'south') { // If the orientation is 'south'.
+        duct.rotation.y = 90;
+    }
+    else if (orientation == 'west') { // If the orientation is 'west'.
+        duct.rotation.y = 180;
     }
 }

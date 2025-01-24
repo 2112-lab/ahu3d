@@ -1,5 +1,14 @@
 import * as THREE from 'three';
-import {getSegmentDirection, seperateByDirections, translateAssemblySegment, orientAssemblySegment} from "./Basic.js";
+import {
+    getSegmentDirection, 
+    getDuctDirection, 
+    seperateByDirections, 
+    translateDuct, 
+    translateAssemblySegment, 
+    orientAssemblySegment, 
+    orientDuct,
+} from "./Basic.js";
+import { sharedData } from "../Ahu3D/globals.js";
 import Joints from "./Joints.js";
 import Geometry_3D_Joints_Cross from "../3D/Geometry/Joints/Geometry_3D_Joints_Cross.js";
 import Geometry_3D_Joints_T from "../3D/Geometry/Joints/Geometry_3D_Joints_T.js";
@@ -8,208 +17,161 @@ import Geometry_3D_Joints_Colinear from "../3D/Geometry/Joints/Geometry_3D_Joint
 
 export default class Ducts {
     constructor(
-        innerDuctDimensions, 
         ductsDictionary, 
-        primaryColor, 
         Mesh3D, 
         componentLibrary, 
         ahuGroup, 
-        sceneHelper
+        sceneHelper,
+        ahuObject
     ) {
-        this.innerDuctDimensions = innerDuctDimensions;
+        this.innerDuctDimensions = sharedData.innerDuctDimensions;
         this.ductsDictionary = ductsDictionary;
-        this.primaryColor = primaryColor;
+        this.primaryColor = sharedData.primaryColor;
         this.Mesh3D = Mesh3D;
         this.componentLibrary = componentLibrary;
-        this.ductEntry = componentLibrary['LinearDuctSliced']; // Retrieve the duct component from the library.
+        // this.ductEntry = componentLibrary['LinearDuctSliced']; // Retrieve the duct component from the library.
         this.ahuGroup = ahuGroup;
+        this.ahuObject = ahuObject;
         
-        this.Joints = new Joints(this.ahuGroup, this.innerDuctDimensions, sceneHelper, primaryColor);
+        this.Joints = new Joints(this.ahuGroup, this.innerDuctDimensions, sceneHelper);
         this.Geometry_3D_Joints_Cross = new Geometry_3D_Joints_Cross();
         this.Geometry_3D_Joints_T = new Geometry_3D_Joints_T();
         this.Geometry_3D_Joints_L = new Geometry_3D_Joints_L();
         this.Geometry_3D_Joints_Colinear = new Geometry_3D_Joints_Colinear();
+
+        this.jointCount = 0;
     }
 
-    async initializeAllDuctSegments(cleanedXeto) {
-
-        let assemblySegments = [];
-
-        let xetoDuctKeys = cleanedXeto.filter(child => child.spec.includes('AhuGroup'))[0].ducts; // Retrieve the list of duct keys.
-
-        for (const i in xetoDuctKeys) { // Iterate over each duct key.
-            const duct = {
-                userData: {
-                    component: JSON.parse(JSON.stringify(this.ductEntry)), // Clone the duct component.
-                }
-            }
-
-            let xetoDuctKey = xetoDuctKeys[i]; // Get the current duct key.
-
-            let xetoDuct = cleanedXeto.filter(child => child.id.includes(xetoDuctKey))[0]; // Find the corresponding duct in the assembly.
-            
-            const segment = await this.initializeDuctSegment(duct, xetoDuct, cleanedXeto); // Build the assembly segment for the duct.
-
-            assemblySegments.push({ xetoDuct: xetoDuct, segment: segment }); // Add the segment to the assembly segments array.
-        }   
-
-        return assemblySegments;
+    async initializeAllDuctSegments(ahuObject) {
+        const ducts = Object.keys(ahuObject.resources.ducts);
+        for (const i in ducts) { // Iterate over each duct key.
+            this.initializeDuctSegment(ahuObject, ducts[i]); // Build the assembly segment for the duct.
+        } 
+        console.log("initializeDuctSegment:", ahuObject);
     }
 
-    /**
-     * initializeDuctSegment
-     * 
-     * Builds an assembly segment by loading component meshes, positioning them, and 
-     * calculating the required duct length and positioning of components within the duct.
-     * 
-     * @param {Object} duct - The duct to build the assembly within.
-     * @param {Array} components - The components to be included in the assembly.
-     * @returns {Object} The built assembly segment containing the duct and its components.
-     */
-    async initializeDuctSegment(duct, xetoDuct, cleanedXeto) {
-        console.log("initializeDuctSegment started:", duct, xetoDuct);
+    initializeDuctSegment(ahuObject, ductKey) {
+        console.log("initializeDuctSegment started:", ahuObject, ductKey);
 
-        let components = xetoDuct.components; 
+        ahuObject.resources.ducts[ductKey].position = {x: 0, y: 0, z: 0};
+        ahuObject.resources.ducts[ductKey].rotation = {x: 0, y: 0, z: 0};
 
-        if (xetoDuct.blockStyle.flowDirection == 'endToStart') {
-            components.reverse();
+        if (ahuObject.xetoDictionary.edges[ductKey].orientation == 'north') {
+            ahuObject.resources.ducts[ductKey].rotation.y = -90;
+        }
+        else if (ahuObject.xetoDictionary.edges[ductKey].orientation == 'south') {
+            ahuObject.resources.ducts[ductKey].rotation.y = 90;
+        }
+        else if (ahuObject.xetoDictionary.edges[ductKey].orientation == 'west') {
+            ahuObject.resources.ducts[ductKey].rotation.y = 180;
         }
 
-        console.log("xetoDuct:", xetoDuct);
+        console.log("initializeDuctSegment step 1:", sharedData.innerDuctDimensions );
 
-        // const size = this.innerDuctDimensions[xetoDuct.graphicLocation.size];
-        const size = 1000;
+        const innerDimension = sharedData.innerDuctDimensions[ahuObject.xetoDictionary.edges[ductKey].graphicLocation.size];
 
-        duct.userData.component.object.boundingBox.dimensions.x = size;
-        duct.userData.component.object.boundingBox.dimensions.y = size + 30;
-        duct.userData.component.object.boundingBox.dimensions.z = size + 60;
+        console.log("initializeDuctSegment step 2:", innerDimension );
 
-        const ductDimensions = {
-            x: duct.userData.component.object.boundingBox.dimensions.x, // Get the duct's x-dimension.
-            y: duct.userData.component.object.boundingBox.dimensions.y, // Get the duct's y-dimension.
-            z: duct.userData.component.object.boundingBox.dimensions.z  // Get the duct's z-dimension.
+        const componentScale = innerDimension / 1000;
+
+        const componentPadding = ahuObject.xetoDictionary.edges[ductKey].blockStyle.componentPadding;
+
+        console.log("initializeDuctSegment step 3");
+
+        let totalSpan = 0;
+        for(const uniqueId of ahuObject.associations.ducts[ductKey].components) {
+            console.log("initializeDuctSegment step 3.1:", ahuObject.xetoDictionary.components[uniqueId]);
+            let componentKey = ahuObject.xetoDictionary.components[uniqueId].componentId.split("r:novo.graphics::").pop();
+            console.log("initializeDuctSegment step 3.2:", componentKey);
+            console.log("initializeDuctSegment step 3.2:", sharedData.componentLibrary);
+            ahuObject.resources.components[uniqueId].dimensions = sharedData.componentLibrary[componentKey].object.boundingBox.dimensions;
+            console.log("initializeDuctSegment step 3.3");
+
+            ahuObject.resources.components[uniqueId].scale = {
+                x: componentScale,
+                y: componentScale,
+                z: componentScale
+            };
+
+            console.log("initializeDuctSegment step 3.4");
+
+            ahuObject.resources.components[uniqueId].dimensions.x *= componentScale;
+            ahuObject.resources.components[uniqueId].dimensions.y *= componentScale;
+            ahuObject.resources.components[uniqueId].dimensions.z *= componentScale;
+
+            ahuObject.resources.components[uniqueId].position = {x: 0, y: 0, z: 0};
+            ahuObject.resources.components[uniqueId].rotation = {x: 0, y: 0, z: 0};
+
+            totalSpan += componentPadding.startSpace + ahuObject.resources.components[uniqueId].dimensions.x + componentPadding.endSpace;
+        }
+
+        console.log("initializeDuctSegment step 4");
+
+        const halfTotalSpan = totalSpan / 2;
+        for(const uniqueId of ahuObject.associations.ducts[ductKey].components) {
+            const componentHalfWidth = ahuObject.resources.components[uniqueId].dimensions.x / 2;
+            ahuObject.resources.components[uniqueId].position.x -= (halfTotalSpan - componentHalfWidth);
+        }
+
+        console.log("initializeDuctSegment step 5");
+
+        let componentKeys = ahuObject.associations.ducts[ductKey].components;
+
+        let componentKeysLength = Object.keys(componentKeys).length;
+
+        console.log("componentKeys:", componentKeys);
+
+        ahuObject.resources.components[componentKeys[0]].position.x += componentPadding.startSpace;
+
+        console.log("initializeDuctSegment moving components starting:", ahuObject, componentKeysLength, componentKeys);
+        for(let i = 1; i <= componentKeys.length-1; i++) {
+            console.log("initializeDuctSegment moving components index:", i);
+
+            console.log("initializeDuctSegment moving previousComponent key:", componentKeys[i-1]);
+            console.log("initializeDuctSegment moving currentComponent key:", componentKeys[i]);
+
+            const previousComponent = ahuObject.resources.components[componentKeys[i-1]];
+            const currentComponent = ahuObject.resources.components[componentKeys[i]];
+
+            console.log("initializeDuctSegment moving previousComponent:", previousComponent);
+            console.log("initializeDuctSegment moving currentComponent:", currentComponent);
+
+            const previousComponentHalfWidth = previousComponent.dimensions.x / 2;
+            const currentComponentHalfWidth = currentComponent.dimensions.x / 2;
+
+            currentComponent.position.x = previousComponent.position.x;
+
+            currentComponent.position.x += previousComponentHalfWidth;
+            currentComponent.position.x += currentComponentHalfWidth;
+            currentComponent.position.x += componentPadding.startSpace;
+            currentComponent.position.x += componentPadding.endSpace;
+
+            console.log("initializeDuctSegment moving finished loop:", currentComponent);
+        }
+
+        // ahuObject.resources.components[componentKeys[componentKeys.length-1]].position.x += componentPadding.endSpace;
+
+        console.log("initializeDuctSegment moving finished");
+
+        ahuObject.resources.ducts[ductKey].dimensions = {
+            x: totalSpan, 
+            y: innerDimension, 
+            z: innerDimension
         };
 
-        try {
-            const meshes = await this.Mesh3D.loadAssemblyMeshes(cleanedXeto, components, this.componentLibrary); // Load the component meshes for the assembly.
+        return
 
-            if(meshes.length > 0) {
-                for (const i in meshes) { // Iterate over each mesh.
-                    meshes[i].userData.component.object.position.z = ductDimensions.z / 2; // Position the mesh along the z-axis.
-                    meshes[i].userData.component.object.position.x = 0; // Reset the x-position of the mesh.
-                    meshes[i].userData.component.object.position.y = 0; // Reset the y-position of the mesh.
-                }
+        for(const endKey of ahuObject.associations.ducts[ductKey].ends) {
+            console.log("initializeDuctSegment endKey:", endKey);
+            ahuObject.resources.ends[endKey].position = {x: 0, y: 0, z: 0};
+            ahuObject.resources.ends[endKey].rotation = {x: 0, y: 0, z: 0};
+            ahuObject.resources.ends[endKey].dimensions = {x: 0, y: innerDimension, z: innerDimension};
+            if(endKey.includes("Insert")) {
+                ahuObject.resources.ends[endKey].dimensions.x = 150;
             }
-            
-            const componentScale = this.innerDuctDimensions[xetoDuct.graphicLocation.size] / 1000;
-            for (const mesh of meshes) {
-                mesh.userData.component.object.scale.x *= componentScale;
-                mesh.userData.component.object.scale.y *= componentScale;
-                mesh.userData.component.object.scale.z *= componentScale;
-
-                mesh.userData.component.object.boundingBox.dimensions.x *= componentScale;
-                mesh.userData.component.object.boundingBox.dimensions.y *= componentScale;
-                mesh.userData.component.object.boundingBox.dimensions.z *= componentScale;
+            else if(endKey.includes("cap")) {
+                ahuObject.resources.ends[endKey].dimensions.x = 100;
             }
-
-            let component_span = 0; // Initialize the component span.
-            for (const mesh of meshes) { // Iterate over each mesh.
-                component_span += mesh.userData.xeto.blockStyle.componentPadding.startSpace; // Add the start padding of the component.
-                component_span += mesh.userData.component.object.boundingBox.dimensions.x; // Add the x-dimension of the component.
-                component_span += mesh.userData.xeto.blockStyle.componentPadding.endSpace; // Add the end padding of the component.
-            }
-
-            let attributes = duct.userData.component.attributes; // Get the attributes of the duct.
-            attributes.length.value = Math.max(component_span, duct.userData.component.object.boundingBox.dimensions.x); // Set the length of the duct based on the component span.
-            console.log("arithmetic duct:", duct);
-
-            if(xetoDuct.graphicLocation.size == undefined) {
-                xetoDuct.graphicLocation.size = "medium"
-            }
-
-            const innerDuctDimensionsension = this.innerDuctDimensions[xetoDuct.graphicLocation.size];
-            if(innerDuctDimensionsension == null) {
-                alert(`Duct ${xetoDuct.id}'s size (${xetoDuct.graphicLocation.size}) is not valid.`)
-            }
-            let ductSize = innerDuctDimensionsension;  
-
-            duct.userData.component.object.scale.x = attributes.length.value / ductSize; // Scale the duct's x-dimension.
-            duct.userData.component.object.boundingBox.dimensions.x = attributes.length.value; // Update the duct's bounding box x-dimension.
-
-            duct.userData.component.object.innerDuctDimensionsensions = xetoDuct.isVertical ? 
-                {
-                    x: (duct.userData.component.object.boundingBox.dimensions.z - 60) * componentScale, 
-                    y: duct.userData.component.object.boundingBox.dimensions.y, 
-                    z: (duct.userData.component.object.boundingBox.dimensions.x + 30)
-                } 
-                    :
-                {
-                    x: (duct.userData.component.object.boundingBox.dimensions.x + 30), 
-                    y: duct.userData.component.object.boundingBox.dimensions.y, 
-                    z: (duct.userData.component.object.boundingBox.dimensions.z - 60) * componentScale
-                };
-            
-            const ductPosX = duct.userData.component.object.position.x; // Get the duct's current x-position.
-            const ductWidth = duct.userData.component.object.boundingBox.dimensions.x; // Get the duct's width.
-
-            let primaryComponentStartSpace = 0; // Get the start padding of the primary component.
-            let primaryComponentWidth = 0; // Get the width of the primary component.
-            let primaryComponentPosition = 0; // Calculate the primary component's position.
-            if(meshes.length > 0) {
-                primaryComponentStartSpace = meshes[0].userData.xeto.blockStyle.componentPadding.startSpace;
-                primaryComponentWidth = meshes[0].userData.component.object.boundingBox.dimensions.x;
-                primaryComponentPosition = ductPosX - (ductWidth / 2) + (primaryComponentWidth / 2) + primaryComponentStartSpace;
-            }
-            
-
-            for (const mesh of meshes) { // Iterate over each mesh.
-                mesh.userData.component.object.position.x = primaryComponentPosition; // Set the x-position of the component.
-            }
-
-            for (let i = 1; i < meshes.length; i++) { // Iterate over each mesh starting from the second.
-                const prevComponentHalfWidth = meshes[i-1].userData.component.object.boundingBox.dimensions.x / 2; // Get the previous component's half-width.
-                const prevComponentEndSpace = meshes[i-1].userData.xeto.blockStyle.componentPadding.endSpace; // Get the previous component's end padding.
-                const componentHalfWidth = meshes[i].userData.component.object.boundingBox.dimensions.x / 2; // Get the current component's half-width.
-                const componentStartSpace = meshes[i].userData.xeto.blockStyle.componentPadding.startSpace; // Get the current component's start padding.
-                for (let j = i; j < meshes.length; j++) { // Adjust the position of all subsequent components.
-                    meshes[j].userData.component.object.position.x += prevComponentHalfWidth + prevComponentEndSpace + componentHalfWidth + componentStartSpace;
-                }
-            }
-
-            for (let mesh of meshes) {
-
-                if (mesh.userData.xeto.blockStyle.flowDirection == 'endToStart') {
-                    this.flipMesh(mesh); // Flip the mesh by applying negative scale to the x-axis.
-                }
-
-                if(mesh.userData.xeto.blockStyle.componentPosition != undefined) {
-                    const ductHalfHeight = duct.userData.component.object.boundingBox.dimensions.z / 2;
-                    const componentQuarterHeight = mesh.userData.component.object.boundingBox.dimensions.z / 4;
-                    if(mesh.userData.xeto.blockStyle.componentPosition == 'ceiling') {
-                        mesh.userData.component.object.position.z += ductHalfHeight - componentQuarterHeight;
-                        if(mesh.userData.xeto.blockStyle.componentFacing == 'outwards') {
-                            mesh.userData.component.object.rotation.y += THREE.MathUtils.degToRad(180);
-                            mesh.userData.component.object.position.z += componentQuarterHeight * 2;
-                        }                        
-                    }
-                    else if(mesh.userData.xeto.blockStyle.componentPosition == 'floor') {
-                        if(mesh.userData.xeto.blockStyle.componentFacing == 'inwards') {
-                            mesh.userData.component.object.rotation.y += THREE.MathUtils.degToRad(180);
-                            mesh.userData.component.object.position.z += componentQuarterHeight * 2;
-                        }
-                        mesh.userData.component.object.position.z -= ductHalfHeight + componentQuarterHeight;
-                    }
-                }
-                
-            }
-
-            // console.log("initializeDuctSegment duct:", duct.userData.component.object.position.z);
-
-            return { duct: duct, meshes: meshes, joints: [], ends: [], arrows: [], textMeshes: [] }; // Return the built assembly segment.
-        } 
-        catch (error) {
-            console.error("Error in initializeDuctSegment:", error); // Log any errors that occur during the build process.
-            throw error; // Re-throw the error for further handling.
         }
     }
 
@@ -229,24 +191,50 @@ export default class Ducts {
      * 
      * @returns {Array} The placed assembly segments.
      */
-    async placeSegments(assemblySegments) {
-        this.assemblySegments = assemblySegments;
+    async placeSegments(ahuObject) {
+        console.log("placeSegments started:", ahuObject);
+        this.ahuObject = ahuObject;
 
         const primaryKey = this.getPrimaryKey();
 
-        const primarySegmentXeto = this.ductsDictionary[primaryKey][0];
+        console.log("placeSegments ahuObject.xetoDictionary.edges:", ahuObject.xetoDictionary.edges);
+        const edgeKeys = Object.keys(ahuObject.xetoDictionary.edges); 
+        console.log("placeSegments edgeKeys:", edgeKeys);
 
-        let primarySegment = assemblySegments.filter(child => 
-            child.xetoDuct.id === primarySegmentXeto.id
-        )[0];
+        const primarySegmentXeto = ahuObject.xetoDictionary.edges[edgeKeys[0]];
 
-        let primarySegmentOrientation = primarySegment.xetoDuct.orientation;
-        orientAssemblySegment(primarySegment.segment, primarySegmentOrientation);
+        console.log("placeSegments primarySegmentXeto:", primarySegmentXeto);
+
+        // let primarySegment = assemblySegments.filter(child => 
+        //     child.xetoDuct.id === primarySegmentXeto.id
+        // )[0];
+
+        // console.log("placeSegments primarySegment:", primarySegment);
+
+        let primarySegmentOrientation = primarySegmentXeto.orientation;
+
+        console.log("placeSegments primarySegmentOrientation:", primarySegmentOrientation);
+        console.log("placeSegments ahuObject.resources.ducts:", ahuObject.resources.ducts);
+
+        if (primarySegmentOrientation == 'north') {
+            ahuObject.resources.ducts[primarySegmentXeto.id].rotation.y = -90;
+        }
+        else if (primarySegmentOrientation == 'south') {
+            ahuObject.resources.ducts[primarySegmentXeto.id].rotation.y = 90;
+        }
+        else if (primarySegmentOrientation == 'west') {
+            ahuObject.resources.ducts[primarySegmentXeto.id].rotation.y = 180;
+        }
+
+        // orientDuct(primarySegmentXeto, primarySegmentOrientation);
         primarySegmentXeto.isPositioned = true;
 
         this.getNextSegment(primarySegmentXeto, primaryKey);     
 
-        return assemblySegments; // Return the placed assembly segments.  
+        this.transformEnds();
+        this.reTransformComponents();
+
+        console.log("placeSegments this.ahuObject:", this.ahuObject);
     }
 
     /**
@@ -276,668 +264,716 @@ export default class Ducts {
         }
     }  
 
-    /**
-     * placeIntersection
-     * 
-     * Places an intersection component at the point where two segments intersect, adjusting for orientation.
-     * 
-     * @param {Object} segmentA - The first intersecting segment.
-     * @param {Object} segmentB - The second intersecting segment.
-     * @returns {Object} The intersection component placed at the intersection point.
-     */
+    addJointRsrcAndAssoc(ductsDictionary, key){
+        this.jointCount++;
+        console.log("addJointRsrcAndAssoc ductsDictionary and key:", ductsDictionary, key);
+
+        if(this.ahuObject.associations.joints[`Joint-${key}`] == undefined) {
+            this.ahuObject.associations.joints[`Joint-${key}`] = {};
+            this.ahuObject.associations.joints[`Joint-${key}`].ducts = [];
+            this.ahuObject.resources.joints[`Joint-${key}`] = {};
+        }
+
+        for(const i in ductsDictionary[key]) {
+            this.ahuObject.associations.joints[`Joint-${key}`].ducts.push(ductsDictionary[key][i].id);
+            this.ahuObject.associations.ducts[ductsDictionary[key][i].id].joints.push(`Joint-${key}`);
+        }      
+        
+        console.log("addJointRsrcAndAssoc result:", this.ahuObject);
+        
+    }
+
     placeIntersection(key) {
-        console.log("placeIntersection started");
+        console.log("placeIntersection started:", this.ahuObject);
+
+        let jointGeometry = null;
+        let proxyGeometry = null;
+        let largestGlobalSize = 1500;
+
+        if(this.ductsDictionary[key].length >= 2 && this.ductsDictionary[key].length <= 4) {
+            this.addJointRsrcAndAssoc(this.ductsDictionary, key);
+        }
 
         let xzJointPadding = this.ahuGroup.blockStyle.joints.XZ.padding;
 
         if(this.ductsDictionary[key].length == 4) {
             console.log("placeIntersection 4*");
 
-            let currentSegments = this.assemblySegments.filter(child => 
-                child.xetoDuct.id === this.ductsDictionary[key][0].id ||
-                child.xetoDuct.id === this.ductsDictionary[key][1].id ||
-                child.xetoDuct.id === this.ductsDictionary[key][2].id ||
-                child.xetoDuct.id === this.ductsDictionary[key][3].id
+            let currentDuctXetos = this.ahuObject.xeto.filter(child => 
+                child.id === this.ductsDictionary[key][0].id ||
+                child.id === this.ductsDictionary[key][1].id ||
+                child.id === this.ductsDictionary[key][2].id ||
+                child.id === this.ductsDictionary[key][3].id
             );
             
-            let fixedSegment = null;
-            for(const i in currentSegments) {
+            let fixedDuctXeto = null;
+            for(const i in currentDuctXetos) {
                 
-                if(currentSegments[i].xetoDuct.isPositioned) {
-                    fixedSegment = currentSegments[i];
-                    currentSegments.splice(i, 1);
+                if(currentDuctXetos[i].isPositioned) {
+                    fixedDuctXeto = currentDuctXetos[i];
+                    currentDuctXetos.splice(i, 1);
                     break;
                 }
             }
-            getSegmentDirection(fixedSegment, key);
-            console.log("placeIntersection 4* fixedSegment:", fixedSegment);
+            getDuctDirection(fixedDuctXeto, key, this.ahuObject);
+            console.log("placeIntersection 4* fixedDuctXeto:", fixedDuctXeto);
 
-            let intersectSegments = {
+            let intersectDucts = {
                 up: null, 
                 down: null,
                 left: null, 
                 right: null
             }
 
-            for(const currentSegment of currentSegments) {
-                getSegmentDirection(currentSegment, key);
-                console.log("placeIntersection 4* currentSegment:", currentSegment);
+            for(const currentDuct of currentDuctXetos) {
+                getDuctDirection(currentDuct, key, this.ahuObject);
+                console.log("placeIntersection 4* currentDuct:", currentDuct);
             }
 
-            seperateByDirections(intersectSegments, fixedSegment, currentSegments);
-            console.log("placeIntersection 4* intersectSegments:", intersectSegments);
+            seperateByDirections(intersectDucts, fixedDuctXeto, currentDuctXetos);
+            console.log("placeIntersection 4* intersectDucts:", intersectDucts);
 
-            if(intersectSegments.up.xetoDuct.isPositioned != true) {
-                let currentSegmentOrientation = intersectSegments.up.xetoDuct.orientation;
-                orientAssemblySegment(intersectSegments.up.segment, currentSegmentOrientation);
-            }
-            if(intersectSegments.down.xetoDuct.isPositioned != true) {
-                let currentSegmentOrientation = intersectSegments.down.xetoDuct.orientation;
-                orientAssemblySegment(intersectSegments.down.segment, currentSegmentOrientation);
-            }
+            // if(intersectDucts.up.isPositioned != true) {
+            //     let currentDuctOrientation = intersectDucts.up.orientation;
+            //     orientDuct(intersectDucts.up.segment, currentDuctOrientation);
+            // }
+            // if(intersectDucts.down.isPositioned != true) {
+            //     let currentDuctOrientation = intersectDucts.down.orientation;
+            //     orientDuct(intersectDucts.down.segment, currentDuctOrientation);
+            // }
 
-            for(const currentSegment of currentSegments) {
-                console.log("placeIntersection 4* currentSegment:", currentSegment);
+            for(const currentDuct of currentDuctXetos) {
+                console.log("placeIntersection 4* currentDuct:", currentDuct);
                 let lengthToAdjacent = 0;
-                lengthToAdjacent = fixedSegment.segment.duct.userData.component.object.position.x - currentSegment.segment.duct.userData.component.object.position.x;
-                translateAssemblySegment(currentSegment.segment, 'x', lengthToAdjacent);
-                lengthToAdjacent = fixedSegment.segment.duct.userData.component.object.position.z - currentSegment.segment.duct.userData.component.object.position.z;
-                translateAssemblySegment(currentSegment.segment, 'z', lengthToAdjacent);
+                lengthToAdjacent = this.ahuObject.resources.ducts[fixedDuctXeto.id].position.x - currentDuct.segment.duct.userData.component.object.position.x;
+                translateDuct(currentDuct.segment, 'x', lengthToAdjacent);
+                lengthToAdjacent = this.ahuObject.resources.ducts[fixedDuctXeto.id].position.z - currentDuct.segment.duct.userData.component.object.position.z;
+                translateDuct(currentDuct.segment, 'z', lengthToAdjacent);
             }
 
-            const upSize = intersectSegments.up.xetoDuct.graphicLocation.size;
-            const downSize = intersectSegments.down.xetoDuct.graphicLocation.size;
-            const leftSize = intersectSegments.left.xetoDuct.graphicLocation.size;
-            const rightSize = intersectSegments.right.xetoDuct.graphicLocation.size;
+            const upSize = intersectDucts.up.graphicLocation.size;
+            const downSize = intersectDucts.down.graphicLocation.size;
+            const leftSize = intersectDucts.left.graphicLocation.size;
+            const rightSize = intersectDucts.right.graphicLocation.size;
             let maxHalfWidth = this.innerDuctDimensions[upSize] > this.innerDuctDimensions[downSize] ? this.innerDuctDimensions[upSize] / 2 : this.innerDuctDimensions[downSize] / 2;
             let maxHalfHeight = this.innerDuctDimensions[rightSize] > this.innerDuctDimensions[leftSize] ? this.innerDuctDimensions[rightSize] / 2 : this.innerDuctDimensions[leftSize] / 2;
 
-            if(intersectSegments.left == fixedSegment) {
-                length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
+            if(intersectDucts.left == fixedDuctXeto) {
+                length = ((intersectDucts.left.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfWidth + 15;
                 length += xzJointPadding;
-                translateAssemblySegment(intersectSegments.up.segment, "x", (length * 1));
+                translateDuct(intersectDucts.up.segment, "x", (length * 1));
 
-                length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
+                length = ((intersectDucts.up.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfHeight + 15;
                 length += xzJointPadding;
-                translateAssemblySegment(intersectSegments.up.segment, "z", (length * 1));
+                translateDuct(intersectDucts.up.segment, "z", (length * 1));
 
-                length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
+                length = ((intersectDucts.left.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfWidth + 15;
                 length += xzJointPadding;
-                translateAssemblySegment(intersectSegments.down.segment, "x", (length * 1));
+                translateDuct(intersectDucts.down.segment, "x", (length * 1));
 
-                length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+                length = ((intersectDucts.down.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfHeight + 15;
                 length += xzJointPadding;
-                translateAssemblySegment(intersectSegments.down.segment, "z", (length * -1));
+                translateDuct(intersectDucts.down.segment, "z", (length * -1));
 
-                length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
-                length += ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                length = ((intersectDucts.left.segment.duct.userData.component.attributes.length.value) / 2);
+                length += ((intersectDucts.right.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfWidth * 2 + 30;
                 length += xzJointPadding * 2;
-                translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
+                translateDuct(intersectDucts.right.segment, "x", (length * 1));
             }
-            else if(intersectSegments.right == fixedSegment) {
-                length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+            else if(intersectDucts.right == fixedDuctXeto) {
+                length = ((intersectDucts.right.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfWidth + 15;
                 length += xzJointPadding;
-                translateAssemblySegment(intersectSegments.up.segment, "x", (length * -1));
+                translateDuct(intersectDucts.up.segment, "x", (length * -1));
 
-                length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
+                length = ((intersectDucts.up.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfHeight + 15;
                 length += xzJointPadding;
-                translateAssemblySegment(intersectSegments.up.segment, "z", (length * 1));
+                translateDuct(intersectDucts.up.segment, "z", (length * 1));
 
-                length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                length = ((intersectDucts.right.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfWidth + 15;
                 length += xzJointPadding;
-                translateAssemblySegment(intersectSegments.down.segment, "x", (length * -1));
+                translateDuct(intersectDucts.down.segment, "x", (length * -1));
 
-                length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+                length = ((intersectDucts.down.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfHeight + 15;
                 length += xzJointPadding;
-                translateAssemblySegment(intersectSegments.down.segment, "z", (length * -1));
+                translateDuct(intersectDucts.down.segment, "z", (length * -1));
 
-                length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
-                length += ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
+                length = ((intersectDucts.right.segment.duct.userData.component.attributes.length.value) / 2);
+                length += ((intersectDucts.left.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfWidth * 2 + 30;
                 length += xzJointPadding * 2;
-                translateAssemblySegment(intersectSegments.left.segment, "x", (length * -1));
+                translateDuct(intersectDucts.left.segment, "x", (length * -1));
             }
-            else if(intersectSegments.up == fixedSegment) {
-                length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
-                length += ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+            else if(intersectDucts.up == fixedDuctXeto) {
+                length = ((intersectDucts.up.segment.duct.userData.component.attributes.length.value) / 2);
+                length += ((intersectDucts.down.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfHeight * 2 + 30;
                 length += xzJointPadding * 2;
-                translateAssemblySegment(intersectSegments.down.segment, "z", (length * -1));
+                translateDuct(intersectDucts.down.segment, "z", (length * -1));
 
-                length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
+                length = ((intersectDucts.up.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfHeight + 15;
                 length += xzJointPadding;
-                translateAssemblySegment(intersectSegments.left.segment, "z", (length * -1));
+                translateDuct(intersectDucts.left.segment, "z", (length * -1));
 
-                length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
+                length = ((intersectDucts.left.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfWidth + 15;
                 length += xzJointPadding;
-                translateAssemblySegment(intersectSegments.left.segment, "x", (length * -1));
+                translateDuct(intersectDucts.left.segment, "x", (length * -1));
 
-                length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
+                length = ((intersectDucts.up.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfHeight + 15;
                 length += xzJointPadding;
-                translateAssemblySegment(intersectSegments.right.segment, "z", (length * -1));
+                translateDuct(intersectDucts.right.segment, "z", (length * -1));
 
-                length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                length = ((intersectDucts.right.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfWidth + 15;
                 length += xzJointPadding;
-                translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
+                translateDuct(intersectDucts.right.segment, "x", (length * 1));
             }
-            else if(intersectSegments.down == fixedSegment) {
-                length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
-                length += ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+            else if(intersectDucts.down == fixedDuctXeto) {
+                length = ((intersectDucts.up.segment.duct.userData.component.attributes.length.value) / 2);
+                length += ((intersectDucts.down.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfHeight * 2 + 30;
                 length += xzJointPadding * 2;
-                translateAssemblySegment(intersectSegments.up.segment, "z", (length * 1));
+                translateDuct(intersectDucts.up.segment, "z", (length * 1));
 
-                length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+                length = ((intersectDucts.down.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfHeight + 15;
                 length += xzJointPadding;
-                translateAssemblySegment(intersectSegments.left.segment, "z", (length * 1));
+                translateDuct(intersectDucts.left.segment, "z", (length * 1));
 
-                length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
+                length = ((intersectDucts.left.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfWidth + 15;
                 length += xzJointPadding;
-                translateAssemblySegment(intersectSegments.left.segment, "x", (length * -1));
+                translateDuct(intersectDucts.left.segment, "x", (length * -1));
 
-                length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+                length = ((intersectDucts.down.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfHeight + 15;
                 length += xzJointPadding;
-                translateAssemblySegment(intersectSegments.right.segment, "z", (length * 1));
+                translateDuct(intersectDucts.right.segment, "z", (length * 1));
 
-                length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                length = ((intersectDucts.right.segment.duct.userData.component.attributes.length.value) / 2);
                 length += maxHalfWidth + 15;
                 length += xzJointPadding;
-                translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
+                translateDuct(intersectDucts.right.segment, "x", (length * 1));
             }
                 
-            const largestGlobalSize = this.Joints.createJointProxies(intersectSegments, null);
-            this.Geometry_3D_Joints_Cross.createCrossJoint(intersectSegments, largestGlobalSize);
-            
+            largestGlobalSize = this.Joints.createJointProxies(intersectDucts, null);
+
+            this.ahuObject.resources.joints[`Joint-${key}`].intersectDucts = intersectDucts;
+            this.ahuObject.resources.joints[`Joint-${key}`].largestGlobalSize = largestGlobalSize;
+            this.ahuObject.resources.joints[`Joint-${key}`].key = key;
+            this.ahuObject.resources.joints[`Joint-${key}`].pairDirection = null;            
 
         }
         else if (this.ductsDictionary[key].length == 3) {
             console.log("placeIntersection length 3");
     
-            let currentSegments = this.assemblySegments.filter(child => 
-                child.xetoDuct.id === this.ductsDictionary[key][0].id ||
-                child.xetoDuct.id === this.ductsDictionary[key][1].id ||
-                child.xetoDuct.id === this.ductsDictionary[key][2].id
+            let currentDuctXetos = this.ahuObject.xeto.filter(child => 
+                child.id === this.ductsDictionary[key][0].id ||
+                child.id === this.ductsDictionary[key][1].id ||
+                child.id === this.ductsDictionary[key][2].id
             );
     
-            let fixedSegment = null;
-            for (const i in currentSegments) {
-                if (currentSegments[i].xetoDuct.isPositioned) {
-                    fixedSegment = currentSegments[i];
-                    currentSegments.splice(i, 1);
+            let fixedDuctXeto = null;
+            for (const i in currentDuctXetos) {
+                if (currentDuctXetos[i].isPositioned) {
+                    fixedDuctXeto = currentDuctXetos[i];
+                    currentDuctXetos.splice(i, 1);
                     break;
                 }
             }
-            getSegmentDirection(fixedSegment, key);
-            console.log("placeIntersection 3* fixedSegment:", fixedSegment);
+            getDuctDirection(fixedDuctXeto, key, this.ahuObject);
+            console.log("placeIntersection 3* fixedDuctXeto:", fixedDuctXeto);
     
-            let intersectSegments = {
+            let intersectDucts = {
                 up: null,
                 down: null,
                 left: null,
                 right: null
             };
     
-            for (const currentSegment of currentSegments) {
-                getSegmentDirection(currentSegment, key);
-                console.log("placeIntersection 3* currentSegment:", currentSegment);
+            for (const currentDuct of currentDuctXetos) {
+                getDuctDirection(currentDuct, key, this.ahuObject);
+                console.log("placeIntersection 3* currentDuct:", currentDuct);
             }
     
-            seperateByDirections(intersectSegments, fixedSegment, currentSegments);
-            console.log("placeIntersection 3* intersectSegments:", intersectSegments);
+            seperateByDirections(intersectDucts, fixedDuctXeto, currentDuctXetos);
+            console.log("placeIntersection 3* intersectDucts:", intersectDucts);
 
-            if(intersectSegments.up != null && intersectSegments.up.xetoDuct.isPositioned != true) {
-                let currentSegmentOrientation = intersectSegments.up.xetoDuct.orientation;
-                orientAssemblySegment(intersectSegments.up.segment, currentSegmentOrientation);
+            if(intersectDucts.up != null && intersectDucts.up.isPositioned != true) {
+                let currentDuctOrientation = intersectDucts.up.orientation;
+                orientDuct(intersectDucts.up.segment, currentDuctOrientation);
             }            
 
-            if(intersectSegments.down != null && intersectSegments.down.xetoDuct.isPositioned != true) {
-                let currentSegmentOrientation = intersectSegments.down.xetoDuct.orientation;
-                orientAssemblySegment(intersectSegments.down.segment, currentSegmentOrientation);
+            if(intersectDucts.down != null && intersectDucts.down.isPositioned != true) {
+                let currentDuctOrientation = intersectDucts.down.orientation;
+                orientDuct(intersectDucts.down.segment, currentDuctOrientation);
             }
             
     
-            for (const currentSegment of currentSegments) {
+            for (const currentDuct of currentDuctXetos) {
                 let lengthToAdjacent = 0;
-                lengthToAdjacent = fixedSegment.segment.duct.userData.component.object.position.x - currentSegment.segment.duct.userData.component.object.position.x;
-                translateAssemblySegment(currentSegment.segment, 'x', lengthToAdjacent);
-                lengthToAdjacent = fixedSegment.segment.duct.userData.component.object.position.z - currentSegment.segment.duct.userData.component.object.position.z;
-                translateAssemblySegment(currentSegment.segment, 'z', lengthToAdjacent);
+                lengthToAdjacent = this.ahuObject.resources.ducts[fixedDuctXeto.id].position.x - currentDuct.segment.duct.userData.component.object.position.x;
+                translateDuct(currentDuct.segment, 'x', lengthToAdjacent);
+                lengthToAdjacent = this.ahuObject.resources.ducts[fixedDuctXeto.id].position.z - currentDuct.segment.duct.userData.component.object.position.z;
+                translateDuct(currentDuct.segment, 'z', lengthToAdjacent);
             }
 
             let upSize = 0;
-            if(intersectSegments.up != null) {
-                upSize = intersectSegments.up.xetoDuct.graphicLocation.size
+            if(intersectDucts.up != null) {
+                upSize = intersectDucts.up.graphicLocation.size
             }
             else {
-                upSize = intersectSegments.down.xetoDuct.graphicLocation.size
+                upSize = intersectDucts.down.graphicLocation.size
             }
 
             let downSize = 0;
-            if(intersectSegments.down != null) {
-                downSize = intersectSegments.down.xetoDuct.graphicLocation.size
+            if(intersectDucts.down != null) {
+                downSize = intersectDucts.down.graphicLocation.size
             }
             else {
-                downSize = intersectSegments.up.xetoDuct.graphicLocation.size
+                downSize = intersectDucts.up.graphicLocation.size
             }           
 
-            if(intersectSegments.left == null) {
-                const upSize = intersectSegments.up.xetoDuct.graphicLocation.size;
-                const downSize = intersectSegments.down.xetoDuct.graphicLocation.size;
-                const rightSize = intersectSegments.right.xetoDuct.graphicLocation.size;
+            if(intersectDucts.left == null) {
+                const upSize = intersectDucts.up.graphicLocation.size;
+                const downSize = intersectDucts.down.graphicLocation.size;
+                const rightSize = intersectDucts.right.graphicLocation.size;
                 let maxHalfWidth = this.innerDuctDimensions[upSize] > this.innerDuctDimensions[downSize] ? this.innerDuctDimensions[upSize] / 2 : this.innerDuctDimensions[downSize] / 2;
                 let maxHalfHeight = this.innerDuctDimensions[rightSize] / 2;
 
-                if(fixedSegment == intersectSegments.right) {
-                    length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+                if(fixedDuctXeto == intersectDucts.right) {
+                    length = ((intersectDucts.down.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight + 15;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.down.segment, "z", (length * -1));
+                    translateDuct(intersectDucts.down.segment, "z", (length * -1));
 
-                    length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                    length = ((intersectDucts.right.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth + 15;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.down.segment, "x", (length * -1));
+                    translateDuct(intersectDucts.down.segment, "x", (length * -1));
 
-                    length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
+                    length = ((intersectDucts.up.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight + 15;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.up.segment, "z", (length * 1));
+                    translateDuct(intersectDucts.up.segment, "z", (length * 1));
 
-                    length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                    length = ((intersectDucts.right.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth + 15;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.up.segment, "x", (length * -1));
+                    translateDuct(intersectDucts.up.segment, "x", (length * -1));
                 }
 
-                if(fixedSegment == intersectSegments.up) {
-                    length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
-                    length += ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+                if(fixedDuctXeto == intersectDucts.up) {
+                    length = ((intersectDucts.up.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += ((intersectDucts.down.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight * 2 + 30;
                     length += xzJointPadding * 2;
-                    translateAssemblySegment(intersectSegments.down.segment, "z", (length * -1));
+                    translateDuct(intersectDucts.down.segment, "z", (length * -1));
 
-                    length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
+                    length = ((intersectDucts.up.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight + 15;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.right.segment, "z", (length * -1));
+                    translateDuct(intersectDucts.right.segment, "z", (length * -1));
 
-                    length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                    length = ((intersectDucts.right.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth + 15;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
+                    translateDuct(intersectDucts.right.segment, "x", (length * 1));
                 }
 
-                if(fixedSegment == intersectSegments.down) {
-                    length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
-                    length += ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+                if(fixedDuctXeto == intersectDucts.down) {
+                    length = ((intersectDucts.up.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += ((intersectDucts.down.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight * 2 + 30;
                     length += xzJointPadding * 2;
-                    translateAssemblySegment(intersectSegments.up.segment, "z", (length * 1));
+                    translateDuct(intersectDucts.up.segment, "z", (length * 1));
 
-                    length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+                    length = ((intersectDucts.down.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight + 15;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.right.segment, "z", (length * 1));
+                    translateDuct(intersectDucts.right.segment, "z", (length * 1));
 
-                    length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                    length = ((intersectDucts.right.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth + 15;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
+                    translateDuct(intersectDucts.right.segment, "x", (length * 1));
                 }
             }
 
-            if(intersectSegments.right == null) {
-                const upSize = intersectSegments.up.xetoDuct.graphicLocation.size;
-                const downSize = intersectSegments.down.xetoDuct.graphicLocation.size;
-                const leftSize = intersectSegments.left.xetoDuct.graphicLocation.size;
+            if(intersectDucts.right == null) {
+                const upSize = intersectDucts.up.graphicLocation.size;
+                const downSize = intersectDucts.down.graphicLocation.size;
+                const leftSize = intersectDucts.left.graphicLocation.size;
 
                 let maxHalfWidth = this.innerDuctDimensions[upSize] > this.innerDuctDimensions[downSize] ? this.innerDuctDimensions[upSize] / 2 : this.innerDuctDimensions[downSize] / 2;
                 let maxHalfHeight = this.innerDuctDimensions[leftSize] / 2;
 
-                if(fixedSegment == intersectSegments.left) {
-                    length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+                if(fixedDuctXeto == intersectDucts.left) {
+                    length = ((intersectDucts.down.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight + 15;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.down.segment, "z", (length * -1));
+                    translateDuct(intersectDucts.down.segment, "z", (length * -1));
 
-                    length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
+                    length = ((intersectDucts.left.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth + 15;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.down.segment, "x", (length * 1));
+                    translateDuct(intersectDucts.down.segment, "x", (length * 1));
 
-                    length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
+                    length = ((intersectDucts.up.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight + 15;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.up.segment, "z", (length * 1));
+                    translateDuct(intersectDucts.up.segment, "z", (length * 1));
 
-                    length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
+                    length = ((intersectDucts.left.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth + 15;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.up.segment, "x", (length * 1));
+                    translateDuct(intersectDucts.up.segment, "x", (length * 1));
                 }
 
-                if(fixedSegment == intersectSegments.up) {
-                    length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
-                    length += ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+                if(fixedDuctXeto == intersectDucts.up) {
+                    length = ((intersectDucts.up.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += ((intersectDucts.down.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight * 2 + 30;
                     length += xzJointPadding * 2;
-                    translateAssemblySegment(intersectSegments.down.segment, "z", (length * -1));
+                    translateDuct(intersectDucts.down.segment, "z", (length * -1));
 
-                    length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
+                    length = ((intersectDucts.up.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight + 15;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.left.segment, "z", (length * -1));
+                    translateDuct(intersectDucts.left.segment, "z", (length * -1));
 
-                    length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
+                    length = ((intersectDucts.left.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth + 15;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.left.segment, "x", (length * -1));
+                    translateDuct(intersectDucts.left.segment, "x", (length * -1));
                 }
 
-                if(fixedSegment == intersectSegments.down) {
-                    length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
-                    length += ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+                if(fixedDuctXeto == intersectDucts.down) {
+                    length = ((intersectDucts.up.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += ((intersectDucts.down.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight * 2 + 30;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.up.segment, "z", (length * 1));
+                    translateDuct(intersectDucts.up.segment, "z", (length * 1));
 
-                    length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+                    length = ((intersectDucts.down.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight + 15;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.left.segment, "z", (length * 1));
+                    translateDuct(intersectDucts.left.segment, "z", (length * 1));
 
-                    length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
+                    length = ((intersectDucts.left.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth + 15;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.left.segment, "x", (length * -1));
+                    translateDuct(intersectDucts.left.segment, "x", (length * -1));
                 }
             }
 
-            if(intersectSegments.down == null) {
-                const upSize = intersectSegments.up.xetoDuct.graphicLocation.size;
-                const leftSize = intersectSegments.left.xetoDuct.graphicLocation.size;
-                const rightSize = intersectSegments.right.xetoDuct.graphicLocation.size;
+            if(intersectDucts.down == null) {
+                const upSize = intersectDucts.up.graphicLocation.size;
+                const leftSize = intersectDucts.left.graphicLocation.size;
+                const rightSize = intersectDucts.right.graphicLocation.size;
                 
                 let maxHalfWidth = this.innerDuctDimensions[upSize] / 2;
                 let maxHalfHeight = this.innerDuctDimensions[leftSize] > this.innerDuctDimensions[rightSize] ? this.innerDuctDimensions[leftSize] / 2 : this.innerDuctDimensions[rightSize] / 2;
 
-                if(fixedSegment == intersectSegments.left) {
-                    length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
+                if(fixedDuctXeto == intersectDucts.left) {
+                    length = ((intersectDucts.up.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight + 15;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.up.segment, "z", (length * 1));
+                    translateDuct(intersectDucts.up.segment, "z", (length * 1));
 
-                    length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
+                    length = ((intersectDucts.left.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth + 15;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.up.segment, "x", (length * 1));
+                    translateDuct(intersectDucts.up.segment, "x", (length * 1));
 
-                    length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
-                    length += ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                    length = ((intersectDucts.left.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += ((intersectDucts.right.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth * 2 + 30;
                     length += xzJointPadding * 2;
-                    translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
+                    translateDuct(intersectDucts.right.segment, "x", (length * 1));
                 }
 
-                if(fixedSegment == intersectSegments.right) {
-                    length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
+                if(fixedDuctXeto == intersectDucts.right) {
+                    length = ((intersectDucts.up.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight + 15;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.up.segment, "z", (length * 1));
+                    translateDuct(intersectDucts.up.segment, "z", (length * 1));
 
-                    length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                    length = ((intersectDucts.right.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth + 15;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.up.segment, "x", (length * -1));
+                    translateDuct(intersectDucts.up.segment, "x", (length * -1));
 
-                    length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
-                    length += ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                    length = ((intersectDucts.left.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += ((intersectDucts.right.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth * 2 + 30;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.left.segment, "x", (length * -1));
+                    translateDuct(intersectDucts.left.segment, "x", (length * -1));
                 }
 
-                if(fixedSegment == intersectSegments.up) {
-                    length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
+                if(fixedDuctXeto == intersectDucts.up) {
+                    length = ((intersectDucts.left.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth + 15;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.left.segment, "x", (length * -1));
+                    translateDuct(intersectDucts.left.segment, "x", (length * -1));
 
-                    length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
+                    length = ((intersectDucts.up.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight + 15;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.left.segment, "z", (length * -1));
+                    translateDuct(intersectDucts.left.segment, "z", (length * -1));
 
-                    length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                    length = ((intersectDucts.right.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth + 15;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
+                    translateDuct(intersectDucts.right.segment, "x", (length * 1));
 
-                    length = ((intersectSegments.up.segment.duct.userData.component.attributes.length.value) / 2);
+                    length = ((intersectDucts.up.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight + 15;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.right.segment, "z", (length * -1));
+                    translateDuct(intersectDucts.right.segment, "z", (length * -1));
                 }
             }
 
-            if(intersectSegments.up == null) {
-                const downSize = intersectSegments.down.xetoDuct.graphicLocation.size;
-                const leftSize = intersectSegments.left.xetoDuct.graphicLocation.size;
-                const rightSize = intersectSegments.right.xetoDuct.graphicLocation.size;
+            if(intersectDucts.up == null) {
+                const downSize = intersectDucts.down.graphicLocation.size;
+                const leftSize = intersectDucts.left.graphicLocation.size;
+                const rightSize = intersectDucts.right.graphicLocation.size;
                 
                 let maxHalfWidth = this.innerDuctDimensions[downSize] / 2;
                 let maxHalfHeight = this.innerDuctDimensions[leftSize] > this.innerDuctDimensions[rightSize] ? this.innerDuctDimensions[leftSize] / 2 : this.innerDuctDimensions[rightSize] / 2;
 
-                if(fixedSegment == intersectSegments.left) {
-                    length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+                if(fixedDuctXeto == intersectDucts.left) {
+                    length = ((intersectDucts.down.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight + 15;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.down.segment, "z", (length * -1));
+                    translateDuct(intersectDucts.down.segment, "z", (length * -1));
 
-                    length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
+                    length = ((intersectDucts.left.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth + 15;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.down.segment, "x", (length * 1));
+                    translateDuct(intersectDucts.down.segment, "x", (length * 1));
 
-                    length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
-                    length += ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                    length = ((intersectDucts.left.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += ((intersectDucts.right.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth * 2 + 30;
                     length += xzJointPadding * 2;
-                    translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
+                    translateDuct(intersectDucts.right.segment, "x", (length * 1));
                 }
 
-                if(fixedSegment == intersectSegments.right) {
-                    length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+                if(fixedDuctXeto == intersectDucts.right) {
+                    length = ((intersectDucts.down.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight + 15;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.down.segment, "z", (length * -1));
+                    translateDuct(intersectDucts.down.segment, "z", (length * -1));
 
-                    length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                    length = ((intersectDucts.right.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth + 15;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.down.segment, "x", (length * -1));
+                    translateDuct(intersectDucts.down.segment, "x", (length * -1));
 
-                    length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
-                    length += ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                    length = ((intersectDucts.left.segment.duct.userData.component.attributes.length.value) / 2);
+                    length += ((intersectDucts.right.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth * 2 + 30;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.left.segment, "x", (length * -1));
+                    translateDuct(intersectDucts.left.segment, "x", (length * -1));
                 }
 
-                if(fixedSegment == intersectSegments.down) {
-                    length = ((intersectSegments.left.segment.duct.userData.component.attributes.length.value) / 2);
+                if(fixedDuctXeto == intersectDucts.down) {
+                    length = ((intersectDucts.left.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth + 15;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.left.segment, "x", (length * -1));
+                    translateDuct(intersectDucts.left.segment, "x", (length * -1));
 
-                    length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+                    length = ((intersectDucts.down.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight + 15;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.left.segment, "z", (length * 1));
+                    translateDuct(intersectDucts.left.segment, "z", (length * 1));
 
-                    length = ((intersectSegments.right.segment.duct.userData.component.attributes.length.value) / 2);
+                    length = ((intersectDucts.right.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfWidth + 15;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.right.segment, "x", (length * 1));
+                    translateDuct(intersectDucts.right.segment, "x", (length * 1));
 
-                    length = ((intersectSegments.down.segment.duct.userData.component.attributes.length.value) / 2);
+                    length = ((intersectDucts.down.segment.duct.userData.component.attributes.length.value) / 2);
                     length += maxHalfHeight + 15;
                     length += xzJointPadding;
-                    translateAssemblySegment(intersectSegments.right.segment, "z", (length * 1));
+                    translateDuct(intersectDucts.right.segment, "z", (length * 1));
                 }
             }
 
-            const largestGlobalSize = this.Joints.createJointProxies(intersectSegments, null);
-            this.Geometry_3D_Joints_T.createTJoint(intersectSegments, largestGlobalSize);
+            largestGlobalSize = this.Joints.createJointProxies(intersectDucts, null);
+
+            this.ahuObject.resources.joints[`Joint-${key}`].intersectDucts = intersectDucts;
+            this.ahuObject.resources.joints[`Joint-${key}`].largestGlobalSize = largestGlobalSize;
+            this.ahuObject.resources.joints[`Joint-${key}`].key = key;
+            this.ahuObject.resources.joints[`Joint-${key}`].pairDirection = null;
     
         }
         else if(this.ductsDictionary[key].length == 2) {
-            console.log("placeIntersection 2*");
+            console.log("placeIntersection 2*:", this.ahuObject);
 
-            let currentSegments = this.assemblySegments.filter(child => 
-                child.xetoDuct.id === this.ductsDictionary[key][0].id ||
-                child.xetoDuct.id === this.ductsDictionary[key][1].id
+            let currentDuctXetos = this.ahuObject.xeto.filter(child => 
+                child.id === this.ductsDictionary[key][0].id ||
+                child.id === this.ductsDictionary[key][1].id
             );
 
-            let fixedSegment = null;
-            for (const i in currentSegments) {
-                if (currentSegments[i].xetoDuct.isPositioned) {
-                    fixedSegment = currentSegments[i];
-                    currentSegments.splice(i, 1);
+            console.log("placeIntersection 2* currentDuctXetos:", currentDuctXetos);
+
+            let fixedDuctXeto = null;
+            for (const i in currentDuctXetos) {
+                if (currentDuctXetos[i].isPositioned) {
+                    fixedDuctXeto = currentDuctXetos[i];
+                    currentDuctXetos.splice(i, 1);
                     break;
                 }
             }
-            getSegmentDirection(fixedSegment, key);
-            console.log("placeIntersection 2* fixedSegment:", fixedSegment);
 
-            let intersectSegments = {
+            console.log("placeIntersection 2* fixedDuctXeto:", fixedDuctXeto);
+
+            fixedDuctXeto.relativePosition = getDuctDirection(fixedDuctXeto, key);
+
+            console.log("placeIntersection 2* fixedDuctXeto:", fixedDuctXeto);
+
+            let intersectDucts = {
                 up: null, 
                 down: null,
                 left: null, 
                 right: null
             }
 
-            let currentSegment = currentSegments[0];
-            getSegmentDirection(currentSegment, key);
+            let currentDuctXeto = currentDuctXetos[0];
+            currentDuctXeto.relativePosition = getDuctDirection(currentDuctXeto, key);
 
-            seperateByDirections(intersectSegments, fixedSegment, currentSegments);
+            console.log("placeIntersection 2* step 3");
 
-            if(intersectSegments.up) {
-                let currentSegmentOrientation = currentSegment.xetoDuct.orientation;
-                orientAssemblySegment(currentSegment.segment, currentSegmentOrientation);
-            }
-            else if(intersectSegments.down) {
-                let currentSegmentOrientation = currentSegment.xetoDuct.orientation;
-                orientAssemblySegment(currentSegment.segment, currentSegmentOrientation);
-            }            
+            seperateByDirections(intersectDucts, fixedDuctXeto, currentDuctXetos);
+
+            console.log("placeIntersection 2* step 4:", intersectDucts);       
+
+            console.log("placeIntersection 2* step 5");
 
             let lengthToAdjacent = 0;
-            lengthToAdjacent = fixedSegment.segment.duct.userData.component.object.position.x - currentSegment.segment.duct.userData.component.object.position.x;
-            translateAssemblySegment(currentSegment.segment, 'x', lengthToAdjacent);
-            lengthToAdjacent = fixedSegment.segment.duct.userData.component.object.position.z - currentSegment.segment.duct.userData.component.object.position.z;
-            translateAssemblySegment(currentSegment.segment, 'z', lengthToAdjacent);
+            lengthToAdjacent = this.ahuObject.resources.ducts[fixedDuctXeto.id].position.x - this.ahuObject.resources.ducts[currentDuctXeto.id].position.x;
+            translateDuct(this.ahuObject.resources.ducts[currentDuctXeto.id], 'x', lengthToAdjacent);
+            lengthToAdjacent = this.ahuObject.resources.ducts[fixedDuctXeto.id].position.z - this.ahuObject.resources.ducts[currentDuctXeto.id].position.z;
+            translateDuct(this.ahuObject.resources.ducts[currentDuctXeto.id], 'z', lengthToAdjacent);
+
+            console.log("placeIntersection 2* step 6");
 
             let pairDirection = null;
-            if(intersectSegments.up != null && intersectSegments.down != null) {
+            if(intersectDucts.up != null && intersectDucts.down != null) {
                 pairDirection = "vertical";
                 xzJointPadding = 30;
             }
-            if(intersectSegments.left != null && intersectSegments.right != null) {
+            if(intersectDucts.left != null && intersectDucts.right != null) {
                 pairDirection = "horizontal";
                 xzJointPadding = 30;
             }
 
-            if(fixedSegment.xetoDuct.isVertical == currentSegment.xetoDuct.isVertical) {
-                if(currentSegment.relativePosition == "right") {
-                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + ((fixedSegment.segment.duct.userData.component.attributes.length.value) / 2);
+            console.log("placeIntersection 2* step 7");
+
+            if(fixedDuctXeto.isVertical == currentDuctXeto.isVertical) {
+                if(currentDuctXeto.relativePosition == "right") {
+                    length = ((this.ahuObject.resources.ducts[currentDuctXeto.id].dimensions.x) / 2) + ((this.ahuObject.resources.ducts[fixedDuctXeto.id].dimensions.x) / 2);
                     length += xzJointPadding;
-                    translateAssemblySegment(currentSegment.segment, 'x', length * 1);
+                    translateDuct(this.ahuObject.resources.ducts[currentDuctXeto.id], 'x', length * 1);
                 }
-                else if(currentSegment.relativePosition == "left") {
-                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + ((fixedSegment.segment.duct.userData.component.attributes.length.value) / 2);
+                else if(currentDuctXeto.relativePosition == "left") {
+                    length = ((this.ahuObject.resources.ducts[currentDuctXeto.id].dimensions.x) / 2) + ((this.ahuObject.resources.ducts[fixedDuctXeto.id].dimensions.x) / 2);
                     length += xzJointPadding;
-                    translateAssemblySegment(currentSegment.segment, 'x', length * -1);
+                    translateDuct(this.ahuObject.resources.ducts[currentDuctXeto.id], 'x', length * -1);
                 }
-                else if(currentSegment.relativePosition == "up") {
-                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + ((fixedSegment.segment.duct.userData.component.attributes.length.value) / 2);
+                else if(currentDuctXeto.relativePosition == "up") {
+                    length = ((this.ahuObject.resources.ducts[currentDuctXeto.id].dimensions.x) / 2) + ((this.ahuObject.resources.ducts[fixedDuctXeto.id].dimensions.x) / 2);
                     length += xzJointPadding;
-                    translateAssemblySegment(currentSegment.segment, 'z', (length * 1));
+                    translateDuct(this.ahuObject.resources.ducts[currentDuctXeto.id], 'z', (length * 1));
                 }
-                else if(currentSegment.relativePosition == "down") {
-                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + ((fixedSegment.segment.duct.userData.component.attributes.length.value) / 2);
+                else if(currentDuctXeto.relativePosition == "down") {
+                    length = ((this.ahuObject.resources.ducts[currentDuctXeto.id].dimensions.x) / 2) + ((this.ahuObject.resources.ducts[fixedDuctXeto.id].dimensions.x) / 2);
                     length += xzJointPadding;
-                    translateAssemblySegment(currentSegment.segment, 'z', (length * -1));
+                    translateDuct(this.ahuObject.resources.ducts[currentDuctXeto.id], 'z', (length * -1));
                 }
             }
-            else if(fixedSegment.xetoDuct.isVertical != currentSegment.xetoDuct.isVertical) {
-                if(fixedSegment.relativePosition == "left") {
-                    length = ((fixedSegment.segment.duct.userData.component.attributes.length.value) / 2) + this.innerDuctDimensions[currentSegment.xetoDuct.graphicLocation.size] / 2;
+            else if(fixedDuctXeto.isVertical != currentDuctXeto.isVertical) {
+                if(fixedDuctXeto.relativePosition == "left") {
+                    length = ((this.ahuObject.resources.ducts[fixedDuctXeto.id].dimensions.x) / 2) + this.innerDuctDimensions[currentDuctXeto.graphicLocation.size] / 2;
                     length += xzJointPadding;
-                    translateAssemblySegment(currentSegment.segment, "x", (length * 1) + 15);
+                    translateDuct(this.ahuObject.resources.ducts[currentDuctXeto.id], "x", (length * 1) + 15);
                 }
-                else if(fixedSegment.relativePosition == "right") {
-                    length = ((fixedSegment.segment.duct.userData.component.attributes.length.value) / 2) + this.innerDuctDimensions[currentSegment.xetoDuct.graphicLocation.size] / 2;
+                else if(fixedDuctXeto.relativePosition == "right") {
+                    length = ((this.ahuObject.resources.ducts[fixedDuctXeto.id].dimensions.x) / 2) + this.innerDuctDimensions[currentDuctXeto.graphicLocation.size] / 2;
                     length += xzJointPadding;
-                    translateAssemblySegment(currentSegment.segment, "x", (length * -1) - 15);
+                    translateDuct(this.ahuObject.resources.ducts[currentDuctXeto.id], "x", (length * -1) - 15);
                 }
-                if(fixedSegment.relativePosition == "up") {
-                    length = ((fixedSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDuctDimensions[currentSegment.xetoDuct.graphicLocation.size] / 2);
+                if(fixedDuctXeto.relativePosition == "up") {
+                    length = ((this.ahuObject.resources.ducts[fixedDuctXeto.id].dimensions.x) / 2) + (this.innerDuctDimensions[currentDuctXeto.graphicLocation.size] / 2);
                     length += xzJointPadding;
-                    translateAssemblySegment(currentSegment.segment, 'z', (length * -1) - 15);
+                    translateDuct(this.ahuObject.resources.ducts[currentDuctXeto.id], 'z', (length * -1) - 15);
                 }
-                else if(fixedSegment.relativePosition == "down") {
-                    length = ((fixedSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDuctDimensions[currentSegment.xetoDuct.graphicLocation.size] / 2);
+                else if(fixedDuctXeto.relativePosition == "down") {
+                    length = ((this.ahuObject.resources.ducts[fixedDuctXeto.id].dimensions.x) / 2) + (this.innerDuctDimensions[currentDuctXeto.graphicLocation.size] / 2);
                     length += xzJointPadding;
-                    translateAssemblySegment(currentSegment.segment, 'z', (length * 1) + 15);
+                    translateDuct(this.ahuObject.resources.ducts[currentDuctXeto.id], 'z', (length * 1) + 15);
                 }
 
-                if(currentSegment.relativePosition == "up") {
-                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDuctDimensions[fixedSegment.xetoDuct.graphicLocation.size] / 2);
+                if(currentDuctXeto.relativePosition == "up") {
+                    length = ((this.ahuObject.resources.ducts[currentDuctXeto.id].dimensions.x) / 2) + (this.innerDuctDimensions[fixedDuctXeto.graphicLocation.size] / 2);
                     length += xzJointPadding;
-                    translateAssemblySegment(currentSegment.segment, 'z', (length * 1) + 15);
+                    translateDuct(this.ahuObject.resources.ducts[currentDuctXeto.id], 'z', (length * 1) + 15);
                 }
-                else if(currentSegment.relativePosition == "down") {
-                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDuctDimensions[fixedSegment.xetoDuct.graphicLocation.size] / 2);
+                else if(currentDuctXeto.relativePosition == "down") {
+                    length = ((this.ahuObject.resources.ducts[currentDuctXeto.id].dimensions.x) / 2) + (this.innerDuctDimensions[fixedDuctXeto.graphicLocation.size] / 2);
                     length += xzJointPadding;
-                    translateAssemblySegment(currentSegment.segment, 'z', (length * -1) - 15);
+                    translateDuct(this.ahuObject.resources.ducts[currentDuctXeto.id], 'z', (length * -1) - 15);
                 }
-                else if(currentSegment.relativePosition == "left") {
-                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDuctDimensions[fixedSegment.xetoDuct.graphicLocation.size] / 2);
+                else if(currentDuctXeto.relativePosition == "left") {
+                    length = ((this.ahuObject.resources.ducts[currentDuctXeto.id].dimensions.x) / 2) + (this.innerDuctDimensions[fixedDuctXeto.graphicLocation.size] / 2);
                     length += xzJointPadding;
-                    translateAssemblySegment(currentSegment.segment, 'x', (length * -1) - 15);
+                    translateDuct(this.ahuObject.resources.ducts[currentDuctXeto.id], 'x', (length * -1) - 15);
                 }
-                else if(currentSegment.relativePosition == "right") {
-                    length = ((currentSegment.segment.duct.userData.component.attributes.length.value) / 2) + (this.innerDuctDimensions[fixedSegment.xetoDuct.graphicLocation.size] / 2);
+                else if(currentDuctXeto.relativePosition == "right") {
+                    length = ((this.ahuObject.resources.ducts[currentDuctXeto.id].dimensions.x) / 2) + (this.innerDuctDimensions[fixedDuctXeto.graphicLocation.size] / 2);
                     length += xzJointPadding;
-                    translateAssemblySegment(currentSegment.segment, 'x', (length * 1) + 15);
+                    translateDuct(this.ahuObject.resources.ducts[currentDuctXeto.id], 'x', (length * 1) + 15);
                 }
             }
 
-            const largestGlobalSize = this.Joints.createJointProxies(intersectSegments, pairDirection);
-            if(pairDirection) {
-                this.Geometry_3D_Joints_Colinear.createParallelJoint(intersectSegments, pairDirection);
-            }
-            else {
-                this.Geometry_3D_Joints_L.createLJoint(intersectSegments, largestGlobalSize);
-            }
+            console.log("placeIntersection 2* step 8");
+
+            this.ahuObject.resources.joints["Joints-1"]
+
+            this.Joints.createJointProxies(intersectDucts, this.ahuObject, key, largestGlobalSize);
+
+            console.log("placeIntersection 2* step 9");
+
+            this.ahuObject.resources.joints[`Joint-${key}`].intersectDucts = intersectDucts;
+            this.ahuObject.resources.joints[`Joint-${key}`].largestGlobalSize = largestGlobalSize;
+            this.ahuObject.resources.joints[`Joint-${key}`].key = key;
+            this.ahuObject.resources.joints[`Joint-${key}`].pairDirection = pairDirection;
+
+            // if(pairDirection) {
+            //     jointGeometry = this.Geometry_3D_Joints_Colinear.createParallelJoint(intersectDucts, pairDirection);
+            // }
+            // else {
+            //     jointGeometry = this.Geometry_3D_Joints_L.createLJoint(intersectDucts, largestGlobalSize, this.ahuObject.resources.joints[`Joint-${key}`]);
+            // }
+
+            console.log("placeIntersection 2* step 10:", jointGeometry);
             
         }
+
+        console.log("placeIntersection 2* step 11");
 
         for(const traversedSegmentXeto of this.ductsDictionary[key]) {
             if(traversedSegmentXeto.isPositioned != true) {
@@ -945,6 +981,34 @@ export default class Ducts {
             }
             traversedSegmentXeto.isPositioned = true;
         }
+
+        this.ahuObject["3d"].joints.geometry[`Joint-${key}`] = jointGeometry;
+        this.ahuObject["3d"].joints.meshes[`Joint-${key}`] = null;
+
+        console.log("placeIntersection 2* step 12:", this.ahuObject);
         
+    }
+
+    transformEnds() {
+        const endKeys = Object.keys(this.ahuObject.associations.ends);
+        for(const endKey of endKeys) {
+            const ductKey = this.ahuObject.associations.ends[endKey];
+            this.ahuObject.resources.ends[endKey].position = this.ahuObject.resources.ducts[ductKey].position;
+            this.ahuObject.resources.ends[endKey].rotation = this.ahuObject.resources.ducts[ductKey].rotation;
+        }
+    }
+    reTransformComponents() {
+        console.log("reTransformComponents component:", this.ahuObject);
+        for(const componentId in this.ahuObject.resources.components) {
+            console.log("reTransformComponents componentId:", componentId);
+            const associatedDuctId = this.ahuObject.associations.components[componentId];
+            console.log("reTransformComponents associatedDuctId:", associatedDuctId);
+            console.log("reTransformComponents associatedDuctId:", associatedDuctId);
+            this.ahuObject.resources.components[componentId].position.x += this.ahuObject.resources.ducts[associatedDuctId].position.x;
+            this.ahuObject.resources.components[componentId].position.y += this.ahuObject.resources.ducts[associatedDuctId].position.y;
+            this.ahuObject.resources.components[componentId].position.z += this.ahuObject.resources.ducts[associatedDuctId].position.z;
+
+            this.ahuObject.resources.components[componentId].rotation.y += this.ahuObject.resources.ducts[associatedDuctId].rotation.y;
+        }
     }
 }

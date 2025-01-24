@@ -30,16 +30,18 @@ import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
 
 import axios from 'axios';
 
-import Arithmetics from "../Arithmetics/_Arithmetics.js"
 import Preprocess from "../Preprocess/_Preprocess.js"
 import Assets3D from "../3D/Assets3D.js"
 import Mesh3D from "../3D/Mesh3D.js"
+import FlowControl from "./FlowControl.js"
+import { sharedData } from './globals.js';
 
 class Ahu3DAPI {
     constructor(ahu3DInstance) {
         this.ahu3D = ahu3DInstance;     
         this.libraryLoadInitiated = false;
         this.Mesh3D = new Mesh3D(this.sceneHelper);
+        this.FlowControl = new FlowControl();
     }
 
     /**
@@ -74,15 +76,55 @@ class Ahu3DAPI {
         await Promise.all(requests); // Wait for all promises to resolve
 
         this.library = files;
+
+        sharedData.componentLibrary = files;
         // this.validator = new Validate(this.library);  
 
         this.Assets3D = new Assets3D(this.sceneHelper, this.library, assetConfigs);
         await this.Assets3D.loadInstanceSet();
 
         this.preprocess = new Preprocess(this.library);
-        this.arithmetics = new Arithmetics(this.library, this.sceneHelper); 
 
         return this.library;
+    }
+
+    async runAhu3D(xeto, outputMode){
+
+        // Ensure that the loadLibrary method has been invoked.
+        if(this.libraryLoadInitiated == false) {
+            alert("Please load in the asset library before loading xeto.");
+            return null;
+        }
+
+        // This setInterval function will loop until the library is loaded.
+        if(this.isLibraryLoaded == false) {
+            await new Promise((resolve) => {
+                const checkLibraryInterval = setInterval(() => {
+                    if (this.isLibraryLoaded) {
+                        clearInterval(checkLibraryInterval);
+                        resolve();
+                    }
+                }, 100); // Check every 100ms
+            });
+        }        
+
+        const {cleanedXeto, ductsDictionary} = this.preprocess.preprocessXeto2(xeto);
+
+        console.log("runAhu3D cleanedXeto:", cleanedXeto);
+        console.log("runAhu3D ductsDictionary:", ductsDictionary);
+
+        this.FlowControl.cleanedXeto = cleanedXeto;
+        this.FlowControl.ductsDictionary = ductsDictionary;
+
+        if(!cleanedXeto) {
+            return [];
+        }
+
+        this.sceneHelper.clearScene();
+
+        const ahuObject = this.FlowControl.runAhu3D(cleanedXeto, outputMode);
+
+        return ahuObject;
     }
 
     /**
@@ -230,63 +272,6 @@ class Ahu3DAPI {
     }
 
     /**
-     * Loads and processes a XETO model for the AHU and renders it in the scene.
-     * 
-     * @param {Object} xeto - The XETO model data to be loaded.
-     * @returns {Promise<Object>} The processed AHU assembly.
-     * 
-     * @example
-     * const xetoData = { ... };
-     * ahu3d.loadXeto(xetoData).then((assembly) => {
-     *   console.log("Assembly loaded:", assembly);
-     * });
-     */
-    async loadXeto(xeto) {
-
-        // Ensure that the loadLibrary method has been invoked.
-        if(this.libraryLoadInitiated == false) {
-            alert("Please load in the asset library before loading xeto.");
-            return null;
-        }
-
-        // This setInterval function will loop until the library is loaded.
-        if(this.isLibraryLoaded == false) {
-            await new Promise((resolve) => {
-                const checkLibraryInterval = setInterval(() => {
-                    if (this.isLibraryLoaded) {
-                        clearInterval(checkLibraryInterval);
-                        resolve();
-                    }
-                }, 100); // Check every 100ms
-            });
-        }        
-
-        const cleanedXeto = this.preprocess.preprocessXeto(xeto);
-
-        this.loadedXeto = cleanedXeto;
-
-        if(!cleanedXeto) {
-            return [];
-        }
-
-        console.log("cleanedXeto:", cleanedXeto);
-
-        this.sceneHelper.clearScene();
-
-        const assembly = await this.arithmetics.calculateAssembly(cleanedXeto);
-
-        const renderedAssembly = await this.Mesh3D.renderAssembly(assembly, this.sceneHelper);
-
-        this.sceneHelper.fitAssemblyIntoView();
-
-        for(const component of renderedAssembly) {
-            this.components[component.userData.component.componentId.split("::")[1]] = component;
-        }
-
-        return renderedAssembly;
-    }
-
-    /**
      * Toggles the visibility of the grid in the scene.
      * 
      * @example
@@ -316,19 +301,6 @@ class Ahu3DAPI {
         this.sceneHelper.tooltipEnabled = !this.sceneHelper.tooltipEnabled;
     }
 
-    /**
-     * Sets an attribute for a specific component.
-     * 
-     * @param {string} key - The key for the component (e.g., "Fan-1", "Filter-2").
-     * @param {number|string} value - The value to set for the attribute.
-     * 
-     * @example
-     * const ahu3d = new Ahu3D();
-     * ahu3d.loadXeto(xetoData).then(() => {
-     *   // Set attribute for a specific component
-     *   ahu3d.setAttribute("Fan-1", 10);
-     * });
-     */
     setAttribute(key, value) {
         if (this.components[key]) {
             this.components[key].setAttribute(value);
@@ -338,19 +310,6 @@ class Ahu3DAPI {
         }
     }
 
-    /**
-     * Sets the transparency for a specific component.
-     * 
-     * @param {string} key - The key for the component (e.g., "Fan-1", "Filter-2").
-     * @param {number} transparency - A value between 0 (fully transparent) and 1 (fully opaque).
-     * 
-     * @example
-     * const ahu3d = new Ahu3D();
-     * ahu3d.loadXeto(xetoData).then(() => {
-     *   // Set transparency for a specific component
-     *   ahu3d.setTransparency("Fan-1", 0.5);
-     * });
-     */
     setTransparency(key, transparency) {
         if (this.components[key]) {
             this.components[key].setTransparency(transparency);
@@ -382,7 +341,6 @@ class Ahu3DAPI {
 
         // Nullify other references
         this.library = null;
-        this.loadedXeto = null;
 
         console.log("Ahu3D disposed successfully.");
     }

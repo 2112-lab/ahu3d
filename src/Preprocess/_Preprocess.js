@@ -63,6 +63,38 @@ class Preprocess {
 
         return cleanedXeto;
     }
+
+    preprocessXeto2(xeto) {
+
+        const isValid = this.validation.validateJsonBlocks(xeto);
+        const isValid2 = this.validation.validateComponentIds(xeto);
+
+        if(!isValid || !isValid2) {
+            return false;
+        }
+
+        xeto = JSON.parse(JSON.stringify(xeto));
+
+        let xetoDictionary = {};
+        xetoDictionary.ahuGroup = xeto.filter(child => child.spec.includes('AhuGroup'));
+        xetoDictionary.ductsList = xeto.filter(
+            child => child.spec.includes('DuctEdge') && xetoDictionary.ahuGroup[0].ducts.includes(child.id)
+        );
+        xetoDictionary.componentsList = xeto.filter(child => child.spec.includes('Component'));
+
+        this.analysis.analyzeAndTransform(xetoDictionary);
+        this.validation.propogateBlockStyle(xetoDictionary);
+
+        const cleanedXeto = [
+            ...xetoDictionary.ahuGroup,
+            ...xetoDictionary.ductsList,
+            ...xetoDictionary.componentsList,
+        ];
+
+        console.log("preprocessXeto2 cleanedXeto:", cleanedXeto);
+
+        return {cleanedXeto: cleanedXeto, ductsDictionary: xetoDictionary.ductsDictionary};
+    }
 }
 
 export default Preprocess;

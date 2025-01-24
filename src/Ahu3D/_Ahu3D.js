@@ -30,6 +30,7 @@
 import Ahu3DAPI from './Ahu3D-API.js';
 import Scene3D from "../3D/Scene/Scene3D.js"
 import Utils3D from "../3D/Utils3D.js"
+import { sharedData } from "./globals.js"
 
 import moduleDefaults from '../assets/module_defaults.json';
 import _ from 'lodash';  // You can use lodash for deep merge
@@ -46,7 +47,15 @@ class Ahu3D extends Ahu3DAPI {
         this.moduleConfigs = _.merge({}, moduleDefaults, moduleConfigs);
         console.log("this.moduleConfigs:", this.moduleConfigs);
 
+        console.log("defaults before");
+
+        sharedData.moduleConfigs = this.moduleConfigs;
+
+        console.log("defaults after:", sharedData.moduleConfigs);
+
         this.sceneHelper = new Scene3D(this.moduleConfigs);
+
+        sharedData.sceneHelper = this.sceneHelper;
 
         this.Assets3D = null; 
         this.library = null;
@@ -54,7 +63,6 @@ class Ahu3D extends Ahu3DAPI {
         this.utils = new Utils3D(this.sceneHelper);
         
         this.components = {};  // This object holds loaded assembly components
-        this.loadedXeto = [];  // This object holds xeto
     }
 
 }

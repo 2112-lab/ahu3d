@@ -5,9 +5,9 @@ import {
     connectProxiesDiagonallyDownhill,
     createJointClosure,
     mergeAndAddToScene,
-    createGeometryFromPoints,
-    sharedData
+    createGeometryFromPoints
 } from "./Geometry_3D_Joints_Utils.js";
+import { sharedData } from "../../../Ahu3D/globals.js";
 
 export default class Geometry_3D_Joints_Colinear {
     createParallelJoint(intersection, pairDirection) {

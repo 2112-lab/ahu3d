@@ -1,56 +1,65 @@
 import * as THREE from 'three';
-import { sharedData } from '../3D/Geometry/Joints/Geometry_3D_Joints_Utils.js';
+import { sharedData } from "../Ahu3D/globals.js";
 import { moveOriginalProxyVertices, moveProxyVertices } from '../3D/Geometry/Helpers/Geometry_Proxies.js';
 
 export default class Joints {
-    constructor(ahuGroup, innerDuctDimensions, sceneHelper, primaryColor) {
+    constructor(ahuGroup, innerDuctDimensions, sceneHelper) {
         this.ahuGroup = ahuGroup;
         this.innerDuctDimensions = innerDuctDimensions;
-        sharedData.sceneHelper = sceneHelper;
-        sharedData.primaryColor = primaryColor;
+        
 
-        this.jointBlockStyle = this.ahuGroup.blockStyle.joints;
+        console.log("Joints constructor this.ahuGroup:", this.ahuGroup);
+
+        // this.jointBlockStyle = this.ahuGroup.blockStyle.joints;
         sharedData.jointBlockStyle = this.ahuGroup.blockStyle.joints;
-        sharedData.xzJointStyle = this.jointBlockStyle.XZ.style;
-        sharedData.xzJointDirection = this.jointBlockStyle.XZ.direction;
-        sharedData.xzJointContext = this.jointBlockStyle.XZ.context;
-        sharedData.xzJointPadding = this.jointBlockStyle.XZ.padding;
-        sharedData.xzJointYStyle = this.jointBlockStyle.XZ.yStyle;
-        sharedData.xzJointYDirection = this.jointBlockStyle.XZ.yDirection;        
+        sharedData.xzJointStyle = sharedData.jointBlockStyle.XZ.style;
+        sharedData.xzJointDirection = sharedData.jointBlockStyle.XZ.direction;
+        sharedData.xzJointContext = sharedData.jointBlockStyle.XZ.context;
+        sharedData.xzJointPadding = sharedData.jointBlockStyle.XZ.padding;
+        sharedData.xzJointYStyle = sharedData.jointBlockStyle.XZ.yStyle;
+        sharedData.xzJointYDirection = sharedData.jointBlockStyle.XZ.yDirection; 
+        
+        console.log("Joints constructor step 2:", this.ahuGroup);
     }
 
-    createJointProxies(intersection, pairDirection = null) {
-        console.log("createJointProxies started");
+
+    createJointProxies(intersection, ahuObject, gridKey, largestGlobalSize) {
+        console.log("createJointProxies started:", intersection, ahuObject);
+
+        this.ahuObject = ahuObject;
           
-        const wallThickness = 30;
+        const wallThickness = sharedData.moduleConfigs.parametricOptions.wallThickness;
   
-        let largestGlobalSize = this.innerDuctDimensions["small"];
+        largestGlobalSize = this.innerDuctDimensions["small"];
         for(const key in intersection) {
             let duct = intersection[key];
             if(duct != null) {
-                if(this.innerDuctDimensions[duct.xetoDuct.graphicLocation.size] > largestGlobalSize) {
-                    largestGlobalSize = this.innerDuctDimensions[duct.xetoDuct.graphicLocation.size];
+                const size =  this.ahuObject.resources.ducts[duct.id].dimensions.z;
+                if(size > largestGlobalSize) {
+                    largestGlobalSize = size;
                 }
             }
         }
 
-        const areHelpersOn = false;
+        console.log("createJointProxies largestGlobalSize:", largestGlobalSize);
 
-        let material = new THREE.MeshStandardMaterial({ color: sharedData.primaryColor });
-        let material2 = new THREE.MeshStandardMaterial({ color: sharedData.primaryColor });
-        let material3 = new THREE.MeshStandardMaterial({ color: sharedData.primaryColor });
-        let material4 = new THREE.MeshStandardMaterial({ color: sharedData.primaryColor });
-        let material5 = new THREE.MeshStandardMaterial({ color: sharedData.primaryColor });
+        // const areHelpersOn = false;
+
+        // let material = new THREE.MeshStandardMaterial({ color: sharedData.primaryColor });
+        // let material2 = new THREE.MeshStandardMaterial({ color: sharedData.primaryColor });
+        // let material3 = new THREE.MeshStandardMaterial({ color: sharedData.primaryColor });
+        // let material4 = new THREE.MeshStandardMaterial({ color: sharedData.primaryColor });
+        // let material5 = new THREE.MeshStandardMaterial({ color: sharedData.primaryColor });
         
-        if(areHelpersOn) {
-            material.color.setHex("0xFF0000");
-            material2.color.setHex("0x0000FF");
-            material3.color.setHex("0x00FF00");
-            material4.color.setHex("0xFF0000");
-            material5.color.setHex("0x0000FF");
-        }          
+        // if(areHelpersOn) {
+        //     material.color.setHex("0xFF0000");
+        //     material2.color.setHex("0x0000FF");
+        //     material3.color.setHex("0x00FF00");
+        //     material4.color.setHex("0xFF0000");
+        //     material5.color.setHex("0x0000FF");
+        // }          
 
-        let y_offset = -30;
+        let y_offset = wallThickness * -1;
 
         let definedIntersectionCount = 0;
         for(const key in intersection) {
@@ -59,17 +68,29 @@ export default class Joints {
             }
         }
 
+        console.log("createJointProxies step 1");
+
         this.calculateAdjacentContext(intersection, largestGlobalSize, definedIntersectionCount);
+
+        console.log("createJointProxies step 2:", intersection);
   
         for(const key in intersection) {
             let duct = intersection[key];
 
             if(duct != null) {
-                const innerDuctDimensionsensions = duct.segment.duct.userData.component.object.innerDuctDimensionsensions;
 
-                const ductDepth = this.innerDuctDimensions[duct.xetoDuct.graphicLocation.size];
+                console.log("createJointProxies step 3 key:", key);
+                const innerDuctDimensions = this.ahuObject.resources.ducts[duct.id].dimensions;
 
-                const proxyDepth = this.innerDuctDimensions[duct.xetoDuct.graphicLocation.size] + y_offset;
+                console.log("createJointProxies step 4");
+
+                const ductDepth = innerDuctDimensions.z;
+
+                console.log("createJointProxies step 5");
+
+                const proxyDepth = ductDepth + y_offset;
+
+                console.log("createJointProxies step 6");
 
                 const proxy1Geometry = new THREE.BoxGeometry(wallThickness, proxyDepth, wallThickness);
                 const proxy2Geometry = new THREE.BoxGeometry(wallThickness, proxyDepth, wallThickness);
@@ -77,136 +98,126 @@ export default class Joints {
                 const proxyOriginal2Geometry = new THREE.BoxGeometry(wallThickness, proxyDepth, wallThickness);    
                 const proxyMedianGeometry = new THREE.BoxGeometry(wallThickness, proxyDepth, wallThickness);
 
+                let proxy1 = { position: { x: 0, z: 0 } }
+                let proxy2 = { position: { x: 0, z: 0 } }
+                let proxyOriginal1 = { position: { x: 0, z: 0 } }
+                let proxyOriginal2 = { position: { x: 0, z: 0 } }
+                let proxyMedian = { position: { x: 0, z: 0 } }
+
+                console.log("createJointProxies step 7:", duct);
+
                 moveProxyVertices(proxy1Geometry, ductDepth, duct.proxyLengths.proxy1, largestGlobalSize);
                 moveProxyVertices(proxy2Geometry, ductDepth, duct.proxyLengths.proxy2, largestGlobalSize);
                 moveProxyVertices(proxyMedianGeometry, ductDepth, duct.proxyLengths.proxyMedian, largestGlobalSize);
                 moveOriginalProxyVertices(proxyOriginal1Geometry);
                 moveOriginalProxyVertices(proxyOriginal2Geometry);
 
-                const proxy1 = new THREE.Mesh(proxy1Geometry, material);
-                proxy1.position.copy(duct.segment.duct.userData.component.object.position);
-                const proxy2 = new THREE.Mesh(proxy2Geometry, material2);
-                const proxyOriginal1 = new THREE.Mesh(proxyOriginal1Geometry, material4); 
-                const proxyOriginal2 = new THREE.Mesh(proxyOriginal2Geometry, material5); 
-                const proxyMedian = new THREE.Mesh(proxyMedianGeometry, material3);
+                console.log("createJointProxies step 8");
 
                 if(key == "up") {
-                    proxy1.position.x += (innerDuctDimensionsensions.x / -2);
-                    proxy1.position.z += (innerDuctDimensionsensions.z) / -2;
+                    proxy1.position.x += (innerDuctDimensions.z / -2);
+                    proxy1.position.z += (innerDuctDimensions.x) / -2;
         
-                    proxy2.position.copy(proxy1.position);
-                    proxy2.position.x += (innerDuctDimensionsensions.x);
+                    proxy2 = JSON.parse(JSON.stringify(proxy1));
+                    proxy2.position.x += (innerDuctDimensions.z);
                 }
                 else if(key == "down") {
-                    proxy1.position.x += (innerDuctDimensionsensions.x / -2);
-                    proxy1.position.z += (innerDuctDimensionsensions.z) / 2;
+                    proxy1.position.x += (innerDuctDimensions.z / -2);
+                    proxy1.position.z += (innerDuctDimensions.x) / 2;
         
-                    proxy2.position.copy(proxy1.position);
-                    proxy2.position.x += (innerDuctDimensionsensions.x);
+                    proxy2 = JSON.parse(JSON.stringify(proxy1));
+                    proxy2.position.x += (innerDuctDimensions.z);
                 }
                 else if(key == "left") {
-                    proxy1.position.x += (innerDuctDimensionsensions.x / 2);
-                    proxy1.position.z += (innerDuctDimensionsensions.z) / 2;
+                    proxy1.position.x += (innerDuctDimensions.x / 2);
+                    proxy1.position.z += (innerDuctDimensions.z) / 2;
         
-                    proxy2.position.copy(proxy1.position);
-                    proxy2.position.z += (innerDuctDimensionsensions.z * -1);
+                    proxy2 = JSON.parse(JSON.stringify(proxy1));
+                    proxy2.position.z += (innerDuctDimensions.z * -1);
                 }
                 else if(key == "right") {
-                    proxy1.position.x += (innerDuctDimensionsensions.x / -2);
-                    proxy1.position.z += (innerDuctDimensionsensions.z) / 2;
+                    proxy1.position.x += (innerDuctDimensions.x / -2);
+                    proxy1.position.z += (innerDuctDimensions.z) / 2;
         
-                    proxy2.position.copy(proxy1.position);
-                    proxy2.position.z += (innerDuctDimensionsensions.z * -1);
-                }   
+                    proxy2 = JSON.parse(JSON.stringify(proxy1));
+                    proxy2.position.z += (innerDuctDimensions.z * -1);
+                }  
 
-                proxyMedian.position.copy(proxy1.position);
+                proxy1.position.x += this.ahuObject.resources.ducts[duct.id].position.x;
+                proxy1.position.z += this.ahuObject.resources.ducts[duct.id].position.z;
 
-                proxyOriginal1.position.copy(proxy1.position);
-                proxyOriginal2.position.copy(proxy2.position);
-                
-                const proxy1Vertices = this.mapProxyVertices(proxy1);
-                const proxy2Vertices = this.mapProxyVertices(proxy2);
-                const proxyOriginal1Vertices = this.mapProxyVertices(proxyOriginal1);
-                const proxyOriginal2Vertices = this.mapProxyVertices(proxyOriginal2);
-        
-                duct.segment.duct.userData.proxy1Vertices = proxy1Vertices;
-                duct.segment.duct.userData.proxy2Vertices = proxy2Vertices;
-                duct.segment.duct.userData.proxyOriginal1Vertices = proxyOriginal1Vertices;
-                duct.segment.duct.userData.proxyOriginal2Vertices = proxyOriginal2Vertices;
-        
-                proxy1.name = "jointHelperProxy";
-                proxy2.name = "jointHelperProxy";
-                proxyOriginal1.name = "jointHelperProxy";
-                proxyOriginal2.name = "jointHelperProxy";
-                proxyMedian.name = "jointHelperProxy";
+                proxy2.position.x += this.ahuObject.resources.ducts[duct.id].position.x;
+                proxy2.position.z += this.ahuObject.resources.ducts[duct.id].position.z;
 
-                proxy1.userData = {
-                    helperColor: "0xFF0000",
-                    productionColor: "sharedData.primaryColor"
-                };
-                proxy2.userData = {
-                    helperColor: "0x0000FF",
-                    productionColor: "sharedData.primaryColor"
-                };
-                proxyOriginal1.userData = {
-                    helperColor: "0xFF0000",
-                    productionColor: "sharedData.primaryColor"
-                };
-                proxyOriginal2.userData = {
-                    helperColor: "0x0000FF",
-                    productionColor: "sharedData.primaryColor"
-                };
-                proxyMedian.userData = {
-                    helperColor: "0x00FF00",
-                    productionColor: "sharedData.primaryColor"
-                };
+                proxyOriginal1 = JSON.parse(JSON.stringify(proxy1));
+                proxyOriginal2 = JSON.parse(JSON.stringify(proxy2));
+                proxyMedian = JSON.parse(JSON.stringify(proxy1));
 
-                duct.segment.duct.userData.proxies = {
-                    proxy1: proxy1, 
-                    proxy2: proxy2,
-                    proxyOriginal1: proxyOriginal1, 
-                    proxyOriginal2: proxyOriginal2, 
-                    proxyMedian: proxyMedian, 
-                };
+                proxy1Geometry.translate( proxy1.position.x, 0, proxy1.position.z );
+                proxy2Geometry.translate( proxy2.position.x, 0, proxy2.position.z );
+                proxyOriginal1Geometry.translate( proxyOriginal1.position.x, 0, proxyOriginal1.position.z );
+                proxyOriginal2Geometry.translate( proxyOriginal2.position.x, 0, proxyOriginal2.position.z );
+                // proxyMedianGeometry.translate( proxyMedian.position.x, 0, proxyMedian.position.z );
 
-                for(const key in duct.segment.duct.userData.proxies) {
-                    let proxy = duct.segment.duct.userData.proxies[key];
-                    
-                    const wireframe = new THREE.WireframeGeometry(proxy.geometry);
-                    const lineMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
-                    const wireframeMesh = new THREE.LineSegments(wireframe, lineMaterial);
-                    wireframeMesh.visible = false;
-                    proxy.add(wireframeMesh); // Add wireframe as a child of the original mesh
-                }
+                console.log("createJointProxies step 10");
 
-                duct.segment.duct.userData.proxies.proxy1.userData.vertexIndicators = this.renderProxyVertices(proxy1Vertices, areHelpersOn);
-                duct.segment.duct.userData.proxies.proxy2.userData.vertexIndicators = this.renderProxyVertices(proxy2Vertices, areHelpersOn);
-                duct.segment.duct.userData.proxies.proxyOriginal1.userData.vertexIndicators = this.renderProxyVertices(proxyOriginal1Vertices, areHelpersOn);
-                duct.segment.duct.userData.proxies.proxyOriginal2.userData.vertexIndicators = this.renderProxyVertices(proxyOriginal2Vertices, areHelpersOn);
+                this.ahuObject.resources.joints[`Joint-${gridKey}`][key] = {};
+
+                this.ahuObject.resources.joints[`Joint-${gridKey}`][key] = {};
+
+                this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxy1 = JSON.parse(JSON.stringify(proxy1));
+                this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxy2 = JSON.parse(JSON.stringify(proxy2));
+                this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxyOriginal1 = JSON.parse(JSON.stringify(proxyOriginal1));
+                this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxyOriginal2 = JSON.parse(JSON.stringify(proxyOriginal2));
+                this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxyMedian = JSON.parse(JSON.stringify(proxyMedian));
+
+                console.log("createJointProxies step 11");
+
+                this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxy1.coordinates = this.mapProxyVertices2(proxy1Geometry);
+                this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxy2.coordinates = this.mapProxyVertices2(proxy2Geometry);
+                this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxyOriginal1.coordinates = this.mapProxyVertices2(proxyOriginal1Geometry);
+                this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxyOriginal2.coordinates = this.mapProxyVertices2(proxyOriginal2Geometry);
+                this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxyMedian.geometry = proxyMedianGeometry;
+
+                console.log("createJointProxies step 12:", this.ahuObject);
             }
   
         }
 
         if(sharedData.xzJointDirection == "inwards") {
-            this.alignProxyMediansInwards(intersection); 
+            this.alignProxyMediansInwards(intersection, gridKey); 
         }
         else if(sharedData.xzJointDirection == "outwards") {
-            this.alignProxyMediansOutwards(intersection); 
+            this.alignProxyMediansOutwards2(intersection, gridKey); 
         }
+
+        console.log("createJointProxies step 15");
   
         for(const key in intersection) {
             let duct = intersection[key];
             if(duct != null) {
-                const proxyMedianVertices = this.mapProxyVertices(duct.segment.duct.userData.proxies.proxyMedian);
-                duct.segment.duct.userData.proxyMedianVertices = proxyMedianVertices;
-                duct.segment.duct.userData.proxies.proxyMedian.userData.vertexIndicators = this.renderProxyVertices(proxyMedianVertices, areHelpersOn);
+                let proxyMedianGeometry = this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxyMedian.geometry;
+
+                const ductPos = this.ahuObject.resources.ducts[duct.id].position;
+
+                proxyMedianGeometry.translate(
+                    this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxyMedian.position.x, 
+                    0, 
+                    this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxyMedian.position.z,
+                );
+                let mappedCoordinates = this.mapProxyVertices2(proxyMedianGeometry); 
+                this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxyMedian.coordinates = mappedCoordinates;
+
+                delete this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxyMedian.geometry;
             }
         }
 
-        return largestGlobalSize;
+        console.log("createJointProxies step 16:", this.ahuObject.resources.joints[`Joint-${gridKey}`]);
     }
 
     calculateAdjacentContext(intersection, largestGlobalSize, definedIntersectionCount) {
+
+        console.log("calculateAdjacentContext started");
 
         let ductSize1 = 0;
         let ductSize2 = 0;
@@ -215,6 +226,8 @@ export default class Joints {
             inwards: null,
             outwards: null
         }
+
+        console.log("calculateAdjacentContext step 1");
 
         function compareSizes(sizes, ductSize1, ductSize2) {
             if(ductSize2 < ductSize1) {
@@ -227,6 +240,8 @@ export default class Joints {
             }
         }
 
+        console.log("calculateAdjacentContext step 2");
+
         for(const key in intersection) {
             if(intersection[key] != null) {
                 intersection[key].proxyLengths = {
@@ -237,9 +252,13 @@ export default class Joints {
             }
         }
 
+        console.log("calculateAdjacentContext step 3");
+
         if(sharedData.xzJointContext == "global") {
             return;
         }
+
+        console.log("calculateAdjacentContext step 4");
 
         if(definedIntersectionCount == 2) {
             if(intersection.up != null && intersection.down != null) {
@@ -250,8 +269,11 @@ export default class Joints {
             }
         }
 
+        console.log("calculateAdjacentContext step 5");
+
         if(sharedData.xzJointYStyle == "diagonal") {
             for(const key in intersection) {
+                
                 if(intersection[key] != null) {
                     const currentSize = this.innerDuctDimensions[intersection[key].xetoDuct.graphicLocation.size];
                     intersection[key].proxyLengths.proxy1 = currentSize;
@@ -301,8 +323,8 @@ export default class Joints {
                 // up-left proxies
                 //////////////////
     
-                ductSize1 = this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size];
-                ductSize2 = this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size];
+                ductSize1 = this.getSize("up");
+                ductSize2 = this.getSize("left");
     
                 compareSizes(sizes, ductSize1, ductSize2);
     
@@ -314,8 +336,8 @@ export default class Joints {
                 // down-left proxies
                 //////////////////
                 
-                ductSize1 = this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size];
-                ductSize2 = this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size];
+                ductSize1 = this.getSize("left");
+                ductSize2 = this.getSize("down");
     
                 compareSizes(sizes, ductSize1, ductSize2)
     
@@ -327,8 +349,8 @@ export default class Joints {
                 // down-right proxies
                 //////////////////
                 
-                ductSize1 = this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size];
-                ductSize2 = this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size];
+                ductSize1 = this.getSize("down");
+                ductSize2 = this.getSize("right");
     
                 compareSizes(sizes, ductSize1, ductSize2);
     
@@ -340,8 +362,8 @@ export default class Joints {
                 // up-right proxies
                 //////////////////
                 
-                ductSize1 = this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size];
-                ductSize2 = this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size];
+                ductSize1 = this.getSize("right");
+                ductSize2 = this.getSize("up");
     
                 compareSizes(sizes, ductSize1, ductSize2);
     
@@ -356,8 +378,8 @@ export default class Joints {
                 //////////////////
     
                 if(intersection.up != null && intersection.left != null) {
-                    ductSize1 = this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size];
-                    ductSize2 = this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size];
+                    ductSize1 = this.getSize("up");
+                    ductSize2 = this.getSize("left");
     
                     compareSizes(sizes, ductSize1, ductSize2);
     
@@ -371,8 +393,8 @@ export default class Joints {
                 //////////////////
     
                 if(intersection.left != null && intersection.down != null) {
-                    ductSize1 = this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size];
-                    ductSize2 = this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size];
+                    ductSize1 = this.getSize("left");
+                    ductSize2 = this.getSize("down");
     
                     compareSizes(sizes, ductSize1, ductSize2)
     
@@ -386,8 +408,8 @@ export default class Joints {
                 //////////////////
     
                 if(intersection.down != null && intersection.right != null) {
-                    ductSize1 = this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size];
-                    ductSize2 = this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size];
+                    ductSize1 = this.getSize("down");
+                    ductSize2 = this.getSize("right");
     
                     compareSizes(sizes, ductSize1, ductSize2);
     
@@ -401,8 +423,8 @@ export default class Joints {
                 //////////////////
     
                 if(intersection.right != null && intersection.up != null) {
-                    ductSize1 = this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size];
-                    ductSize2 = this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size];
+                    ductSize1 = this.getSize("right");
+                    ductSize2 = this.getSize("up");
     
                     compareSizes(sizes, ductSize1, ductSize2);
     
@@ -416,8 +438,8 @@ export default class Joints {
                 //////////////////
     
                 if(intersection.left == null) {
-                    ductSize1 = this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size];
-                    ductSize2 = this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size];
+                    ductSize1 = this.getSize("up");
+                    ductSize2 = this.getSize("down");
     
                     compareSizes(sizes, ductSize1, ductSize2);
     
@@ -425,24 +447,24 @@ export default class Joints {
                     intersection.down.proxyLengths.proxyMedian = sizes[selectedSize];
                     intersection.up.proxyLengths.proxy2 = sizes[selectedSize];
                 }
-                // if(intersection.up != null && intersection.down != null) {
-                //     ductSize1 = this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size];
-                //     ductSize2 = this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size];
+                if(intersection.right != null) {
+                    ductSize1 = this.getSize("up");
+                    ductSize2 = this.getSize("down");
     
-                //     compareSizes(sizes, ductSize1, ductSize2);
+                    compareSizes(sizes, ductSize1, ductSize2);
     
-                //     intersection.down.proxyLengths.proxy2 = sizes[selectedSize];
-                //     intersection.down.proxyLengths.proxyMedian = sizes[selectedSize];
-                //     intersection.up.proxyLengths.proxy2 = sizes[selectedSize];
-                // }
+                    intersection.up.proxyLengths.proxy2 = sizes[selectedSize];
+                    intersection.down.proxyLengths.proxyMedian = sizes[selectedSize];
+                    intersection.down.proxyLengths.proxy2 = sizes[selectedSize];
+                }
 
                 //////////////////
                 // left-right proxies
                 //////////////////
     
                 if(intersection.down == null) {
-                    ductSize1 = this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size];
-                    ductSize2 = this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size];
+                    ductSize1 = this.getSize("left");
+                    ductSize2 = this.getSize("right");
     
                     compareSizes(sizes, ductSize1, ductSize2);
     
@@ -451,8 +473,8 @@ export default class Joints {
                     intersection.right.proxyLengths.proxy2 = sizes[selectedSize];
                 }
                 else if(intersection.up == null) {
-                    ductSize1 = this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size];
-                    ductSize2 = this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size];
+                    ductSize1 = this.getSize("left");
+                    ductSize2 = this.getSize("right");
     
                     compareSizes(sizes, ductSize1, ductSize2);
     
@@ -467,10 +489,13 @@ export default class Joints {
                 //////////////////
                 // up-left proxies
                 //////////////////
+
+                console.log("calculateAdjacentContext step 6");
     
                 if(intersection.up != null && intersection.left != null) {
-                    ductSize1 = this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size];
-                    ductSize2 = this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size];
+
+                    ductSize1 = this.getSize("up");
+                    ductSize2 = this.getSize("left");
     
                     compareSizes(sizes, ductSize1, ductSize2);
     
@@ -484,8 +509,8 @@ export default class Joints {
                 //////////////////
     
                 if(intersection.left != null && intersection.down != null) {
-                    ductSize1 = this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size];
-                    ductSize2 = this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size];
+                    ductSize1 = this.getSize("left");
+                    ductSize2 = this.getSize("down");
     
                     compareSizes(sizes, ductSize1, ductSize2)
     
@@ -499,8 +524,8 @@ export default class Joints {
                 //////////////////
     
                 if(intersection.down != null && intersection.right != null) {
-                    ductSize1 = this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size];
-                    ductSize2 = this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size];
+                    ductSize1 = this.getSize("down");
+                    ductSize2 = this.getSize("right");
     
                     compareSizes(sizes, ductSize1, ductSize2);
     
@@ -514,14 +539,20 @@ export default class Joints {
                 //////////////////
     
                 if(intersection.right != null && intersection.up != null) {
-                    ductSize1 = this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size];
-                    ductSize2 = this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size];
+                    console.log("calculateAdjacentContext step 6.5");
+
+                    ductSize1 = this.getSize(intersection.right);
+                    ductSize2 = this.getSize(intersection.up);
+
+                    console.log("calculateAdjacentContext step 7");
     
                     compareSizes(sizes, ductSize1, ductSize2);
     
                     intersection.right.proxyLengths.proxy1 = sizes[selectedSize];
                     intersection.right.proxyLengths.proxyMedian = sizes[selectedSize];
                     intersection.up.proxyLengths.proxy2 = sizes[selectedSize];
+
+                    console.log("calculateAdjacentContext step 8");
                 }
                 
             }
@@ -529,7 +560,13 @@ export default class Joints {
 
     }
 
-    alignProxyMediansInwards(intersection) {
+    getSize(duct) {
+        const size = this.ahuObject.resources.ducts[duct.id].dimensions.z;
+        return size;
+    }
+
+    alignProxyMediansInwards(intersection, gridKey) {
+        console.log("alignProxyMediansInwards started:", intersection, gridKey, this.ahuObject);
         let definedIntersectionCount = 0;
         for(const key in intersection) {
             if(intersection[key] != null)  {
@@ -537,26 +574,42 @@ export default class Joints {
             }
         }
 
+        const jointObject = this.ahuObject.resources.joints[`Joint-${gridKey}`];
+
+        console.log("alignProxyMediansInwards step 1");
+
         let upProxies, rightProxies, leftProxies, downProxies = null;
 
+        // this.ahuObject.resources.ducts[duct.id].dimensions
+
         if(intersection.up) {
-            upProxies =  intersection.up.segment.duct.userData.proxies;
+            upProxies = jointObject.up;
+            upProxies.ductDimensions = this.ahuObject.resources.ducts[intersection.up.id].dimensions;
         }
         if(intersection.right) {
-            rightProxies =  intersection.right.segment.duct.userData.proxies;
+            rightProxies = jointObject.right;
+            rightProxies.ductDimensions = this.ahuObject.resources.ducts[intersection.right.id].dimensions;
         }
         if(intersection.left) {
-            leftProxies =  intersection.left.segment.duct.userData.proxies;
+            leftProxies = jointObject.left;
+            leftProxies.ductDimensions = this.ahuObject.resources.ducts[intersection.left.id].dimensions;
         }
         if(intersection.down) {
-            downProxies =  intersection.down.segment.duct.userData.proxies;
+            downProxies = jointObject.down;
+            downProxies.ductDimensions = this.ahuObject.resources.ducts[intersection.down.id].dimensions;
         }
 
+        console.log("alignProxyMediansInwards step 2:", this.ahuObject);
+
         if(definedIntersectionCount == 2) {
+            console.log("alignProxyMediansInwards step 3");
             if(intersection.up != null && intersection.right != null) {
+                console.log("alignProxyMediansInwards step 4 upProxies:", upProxies);
 
                 upProxies.proxyMedian.position.z = rightProxies.proxy2.position.z;
                 rightProxies.proxyMedian.position.x = upProxies.proxy2.position.x;
+
+                console.log("alignProxyMediansInwards step 5");
 
                 if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
 
@@ -574,18 +627,35 @@ export default class Joints {
                         rightProxies.proxyMedian.position.z += distances.right.x;
                     }
 
+                    console.log("alignProxyMediansInwards step 6");
+
                     let medianOffset = Math.min(
-                        this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size],
-                        this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size]
+                        rightProxies.ductDimensions.y,
+                        upProxies.ductDimensions.y
                     );
+
+                    console.log("alignProxyMediansInwards step 7");
+
                     medianOffset += sharedData.xzJointPadding;
-                    const medianClone = upProxies.proxyMedian.clone();
+                    const medianClone = JSON.parse(JSON.stringify(upProxies.proxyMedian));
+
+                    console.log("alignProxyMediansInwards step 8");
                     medianClone.position.x += medianOffset;
+
+                    console.log("alignProxyMediansInwards step 9");
                     const proxyMedianVerticesClone = this.mapProxyVertices(medianClone);
+
+                    console.log("alignProxyMediansInwards step 10");
                     intersection.up.segment.duct.userData.proxyMedianVertices2 = proxyMedianVerticesClone;
+
+                    console.log("alignProxyMediansInwards step 11");
                     intersection.up.segment.duct.userData.proxies["medianClone"] = medianClone;
+
+                    console.log("alignProxyMediansInwards step 12");
                     upProxies.proxyMedian.position.z += medianOffset;
                 }
+
+                console.log("alignProxyMediansInwards step 13");
             }
             else if(intersection.down != null && intersection.right != null) {
                 downProxies.proxyMedian.position.x = downProxies.proxy2.position.x;
@@ -608,11 +678,12 @@ export default class Joints {
                     }
 
                     let medianOffset = Math.min(
-                        this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size],
-                        this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size]
+                        rightProxies.ductDimensions.y,
+                        downProxies.ductDimensions.y
                     );
+
                     medianOffset += sharedData.xzJointPadding;
-                    const medianClone = rightProxies.proxyMedian.clone();
+                    const medianClone = JSON.parse(JSON.stringify(rightProxies.proxyMedian));
                     medianClone.position.x += medianOffset;
                     const proxyMedianVerticesClone = this.mapProxyVertices(medianClone);
                     intersection.right.segment.duct.userData.proxyMedianVertices2 = proxyMedianVerticesClone;
@@ -641,11 +712,12 @@ export default class Joints {
                     }
 
                     let medianOffset = Math.min(
-                        this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size],
-                        this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size]
+                        leftProxies.ductDimensions.y,
+                        upProxies.ductDimensions.y
                     );
+
                     medianOffset += sharedData.xzJointPadding;
-                    const medianClone = leftProxies.proxyMedian.clone();
+                    const medianClone = JSON.parse(JSON.stringify(leftProxies.proxyMedian));
                     medianClone.position.x -= medianOffset;
                     const proxyMedianVerticesClone = this.mapProxyVertices(medianClone);
                     intersection.left.segment.duct.userData.proxyMedianVertices2 = proxyMedianVerticesClone;
@@ -674,11 +746,12 @@ export default class Joints {
                     }
 
                     let medianOffset = Math.min(
-                        this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size],
-                        this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size]
+                        leftProxies.ductDimensions.y,
+                        downProxies.ductDimensions.y
                     );
+
                     medianOffset += sharedData.xzJointPadding;
-                    const medianClone = downProxies.proxyMedian.clone();
+                    const medianClone = JSON.parse(JSON.stringify(downProxies.proxyMedian));
                     medianClone.position.x -= medianOffset;
                     const proxyMedianVerticesClone = this.mapProxyVertices(medianClone);
                     intersection.down.segment.duct.userData.proxyMedianVertices2 = proxyMedianVerticesClone;
@@ -686,6 +759,8 @@ export default class Joints {
                     downProxies.proxyMedian.position.z -= medianOffset;
                 }
             }
+
+            console.log("alignProxyMediansInwards step 7");
 
         }
         else if(definedIntersectionCount == 3) {
@@ -1005,9 +1080,430 @@ export default class Joints {
                 }
             }
         }
+
+        console.log("alignProxyMediansInwards step 8");
     }
 
-    alignProxyMediansOutwards(intersection) {        
+    // alignProxyMediansOutwards(intersection) {        
+    //     let definedIntersectionCount = 0;
+    //     for(const key in intersection) {
+    //         if(intersection[key] != null)  {
+    //             definedIntersectionCount++;
+    //         }
+    //     }
+
+    //     let upProxies, rightProxies, leftProxies, downProxies = null;
+
+    //     if(intersection.up) {
+    //         upProxies =  intersection.up.segment.duct.userData.proxies;
+    //     }
+    //     if(intersection.right) {
+    //         rightProxies =  intersection.right.segment.duct.userData.proxies;
+    //     }
+    //     if(intersection.left) {
+    //         leftProxies =  intersection.left.segment.duct.userData.proxies;
+    //     }
+    //     if(intersection.down) {
+    //         downProxies =  intersection.down.segment.duct.userData.proxies;
+    //     }
+
+    //     if(definedIntersectionCount == 2) {
+    //         if(intersection.up != null && intersection.right != null) {
+    //             upProxies.proxyMedian.position.z = rightProxies.proxy2.position.z;
+    //             rightProxies.proxyMedian.position.z = upProxies.proxy2.position.z;
+
+    //             if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
+    //                 const distances = {
+    //                     right: {
+    //                         x: Math.abs(rightProxies.proxyMedian.position.x - upProxies.proxy2.position.x),
+    //                         z: Math.abs(rightProxies.proxyMedian.position.z - rightProxies.proxy1.position.z)
+    //                     }
+    //                 }
+    
+    //                 if(distances.right.x > distances.right.z) {
+    //                     rightProxies.proxyMedian.position.x -= distances.right.z;
+    //                 }
+    //                 else if(distances.right.x <= distances.right.z) {
+    //                     rightProxies.proxyMedian.position.z -= distances.right.x;
+    //                 }
+
+    //                 let medianOffset = Math.min(
+    //                     this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size],
+    //                     this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size]
+    //                 );
+    //                 medianOffset += sharedData.xzJointPadding;
+    //                 const medianClone = upProxies.proxyMedian.clone();
+    //                 medianClone.position.x += medianOffset;
+    //                 const proxyMedianVerticesClone = this.mapProxyVertices(medianClone);
+    //                 intersection.up.segment.duct.userData.proxyMedianVertices2 = proxyMedianVerticesClone;
+    //                 intersection.up.segment.duct.userData.proxies["medianClone"] = medianClone;
+    //                 upProxies.proxyMedian.position.z += medianOffset;
+
+    //             }
+    //         }
+    //         else if(intersection.down != null && intersection.right != null) {
+    //             downProxies.proxyMedian.position.x = rightProxies.proxy2.position.x;
+    //             rightProxies.proxyMedian.position.x = downProxies.proxy1.position.x;
+
+    //             if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
+    //                 const distances = {
+    //                     down: {
+    //                         x: Math.abs(downProxies.proxyMedian.position.x - downProxies.proxy2.position.x),
+    //                         z: Math.abs(downProxies.proxyMedian.position.z - rightProxies.proxy2.position.z)
+    //                     }
+    //                 }
+    //                 if(distances.down.x > distances.down.z) {
+    //                     downProxies.proxyMedian.position.x -= distances.down.z;
+    //                 }
+    //                 else if(distances.down.x <= distances.down.z) {
+    //                     downProxies.proxyMedian.position.z += distances.down.x;
+    //                 }
+
+    //                 let medianOffset = Math.min(
+    //                     this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size],
+    //                     this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size]
+    //                 );
+    //                 medianOffset += sharedData.xzJointPadding;
+    //                 const medianClone = rightProxies.proxyMedian.clone();
+    //                 medianClone.position.x += medianOffset;
+    //                 const proxyMedianVerticesClone = this.mapProxyVertices(medianClone);
+    //                 intersection.right.segment.duct.userData.proxyMedianVertices2 = proxyMedianVerticesClone;
+    //                 intersection.up.segment.duct.userData.proxies["medianClone"] = medianClone;
+    //                 rightProxies.proxyMedian.position.z -= medianOffset;
+    //             }
+    //         }
+    //         else if(intersection.up != null && intersection.left != null) {
+    //             upProxies.proxyMedian.position.x = leftProxies.proxy2.position.x;
+    //             leftProxies.proxyMedian.position.x = upProxies.proxy2.position.x;
+    //             leftProxies.proxyMedian.position.z = leftProxies.proxy2.position.z;
+
+    //             if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
+    //                 const distances = {
+    //                     up: {
+    //                         x: Math.abs(upProxies.proxyMedian.position.x - upProxies.proxy1.position.x),
+    //                         z: Math.abs(upProxies.proxyMedian.position.z - leftProxies.proxy1.position.z)
+    //                     }
+    //                 }
+    
+    //                 if(distances.up.x > distances.up.z) {
+    //                     upProxies.proxyMedian.position.x += distances.up.z;
+    //                 }
+    //                 else if(distances.up.x <= distances.up.z) {
+    //                     upProxies.proxyMedian.position.z -= distances.up.x;
+    //                 }
+
+    //                 let medianOffset = Math.min(
+    //                     this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size],
+    //                     this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size]
+    //                 );
+    //                 medianOffset += sharedData.xzJointPadding;
+    //                 const medianClone = leftProxies.proxyMedian.clone();
+    //                 medianClone.position.x -= medianOffset;
+    //                 const proxyMedianVerticesClone = this.mapProxyVertices(medianClone);
+    //                 intersection.left.segment.duct.userData.proxyMedianVertices2 = proxyMedianVerticesClone;
+    //                 intersection.up.segment.duct.userData.proxies["medianClone"] = medianClone;
+    //                 leftProxies.proxyMedian.position.z += medianOffset;
+    //             }
+    //         }
+    //         else if(intersection.down != null && intersection.left != null) {
+    //             leftProxies.proxyMedian.position.z = downProxies.proxy1.position.z;
+    //             downProxies.proxyMedian.position.x = downProxies.proxy2.position.x;
+    //             downProxies.proxyMedian.position.z = leftProxies.proxy1.position.z;
+                
+    //             if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
+    //                 const distances = {
+    //                     left: {
+    //                         x: Math.abs(leftProxies.proxyMedian.position.x - downProxies.proxy1.position.x),
+    //                         z: Math.abs(leftProxies.proxyMedian.position.z - leftProxies.proxy2.position.z)
+    //                     },
+    //                 }    
+    //                 if(distances.left.x > distances.left.z) {
+    //                     leftProxies.proxyMedian.position.x += distances.left.z;
+    //                 }
+    //                 else if(distances.left.x <= distances.left.z) {
+    //                     leftProxies.proxyMedian.position.z += distances.left.x;
+    //                 }
+
+    //                 let medianOffset = Math.min(
+    //                     this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size],
+    //                     this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size]
+    //                 );
+    //                 medianOffset += sharedData.xzJointPadding;
+    //                 const medianClone = downProxies.proxyMedian.clone();
+    //                 medianClone.position.x -= medianOffset;
+    //                 const proxyMedianVerticesClone = this.mapProxyVertices(medianClone);
+    //                 intersection.down.segment.duct.userData.proxyMedianVertices2 = proxyMedianVerticesClone;
+    //                 intersection.up.segment.duct.userData.proxies["medianClone"] = medianClone;
+    //                 downProxies.proxyMedian.position.z -= medianOffset;
+    //             }
+    //         }
+    //     }
+    //     else if(definedIntersectionCount == 3) {
+            
+    //         if(intersection.right == null) {
+    //             upProxies.proxyMedian.position.x = leftProxies.proxyMedian.position.x;
+    //             leftProxies.proxyMedian.position.z = downProxies.proxyMedian.position.z;
+
+    //             if(this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size] > this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size]) {
+    //                 downProxies.proxyMedian.position.x = upProxies.proxy2.position.x;
+    //             }
+    //             else {
+    //                 downProxies.proxyMedian.position.x = downProxies.proxy2.position.x;
+    //                 downProxies.proxyMedian.position.z = upProxies.proxy2.position.z;
+    //             }
+
+    //             if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
+    //                 const distances = {
+    //                     left: {
+    //                         x: Math.abs(leftProxies.proxyMedian.position.x - downProxies.proxy1.position.x),
+    //                         z: Math.abs(leftProxies.proxyMedian.position.z - leftProxies.proxy2.position.z)
+    //                     },
+    //                     up: {
+    //                         x: Math.abs(upProxies.proxyMedian.position.x - upProxies.proxy1.position.x),
+    //                         z: Math.abs(upProxies.proxyMedian.position.z - leftProxies.proxy1.position.z)
+    //                     },
+    //                 }
+    
+    //                 if(distances.up.x > distances.up.z) {
+    //                     upProxies.proxyMedian.position.x += distances.up.z;
+    //                 }
+    //                 else if(distances.up.x <= distances.up.z) {
+    //                     upProxies.proxyMedian.position.z -= distances.up.x;
+    //                 }
+    
+    //                 if(distances.left.x > distances.left.z) {
+    //                     leftProxies.proxyMedian.position.x += distances.left.z;
+    //                 }
+    //                 else if(distances.left.x <= distances.left.z) {
+    //                     leftProxies.proxyMedian.position.z += distances.left.x;
+    //                 }
+
+    //                 let cornerWidth = 0;
+    //                 if(downProxies.proxyMedian.position.z == downProxies.proxy2.position.z) {
+    //                     cornerWidth = downProxies.proxyMedian.position.x - downProxies.proxy2.position.x;
+    //                 }
+    //                 else {
+    //                     cornerWidth = downProxies.proxyMedian.position.x - upProxies.proxy2.position.x;
+    //                     cornerWidth *= -1;
+    //                 }
+
+    //                 downProxies.proxyMedian.position.z += cornerWidth;
+    //             }
+    //         }
+    //         else if(intersection.left == null) {
+    //             if(this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size] > this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size]) {
+    //                 upProxies.proxyMedian.position.z = downProxies.proxy2.position.z;
+    //             }
+    //             else {
+    //                 upProxies.proxyMedian.position.x = downProxies.proxy1.position.x;
+    //             }
+    //             downProxies.proxyMedian.position.z = downProxies.proxy2.position.z;
+    //             downProxies.proxyMedian.position.x = rightProxies.proxy2.position.x;
+
+    //             rightProxies.proxyMedian.position.z = upProxies.proxy2.position.z;   
+                
+    //             if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
+    //                 const distances = {
+    //                     down: {
+    //                         x: Math.abs(downProxies.proxyMedian.position.x - downProxies.proxy2.position.x),
+    //                         z: Math.abs(downProxies.proxyMedian.position.z - rightProxies.proxy2.position.z)
+    //                     },
+    //                     right: {
+    //                         x: Math.abs(rightProxies.proxyMedian.position.x - upProxies.proxy2.position.x),
+    //                         z: Math.abs(rightProxies.proxyMedian.position.z - rightProxies.proxy1.position.z)
+    //                     }
+    //                 }
+    //                 if(distances.down.x > distances.down.z) {
+    //                     downProxies.proxyMedian.position.x -= distances.down.z;
+    //                 }
+    //                 else if(distances.down.x <= distances.down.z) {
+    //                     downProxies.proxyMedian.position.z += distances.down.x;
+    //                 }
+    
+    //                 if(distances.right.x > distances.right.z) {
+    //                     rightProxies.proxyMedian.position.x -= distances.right.z;
+    //                 }
+    //                 else if(distances.right.x <= distances.right.z) {
+    //                     rightProxies.proxyMedian.position.z -= distances.right.x;
+    //                 }
+
+    //                 let cornerWidth = 0;
+    //                 if(upProxies.proxyMedian.position.z == upProxies.proxy1.position.z) {
+    //                     cornerWidth = upProxies.proxyMedian.position.x - upProxies.proxy1.position.x;
+    //                 }
+    //                 else {
+    //                     cornerWidth = upProxies.proxyMedian.position.x - downProxies.proxy1.position.x;
+    //                     cornerWidth *= -1;
+    //                 }
+
+    //                 upProxies.proxyMedian.position.z += cornerWidth;
+    //             }
+    //         }
+    //         else if(intersection.down == null) {
+    //             if(this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size] > this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size]) {
+    //                 leftProxies.proxyMedian.position.x = rightProxies.proxy2.position.x;
+    //                 leftProxies.proxyMedian.position.z = leftProxies.proxy2.position.z;
+    //             }
+    //             else {
+    //                 leftProxies.proxyMedian.position.z = rightProxies.proxy2.position.z;
+    //             } 
+
+    //             upProxies.proxyMedian.position.x = leftProxies.proxy1.position.x;
+
+    //             rightProxies.proxyMedian.position.z = upProxies.proxy2.position.z;
+
+    //             if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
+    //                 const distances = {
+    //                     up: {
+    //                         x: Math.abs(upProxies.proxyMedian.position.x - upProxies.proxy1.position.x),
+    //                         z: Math.abs(upProxies.proxyMedian.position.z - leftProxies.proxy1.position.z)
+    //                     },
+    //                     right: {
+    //                         x: Math.abs(rightProxies.proxyMedian.position.x - upProxies.proxy2.position.x),
+    //                         z: Math.abs(rightProxies.proxyMedian.position.z - rightProxies.proxy1.position.z)
+    //                     }
+    //                 }
+    //                 if(distances.right.x > distances.right.z) {
+    //                     rightProxies.proxyMedian.position.x -= distances.right.z;
+    //                 }
+    //                 else if(distances.right.x <= distances.right.z) {
+    //                     rightProxies.proxyMedian.position.z -= distances.right.x;
+    //                 }
+    
+    //                 if(distances.up.x > distances.up.z) {
+    //                     upProxies.proxyMedian.position.x += distances.up.z;
+    //                 }
+    //                 else if(distances.up.x <= distances.up.z) {
+    //                     upProxies.proxyMedian.position.z -= distances.up.x;
+    //                 }
+
+    //                 let cornerWidth = 0;
+    //                 if(leftProxies.proxy2.position.x == leftProxies.proxyMedian.position.x) {
+    //                     cornerWidth = leftProxies.proxy2.position.z - leftProxies.proxyMedian.position.z;
+    //                 }
+    //                 else {
+    //                     cornerWidth = rightProxies.proxy2.position.z - leftProxies.proxyMedian.position.z;
+    //                     cornerWidth *= -1;
+    //                 }
+
+    //                 leftProxies.proxyMedian.position.x += cornerWidth;
+    //             }
+                
+    //         }
+    //         else if(intersection.up == null) {
+    //             leftProxies.proxyMedian.position.z = downProxies.proxy1.position.z;
+    //             leftProxies.proxyMedian.position.x = leftProxies.proxy2.position.x;
+
+    //             downProxies.proxyMedian.position.z = downProxies.proxy2.position.z;
+    //             downProxies.proxyMedian.position.x = rightProxies.proxy2.position.x;
+
+    //             if(this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size] > this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size]) {
+    //                 rightProxies.proxyMedian.position.z = leftProxies.proxy1.position.z;
+    //             }
+    //             else {
+    //                 rightProxies.proxyMedian.position.x = leftProxies.proxy1.position.x;
+    //             } 
+                
+    //             if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
+    //                 const distances = {
+    //                     down: {
+    //                         x: Math.abs(downProxies.proxyMedian.position.x - downProxies.proxy2.position.x),
+    //                         z: Math.abs(downProxies.proxyMedian.position.z - rightProxies.proxy2.position.z)
+    //                     },
+    //                     left: {
+    //                         x: Math.abs(leftProxies.proxyMedian.position.x - downProxies.proxy1.position.x),
+    //                         z: Math.abs(leftProxies.proxyMedian.position.z - leftProxies.proxy2.position.z)
+    //                     },
+    //                 }
+    //                 if(distances.down.x > distances.down.z) {
+    //                     downProxies.proxyMedian.position.x -= distances.down.z;
+    //                 }
+    //                 else if(distances.down.x <= distances.down.z) {
+    //                     downProxies.proxyMedian.position.z += distances.down.x;
+    //                 }
+    
+    //                 if(distances.left.x > distances.left.z) {
+    //                     leftProxies.proxyMedian.position.x += distances.left.z;
+    //                 }
+    //                 else if(distances.left.x <= distances.left.z) {
+    //                     leftProxies.proxyMedian.position.z += distances.left.x;
+    //                 }
+
+    //                 let cornerWidth = 0;
+    //                 if(leftProxies.proxy1.position.x == rightProxies.proxyMedian.position.x) {
+    //                     cornerWidth = leftProxies.proxy1.position.z - rightProxies.proxyMedian.position.z;
+    //                     cornerWidth *= -1;
+    //                 }
+    //                 else {
+    //                     cornerWidth = rightProxies.proxyMedian.position.z - rightProxies.proxy1.position.z;
+    //                     cornerWidth *= -1;
+    //                 }
+
+    //                 rightProxies.proxyMedian.position.x += cornerWidth;
+    //             }
+    //         }
+    //     }
+    //     else if(definedIntersectionCount == 4) {
+    //         // top-left median
+    //         upProxies.proxyMedian.position.x = leftProxies.proxyMedian.position.x;
+    //         // bottom-right median
+    //         downProxies.proxyMedian.position.x = rightProxies.proxyMedian.position.x;
+    //         // bottom-right median
+    //         leftProxies.proxyMedian.position.z = downProxies.proxyMedian.position.z;
+    //         // top-right median
+    //         rightProxies.proxyMedian.position.z = upProxies.proxyMedian.position.z;
+
+    //         if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
+    //             const distances = {
+    //                 down: {
+    //                     x: Math.abs(downProxies.proxyMedian.position.x - downProxies.proxy2.position.x),
+    //                     z: Math.abs(downProxies.proxyMedian.position.z - rightProxies.proxy2.position.z)
+    //                 },
+    //                 left: {
+    //                     x: Math.abs(leftProxies.proxyMedian.position.x - downProxies.proxy1.position.x),
+    //                     z: Math.abs(leftProxies.proxyMedian.position.z - leftProxies.proxy2.position.z)
+    //                 },
+    //                 up: {
+    //                     x: Math.abs(upProxies.proxyMedian.position.x - upProxies.proxy1.position.x),
+    //                     z: Math.abs(upProxies.proxyMedian.position.z - leftProxies.proxy1.position.z)
+    //                 },
+    //                 right: {
+    //                     x: Math.abs(rightProxies.proxyMedian.position.x - upProxies.proxy2.position.x),
+    //                     z: Math.abs(rightProxies.proxyMedian.position.z - rightProxies.proxy1.position.z)
+    //                 }
+    //             }
+    //             if(distances.down.x > distances.down.z) {
+    //                 downProxies.proxyMedian.position.x -= distances.down.z;
+    //             }
+    //             else if(distances.down.x <= distances.down.z) {
+    //                 downProxies.proxyMedian.position.z += distances.down.x;
+    //             }
+
+    //             if(distances.right.x > distances.right.z) {
+    //                 rightProxies.proxyMedian.position.x -= distances.right.z;
+    //             }
+    //             else if(distances.right.x <= distances.right.z) {
+    //                 rightProxies.proxyMedian.position.z -= distances.right.x;
+    //             }
+
+    //             if(distances.up.x > distances.up.z) {
+    //                 upProxies.proxyMedian.position.x += distances.up.z;
+    //             }
+    //             else if(distances.up.x <= distances.up.z) {
+    //                 upProxies.proxyMedian.position.z -= distances.up.x;
+    //             }
+
+    //             if(distances.left.x > distances.left.z) {
+    //                 leftProxies.proxyMedian.position.x += distances.left.z;
+    //             }
+    //             else if(distances.left.x <= distances.left.z) {
+    //                 leftProxies.proxyMedian.position.z += distances.left.x;
+    //             }
+    //         }
+    //     }
+    // }
+
+    alignProxyMediansOutwards2(intersection, gridKey) {        
         let definedIntersectionCount = 0;
         for(const key in intersection) {
             if(intersection[key] != null)  {
@@ -1015,23 +1511,29 @@ export default class Joints {
             }
         }
 
+        const jointObject = this.ahuObject.resources.joints[`Joint-${gridKey}`];
+
+        console.log("alignProxyMediansOutwards2 step 1");
+
         let upProxies, rightProxies, leftProxies, downProxies = null;
 
         if(intersection.up) {
-            upProxies =  intersection.up.segment.duct.userData.proxies;
+            upProxies = jointObject.up;
         }
         if(intersection.right) {
-            rightProxies =  intersection.right.segment.duct.userData.proxies;
+            rightProxies = jointObject.right;
         }
         if(intersection.left) {
-            leftProxies =  intersection.left.segment.duct.userData.proxies;
+            leftProxies = jointObject.left;
         }
         if(intersection.down) {
-            downProxies =  intersection.down.segment.duct.userData.proxies;
+            downProxies = jointObject.down;
         }
 
         if(definedIntersectionCount == 2) {
             if(intersection.up != null && intersection.right != null) {
+
+                console.log("alignProxyMediansOutwards2 step 2");
                 upProxies.proxyMedian.position.z = rightProxies.proxy2.position.z;
                 rightProxies.proxyMedian.position.z = upProxies.proxy2.position.z;
 
@@ -1051,11 +1553,12 @@ export default class Joints {
                     }
 
                     let medianOffset = Math.min(
-                        this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size],
-                        this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size]
+                        rightProxies.ductDimensions.y,
+                        upProxies.ductDimensions.y
                     );
+
                     medianOffset += sharedData.xzJointPadding;
-                    const medianClone = upProxies.proxyMedian.clone();
+                    const medianClone = JSON.parse(JSON.stringify(upProxies.proxyMedian));
                     medianClone.position.x += medianOffset;
                     const proxyMedianVerticesClone = this.mapProxyVertices(medianClone);
                     intersection.up.segment.duct.userData.proxyMedianVertices2 = proxyMedianVerticesClone;
@@ -1083,11 +1586,12 @@ export default class Joints {
                     }
 
                     let medianOffset = Math.min(
-                        this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size],
-                        this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size]
+                        rightProxies.ductDimensions.y,
+                        downProxies.ductDimensions.y
                     );
+
                     medianOffset += sharedData.xzJointPadding;
-                    const medianClone = rightProxies.proxyMedian.clone();
+                    const medianClone = JSON.parse(JSON.stringify(rightProxies.proxyMedian));
                     medianClone.position.x += medianOffset;
                     const proxyMedianVerticesClone = this.mapProxyVertices(medianClone);
                     intersection.right.segment.duct.userData.proxyMedianVertices2 = proxyMedianVerticesClone;
@@ -1116,11 +1620,12 @@ export default class Joints {
                     }
 
                     let medianOffset = Math.min(
-                        this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size],
-                        this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size]
+                        leftProxies.ductDimensions.y,
+                        upProxies.ductDimensions.y
                     );
+
                     medianOffset += sharedData.xzJointPadding;
-                    const medianClone = leftProxies.proxyMedian.clone();
+                    const medianClone = JSON.parse(JSON.stringify(leftProxies.proxyMedian));
                     medianClone.position.x -= medianOffset;
                     const proxyMedianVerticesClone = this.mapProxyVertices(medianClone);
                     intersection.left.segment.duct.userData.proxyMedianVertices2 = proxyMedianVerticesClone;
@@ -1148,11 +1653,12 @@ export default class Joints {
                     }
 
                     let medianOffset = Math.min(
-                        this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size],
-                        this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size]
+                        leftProxies.ductDimensions.y,
+                        downProxies.ductDimensions.y
                     );
+
                     medianOffset += sharedData.xzJointPadding;
-                    const medianClone = downProxies.proxyMedian.clone();
+                    const medianClone = JSON.parse(JSON.stringify(downProxies.proxyMedian));
                     medianClone.position.x -= medianOffset;
                     const proxyMedianVerticesClone = this.mapProxyVertices(medianClone);
                     intersection.down.segment.duct.userData.proxyMedianVertices2 = proxyMedianVerticesClone;
@@ -1427,8 +1933,30 @@ export default class Joints {
     }
 
     mapProxyVertices(proxy) {
+        return
         const detachedProxy = proxy.clone();
         const proxyBB = new THREE.Box3().setFromObject(detachedProxy);
+        const proxyMin = proxyBB.min;
+        const proxyMax = proxyBB.max;
+  
+        const proxyCorners = [
+          new THREE.Vector3(proxyMin.x, proxyMin.y, proxyMax.z),
+          new THREE.Vector3(proxyMin.x, proxyMin.y, proxyMin.z),
+          new THREE.Vector3(proxyMax.x, proxyMin.y, proxyMin.z),
+          new THREE.Vector3(proxyMax.x, proxyMin.y, proxyMax.z),
+  
+          new THREE.Vector3(proxyMin.x, proxyMax.y, proxyMax.z),
+          new THREE.Vector3(proxyMin.x, proxyMax.y, proxyMin.z),
+          new THREE.Vector3(proxyMax.x, proxyMax.y, proxyMin.z),
+          new THREE.Vector3(proxyMax.x, proxyMax.y, proxyMax.z),
+        ];
+  
+        return proxyCorners;
+    }
+
+    mapProxyVertices2(proxyGeometry) {
+        // const proxyBB = new THREE.Box3().setFromObject(detachedProxy);
+        const proxyBB = new THREE.Box3().setFromBufferAttribute(proxyGeometry.attributes.position);
         const proxyMin = proxyBB.min;
         const proxyMax = proxyBB.max;
   
@@ -1497,6 +2025,66 @@ export default class Joints {
             vertexIndicator.position.copy(proxyCorner);
             vertexIndicator.name = "jointHelperVertices";
             vertexIndicator.visible = areHelpersOn;
+            vertexIndicators.push(vertexIndicator);
+        });
+
+        return vertexIndicators;
+        
+    }
+
+    renderProxyVertices2(proxyCorners, areHelpersOn) {
+
+        let indicatorSize = 27;
+        if(indicatorSize > 30) {
+            indicatorSize = 30;
+        }
+
+        const createTextCanvasTexture = (text) => {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            const size = 1000; // Higher size for better resolution
+            canvas.width = size;
+            canvas.height = size;
+
+            // Fill the canvas with a background color
+            context.fillStyle = 'green';
+            context.fillRect(0, 0, size, size);
+
+            // Draw the text
+            context.fillStyle = 'black';
+            context.font = 'bold 800px Arial'; // Adjust font size and style
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            context.fillText(text, size / 2, size / 2);
+
+            // Create a texture from the canvas
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.needsUpdate = true; // Ensure the texture is updated
+            return texture;
+        };
+
+        let vertexIndicators = [];
+        proxyCorners.forEach((proxyCorner, index) => {
+            const textTexture = createTextCanvasTexture(index.toString());
+
+            const material = new THREE.MeshStandardMaterial({
+                map: textTexture,
+                transparent: true,
+            });
+
+            const vertexGeometry = new THREE.BoxGeometry(indicatorSize, indicatorSize, indicatorSize);
+            const vertexIndicator = new THREE.Mesh(vertexGeometry, material);
+
+            if(index >= 4 && index <= 7) {
+                vertexIndicator.rotation.y += Math.PI;
+            }            
+
+            vertexIndicator.position.copy(proxyCorner);
+            vertexIndicator.name = "jointHelperVertices";
+            vertexIndicator.visible = areHelpersOn;
+
+            sharedData.sceneHelper.addToScene(vertexIndicator);
+
             vertexIndicators.push(vertexIndicator);
         });
 

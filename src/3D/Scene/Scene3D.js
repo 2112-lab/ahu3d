@@ -601,6 +601,10 @@ class Scene3D {
         this.scene.add(mesh);
     }
 
+    removeFromScene(mesh) {
+        this.scene.remove(mesh);
+    }
+
     clearScene() {
         console.log("clearScene started:");
         const sceneChildren = this.scene.children.filter(

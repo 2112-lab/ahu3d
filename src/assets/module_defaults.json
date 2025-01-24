@@ -146,5 +146,8 @@
                 "context": "adjacent"
             }
         }
+    },
+    "parametricOptions": {
+        "wallThickness": 30
     }
 }

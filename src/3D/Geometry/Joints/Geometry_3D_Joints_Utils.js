@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { sharedData } from "../../../Ahu3D/globals.js";
 
 export function calculateJointCenter(intersection, type) {
     let xPositions = [];
@@ -118,6 +119,81 @@ export function createJointBackwall(points, largestGlobalSize = 1000) {
     mesh.position.y += (largestGlobalSize / 2) - 15;
 
     mesh.position.y += wallThickness;
+
+    mesh.name = "joint";
+
+    // Add an optional wireframe
+    const wireframe = new THREE.WireframeGeometry(mesh.geometry);
+    const lineMaterial = new THREE.LineBasicMaterial({ 
+        color: 0x000000 
+    });
+
+    // Enable depth testing and set render order to ensure visibility
+    lineMaterial.depthTest = false; // Makes sure the wireframe is rendered on top
+    lineMaterial.renderOrder = 3;  // Prioritize rendering order (higher values render later)
+    // lineMaterial.opacity = 0.3;
+
+    // Create the wireframe mesh
+    const wireframeMesh = new THREE.LineSegments(wireframe, lineMaterial);
+    wireframeMesh.visible = false; // Set visibility based on your requirements
+    mesh.add(wireframeMesh); // Add wireframe as a child of the original mesh
+
+    // Ensure the original mesh is rendered with a slight polygon offset
+    // mesh.material.polygonOffset = true;
+    // mesh.material.polygonOffsetFactor = 2; // Adjust this value as needed
+    // mesh.material.polygonOffsetUnits = 5;  // Fine-tune offset to prevent Z-fighting
+
+    sharedData.sceneHelper.addToScene(mesh);
+}
+
+export function createJointBackwall2(points, largestGlobalSize = 1000) {
+    console.log("createJointBackwall2 started:", points);
+    if (points.length < 3) {
+        throw new Error("A shape requires at least 3 points.");
+    }
+
+    const wallThickness = 30;
+
+    // Ensure the points are flattened into 2D (projected onto XZ plane)
+    const shapePoints = points.map(point => new THREE.Vector2(point.x, point.z));
+
+    // Create a THREE.Shape from the points
+    const shape = new THREE.Shape(shapePoints);
+
+    // Create ExtrudeGeometry to add thickness to the shape
+    const extrudeSettings = {
+        depth: wallThickness, // Thickness of the extrusion
+        bevelEnabled: false   // Ensure no bevel for consistent structure
+    };
+    const extrudeGeometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+
+    // Convert to BufferGeometry with indexing
+    const bufferGeometry = new THREE.BufferGeometry();
+    bufferGeometry.setAttribute('position', extrudeGeometry.getAttribute('position'));
+    bufferGeometry.setAttribute('normal', extrudeGeometry.getAttribute('normal'));
+    bufferGeometry.setIndex(extrudeGeometry.index || new THREE.BufferAttribute(new Uint16Array([...Array(bufferGeometry.attributes.position.count).keys()]), 1));
+
+    // Apply transformations to the geometry
+    const transformMatrix = new THREE.Matrix4();
+    transformMatrix.makeRotationX(Math.PI / 2);
+    bufferGeometry.applyMatrix4(transformMatrix);
+
+    // Translate the geometry along the y-axis
+    bufferGeometry.translate(0, (largestGlobalSize / 2) - 15 + wallThickness, 0);
+
+    console.log("createJointBackwall2 bufferGeometry analysis:", bufferGeometry);
+
+    return bufferGeometry;
+
+    // Create the material and mesh
+    const material = new THREE.MeshStandardMaterial({ color: sharedData.primaryColor, side: THREE.DoubleSide, opacity: 1.0 });
+    const mesh = new THREE.Mesh(geometry, material);
+
+    // Rotate and position the mesh
+    // mesh.rotation.x = Math.PI / 2;
+    // mesh.position.y += (largestGlobalSize / 2) - 15;
+
+    // mesh.position.y += wallThickness;
 
     mesh.name = "joint";
 
@@ -430,63 +506,64 @@ export function createGeometryFromPoints(pointA, pointB, pointC, pointD) {
     return geometry;
 }
 
-export function createJointClosure(intersect, direction) {
+export function createJointClosure(joint, direction) {
     const geometries = [];
 
-    if(intersect == undefined) {
+    console.log("createJointClosure:", joint);
+
+    if(joint == undefined) {
         return geometries;
     }
-    const duct = intersect.segment.duct;
 
     if(direction == "horizontal") {
         geometries.push(
             createGeometryFromPoints(
-                duct.userData.proxyOriginal2Vertices[4],
-                duct.userData.proxyOriginal1Vertices[7],
-                duct.userData.proxy1Vertices[7],
-                duct.userData.proxy2Vertices[4]
+                joint.proxyOriginal2.coordinates[4],
+                joint.proxyOriginal1.coordinates[7],
+                joint.proxy1.coordinates[7],
+                joint.proxy2.coordinates[4]
             )
         );
         geometries.push(
             createGeometryFromPoints(
-                duct.userData.proxyOriginal2Vertices[5],
-                duct.userData.proxyOriginal1Vertices[6],
-                duct.userData.proxy1Vertices[6],
-                duct.userData.proxy2Vertices[5]
+                joint.proxyOriginal2.coordinates[5],
+                joint.proxyOriginal1.coordinates[6],
+                joint.proxy1.coordinates[6],
+                joint.proxy2.coordinates[5]
             )
         );
         geometries.push(
             createGeometryFromPoints(
-                duct.userData.proxyOriginal1Vertices[7],
-                duct.userData.proxyOriginal2Vertices[4],
-                duct.userData.proxyOriginal2Vertices[5],
-                duct.userData.proxyOriginal1Vertices[6]
+                joint.proxyOriginal1.coordinates[7],
+                joint.proxyOriginal2.coordinates[4],
+                joint.proxyOriginal2.coordinates[5],
+                joint.proxyOriginal1.coordinates[6]
             )
         );
     }
     else {
         geometries.push(
             createGeometryFromPoints(
-                duct.userData.proxyOriginal2Vertices[4],
-                duct.userData.proxyOriginal1Vertices[4],
-                duct.userData.proxy1Vertices[4],
-                duct.userData.proxy2Vertices[4]
+                joint.proxyOriginal2.coordinates[4],
+                joint.proxyOriginal1.coordinates[4],
+                joint.proxy1.coordinates[4],
+                joint.proxy2.coordinates[4]
             )
         );
         geometries.push(
             createGeometryFromPoints(
-                duct.userData.proxyOriginal2Vertices[7],
-                duct.userData.proxyOriginal1Vertices[7],
-                duct.userData.proxy1Vertices[7],
-                duct.userData.proxy2Vertices[7]
+                joint.proxyOriginal2.coordinates[7],
+                joint.proxyOriginal1.coordinates[7],
+                joint.proxy1.coordinates[7],
+                joint.proxy2.coordinates[7]
             )
         );
         geometries.push(
             createGeometryFromPoints(
-                duct.userData.proxyOriginal1Vertices[7],
-                duct.userData.proxyOriginal2Vertices[6],
-                duct.userData.proxyOriginal2Vertices[5],
-                duct.userData.proxyOriginal1Vertices[4]
+                joint.proxyOriginal1.coordinates[7],
+                joint.proxyOriginal2.coordinates[6],
+                joint.proxyOriginal2.coordinates[5],
+                joint.proxyOriginal1.coordinates[4]
             )
         );
     }
@@ -520,17 +597,30 @@ export function mergeAndAddToScene(geometries) {
     }
 }
 
-export const sharedData = {
-    jointCenter: {},
-    primaryColor: null,
-    sceneHelper: null,
-    jointBlockStyle: null,
-    xzJointStyle: null,
-    xzJointDirection: null,
-    xzJointContext: null,
-    xzJointPadding: null,
-    xzJointYStyle: null,
-    xzJointYDirection: null,
-    isLJoint: false,
-    backwallArcConfigs: [],
-};
+export function mergeAndAddToScene2(geometries) {
+    if (geometries.length > 0) {
+        // Merge all geometries into one
+        const mergedGeometry = BufferGeometryUtils.mergeGeometries(geometries, false);
+
+        return mergedGeometry;
+        
+        // Create a material (opacity can be passed as needed)
+        const material = new THREE.MeshStandardMaterial({ 
+            color: sharedData.primaryColor, 
+            side: THREE.DoubleSide
+        });
+
+        // Create the merged mesh
+        const mergedMesh = new THREE.Mesh(mergedGeometry, material);
+        mergedMesh.name = "joint";
+        mergedMesh.renderOrder = 2;
+
+        const wireframe = new THREE.WireframeGeometry(mergedMesh.geometry);
+        const lineMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
+        const wireframeMesh = new THREE.LineSegments(wireframe, lineMaterial);
+        wireframeMesh.visible = false;
+        mergedMesh.add(wireframeMesh); // Add wireframe as a child of the original mesh
+
+        sharedData.sceneHelper.addToScene(mergedMesh);
+    }
+}

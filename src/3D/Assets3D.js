@@ -1,12 +1,13 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { sharedData } from "../Ahu3D/globals.js";
 
 import { createArrowInstance } from "./Geometry/Helpers/Geometry_Arrows.js"
 
 class Assets3D {
 
     constructor(sceneHelper, library, assetConfigs) {
-        this.sceneHelper = sceneHelper;
+        sharedData.sceneHelper = sceneHelper;
         this.library = library;
         this.assetConfigs = assetConfigs;
     }
@@ -22,16 +23,16 @@ class Assets3D {
     
         // Create an array of promises for loading each component's 3D mesh
         const loadPromises = Object.keys(this.library).map(async (key) => {
-        const mesh = await this.loadComponent(this.library[key], false);
-        instanceSet[this.library[key].componentName] = mesh; // Store mesh in instanceSet
+            const mesh = await this.loadComponent(this.library[key], false);
+            instanceSet[this.library[key].componentName] = mesh; // Store mesh in instanceSet
         });
     
         // Wait for all promises to resolve
         await Promise.all(loadPromises);
 
-        instanceSet.arrow = createArrowInstance(this.sceneHelper);
+        instanceSet.arrow = createArrowInstance(sharedData.sceneHelper);
     
-        this.sceneHelper.instanceSet = instanceSet;
+        sharedData.sceneHelper.instanceSet = instanceSet;
     }
 
     /**
@@ -91,9 +92,9 @@ class Assets3D {
         let mainMesh = mesh.getObjectByName('main'); // Find the 'main' mesh within the GLTF scene.
 
         let hvacNames = []; // Initialize an array to hold existing HVAC component names.
-        for (const i in this.sceneHelper.scene.children) { // Iterate over the children of the scene.
-            if (this.sceneHelper.scene.children[i].isObject3D && this.sceneHelper.scene.children[i].name == 'hvac') {
-                hvacNames.push(this.sceneHelper.scene.children[i].userData.component.componentId); // Collect HVAC component names.
+        for (const i in sharedData.sceneHelper.scene.children) { // Iterate over the children of the scene.
+            if (sharedData.sceneHelper.scene.children[i].isObject3D && sharedData.sceneHelper.scene.children[i].name == 'hvac') {
+                hvacNames.push(sharedData.sceneHelper.scene.children[i].userData.component.componentId); // Collect HVAC component names.
             }
         }
 
@@ -138,7 +139,7 @@ class Assets3D {
         mainMesh.name = "hvac"; // Name the main mesh "hvac".
         mainMesh.userData.component = cmpJson; // Store the component data in the mesh's userData.
 
-        this.sceneHelper.addToScene(mainMesh); // Add the processed mesh to the scene.
+        sharedData.sceneHelper.addToScene(mainMesh); // Add the processed mesh to the scene.
 
         return mainMesh; // Return the processed main mesh.
     }

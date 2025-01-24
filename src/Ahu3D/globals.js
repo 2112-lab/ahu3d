@@ -1,0 +1,22 @@
+export const sharedData = {
+    moduleConfigs: {},
+    jointCenter: {},
+    primaryColor: 0xAEB9C2,
+    sceneHelper: null,
+    jointBlockStyle: null,
+    xzJointStyle: null,
+    xzJointDirection: null,
+    xzJointContext: null,
+    xzJointPadding: null,
+    xzJointYStyle: null,
+    xzJointYDirection: null,
+    isLJoint: false,
+    backwallArcConfigs: [],
+    endTypes: ['cap', 'insert'],
+    innerDuctDimensions: {
+        small: 500,
+        medium: 1000,
+        large: 1500
+    },
+    componentLibrary: null,
+};

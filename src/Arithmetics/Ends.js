@@ -1,11 +1,12 @@
 import * as THREE from 'three';
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { sharedData } from "../Ahu3D/globals.js";
 
 export default class Ends {
-    constructor(innerDuctDimensions, sceneHelper, primaryColor) {
-        this.innerDuctDimensions = innerDuctDimensions;
-        this.sceneHelper = sceneHelper;
-        this.primaryColor = primaryColor;
+    constructor() {
+        this.innerDuctDimensions = sharedData.innerDuctDimensions;
+        this.sceneHelper = sharedData.sceneHelper;
+        this.primaryColor = sharedData.primaryColor;
     }
 
     /**
@@ -14,91 +15,130 @@ export default class Ends {
      * Creates the necessary duct ends based on the segment's orientation and style,
      * and positions them correctly within the assembly.
      */
-    createDuctEnds(assemblySegments) {
-        console.log("createDuctEnds started:", assemblySegments);
-        for (const segment of assemblySegments) { // Iterate over each segment.
+    createDuctEnds(ahuObject) {
+        console.log("createDuctEnds started:", ahuObject);
+        for (const ductKey in ahuObject.resources.ducts) { // Iterate over each segment.
+            const duct = ahuObject.resources.ducts[ductKey];
+
+            console.log("createDuctEnds duct:", duct);
+            console.log("createDuctEnds ductKey:", ductKey);
+
+            const ductXeto = ahuObject.xetoDictionary.edges[ductKey];
+
+            console.log("createDuctEnds ductXeto:", ductXeto);
+            console.log("createDuctEnds duct:", duct);
+
+            console.log("createDuctEnds step 1");
 
             const ductEndTypes = ['cap', 'insert'];
 
-            if (ductEndTypes.includes(segment.xetoDuct.blockStyle.ductEnds)) { // Check if the segment has defined duct ends.
+            if (ductEndTypes.includes(ductXeto.blockStyle.ductEnds)) { // Check if the segment has defined duct ends.
 
-                const segmentLoc = segment.xetoDuct.graphicLocation; // Get the segment's graphic location.
+                const ductLoc = ductXeto.graphicLocation; // Get the segment's graphic location.
 
-                const startIntersections = assemblySegments.filter(child => 
-                    segmentLoc.start === child.xetoDuct.graphicLocation.start &&
-                    segment != child ||
-                    segmentLoc.start === child.xetoDuct.graphicLocation.end &&
-                    segment != child
-                ); // Find intersections at the start of the segment.
+                console.log("createDuctEnds step 2:", ahuObject.xetoDictionary.edges);
 
-                const endIntersections = assemblySegments.filter(child => 
-                    segmentLoc.end === child.xetoDuct.graphicLocation.start &&
-                    segment != child ||
-                    segmentLoc.end === child.xetoDuct.graphicLocation.end &&
-                    segment != child
-                ); // Find intersections at the end of the segment.
+                let startIntersections = [];
+                for(const edgeKey in ahuObject.xetoDictionary.edges) {
+                    const edge = ahuObject.xetoDictionary.edges[edgeKey];
+                    if(
+                        ductXeto.graphicLocation.start === edge.graphicLocation.start &&
+                        ductXeto != edge ||
+                        ductXeto.graphicLocation.start === edge.graphicLocation.end &&
+                        ductXeto != edge
+                    ) {
+                        startIntersections.push(edge);
+                    }
+                }
 
-                let segmentOrientation = segment.xetoDuct.orientation
+                console.log("createDuctEnds step 3");
+
+                let endIntersections = [];
+                for(const edgeKey in ahuObject.xetoDictionary.edges) {
+                    const edge = ahuObject.xetoDictionary.edges[edgeKey];
+                    if(
+                        ductXeto.graphicLocation.end === edge.graphicLocation.start &&
+                        ductXeto != edge ||
+                        ductXeto.graphicLocation.end === edge.graphicLocation.end &&
+                        ductXeto != edge
+                    ) {
+                        endIntersections.push(edge);
+                    }
+                }
+
+                let segmentOrientation = ductXeto.orientation
                 let ductEnd = null;
 
+                console.log("createDuctEnds step 3");
+
                 if (startIntersections.length == 0 || endIntersections.length == 0) {
-                    if(segment.xetoDuct.blockStyle.ductEnds == 'insert') {
-                        ductEnd = this.createParametricInsert(this.innerDuctDimensions[segment.xetoDuct.graphicLocation.size]);
-                        segment.segment.duct.userData.endHeight = ductEnd.userData.height;
+                    if(ductXeto.blockStyle.ductEnds == 'insert') {
+                        ductEnd = this.createParametricInsert(this.innerDuctDimensions[ductXeto.graphicLocation.size]);
+                        const endId = ahuObject.associations.ducts[ductKey].ends[0];
+                        ahuObject["3d"].ends.meshes[endId] = ductEnd;
                     }
-                    else if(segment.xetoDuct.blockStyle.ductEnds == 'cap') {
-                        ductEnd = this.createParametricCap(this.innerDuctDimensions[segment.xetoDuct.graphicLocation.size]);
-                        segment.segment.duct.userData.endHeight = ductEnd.userData.height;
+                    else if(ductXeto.blockStyle.ductEnds == 'cap') {
+                        ductEnd = this.createParametricCap(this.innerDuctDimensions[ductXeto.graphicLocation.size]);
+                        const endId = ahuObject.associations.ducts[ductKey].ends[0];
+                        ahuObject["3d"].ends.meshes[endId] = ductEnd;
                     }
-                    
-                    ductEnd.position.copy(segment.segment.duct.userData.component.object.position);
                 }
+
+                console.log("createDuctEnds step 3:", ductEnd);
+
+                console.log("createDuctEnds step 4:", ductXeto.id);  
+                
+                let ductLength = duct.dimensions.x;
+
+                console.log("createDuctEnds step 5:", ductLength); 
 
                 let ductHalfLength = 500;
                 let halfWallThickness = 15;
 
                 if (startIntersections.length == 0) {
+                    ductEnd.position.copy(duct.position);
                     if (segmentOrientation == 'west') {
                         ductEnd.rotation.y = THREE.MathUtils.degToRad(90);
-                        ductHalfLength = segment.segment.duct.userData.component.attributes.length.value / 2;
+                        ductHalfLength = ductLength / 2;
                         ductEnd.position.x += ductHalfLength + halfWallThickness;
                     } 
                     else if (segmentOrientation == 'east') {
                         ductEnd.rotation.y = THREE.MathUtils.degToRad(270);
-                        ductHalfLength = segment.segment.duct.userData.component.attributes.length.value / -2;
+                        ductHalfLength = ductLength / -2;
                         ductEnd.position.x += ductHalfLength - halfWallThickness;
                     } 
                     else if (segmentOrientation == 'north') {
                         ductEnd.rotation.y = THREE.MathUtils.degToRad(180);
-                        ductHalfLength = segment.segment.duct.userData.component.attributes.length.value / -2;
+                        ductHalfLength = ductLength / -2;
                         ductEnd.position.z += ductHalfLength - halfWallThickness;
                     } 
                     else if (segmentOrientation == 'south') {
                         ductEnd.rotation.y = THREE.MathUtils.degToRad(0);
-                        ductHalfLength = segment.segment.duct.userData.component.attributes.length.value / 2;
+                        ductHalfLength = ductLength / 2;
                         ductEnd.position.z += ductHalfLength + halfWallThickness;
                     }
                 }
 
                 if (endIntersections.length == 0) {
+                    ductEnd.position.copy(duct.position);
                     if (segmentOrientation == 'west') {
                         ductEnd.rotation.y = THREE.MathUtils.degToRad(270);
-                        ductHalfLength = segment.segment.duct.userData.component.attributes.length.value / -2;
+                        ductHalfLength = ductLength / -2;
                         ductEnd.position.x += ductHalfLength - halfWallThickness;
                     } 
                     else if (segmentOrientation == 'east') {
                         ductEnd.rotation.y = THREE.MathUtils.degToRad(90);
-                        ductHalfLength = segment.segment.duct.userData.component.attributes.length.value / 2;
+                        ductHalfLength = ductLength / 2;
                         ductEnd.position.x += ductHalfLength + halfWallThickness;
                     } 
                     else if (segmentOrientation == 'north') {
                         ductEnd.rotation.y = THREE.MathUtils.degToRad(0);
-                        ductHalfLength = segment.segment.duct.userData.component.attributes.length.value / 2;
+                        ductHalfLength = ductLength / 2;
                         ductEnd.position.z += ductHalfLength + halfWallThickness;
                     } 
                     else if (segmentOrientation == 'south') {
                         ductEnd.rotation.y = THREE.MathUtils.degToRad(180);
-                        ductHalfLength = segment.segment.duct.userData.component.attributes.length.value / -2;
+                        ductHalfLength = ductLength / -2;
                         ductEnd.position.z += ductHalfLength - halfWallThickness;
                     }
                 }
