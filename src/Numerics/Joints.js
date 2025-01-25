@@ -10,7 +10,6 @@ export default class Joints {
 
         console.log("Joints constructor this.ahuGroup:", this.ahuGroup);
 
-        // this.jointBlockStyle = this.ahuGroup.blockStyle.joints;
         sharedData.jointBlockStyle = this.ahuGroup.blockStyle.joints;
         sharedData.xzJointStyle = sharedData.jointBlockStyle.XZ.style;
         sharedData.xzJointDirection = sharedData.jointBlockStyle.XZ.direction;
@@ -41,23 +40,7 @@ export default class Joints {
             }
         }
 
-        console.log("createJointProxies largestGlobalSize:", largestGlobalSize);
-
-        // const areHelpersOn = false;
-
-        // let material = new THREE.MeshStandardMaterial({ color: sharedData.primaryColor });
-        // let material2 = new THREE.MeshStandardMaterial({ color: sharedData.primaryColor });
-        // let material3 = new THREE.MeshStandardMaterial({ color: sharedData.primaryColor });
-        // let material4 = new THREE.MeshStandardMaterial({ color: sharedData.primaryColor });
-        // let material5 = new THREE.MeshStandardMaterial({ color: sharedData.primaryColor });
-        
-        // if(areHelpersOn) {
-        //     material.color.setHex("0xFF0000");
-        //     material2.color.setHex("0x0000FF");
-        //     material3.color.setHex("0x00FF00");
-        //     material4.color.setHex("0xFF0000");
-        //     material5.color.setHex("0x0000FF");
-        // }          
+        console.log("createJointProxies largestGlobalSize:", largestGlobalSize);         
 
         let y_offset = wallThickness * -1;
 
@@ -188,7 +171,7 @@ export default class Joints {
             this.alignProxyMediansInwards(intersection, gridKey); 
         }
         else if(sharedData.xzJointDirection == "outwards") {
-            this.alignProxyMediansOutwards2(intersection, gridKey); 
+            this.alignProxyMediansOutwards(intersection, gridKey); 
         }
 
         console.log("createJointProxies step 15");
@@ -282,32 +265,32 @@ export default class Joints {
             }
 
             if(intersection.up != null && intersection.left != null) {
-                ductSize1 = this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size];
-                ductSize2 = this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size];
+                ductSize1 = this.getSize(intersection.up);
+                ductSize2 = this.getSize(intersection.left);
     
                 compareSizes(sizes, ductSize1, ductSize2);
                 intersection.up.proxyLengths.proxyMedian = sizes[selectedSize];
             }
 
             if(intersection.left != null && intersection.down != null) {
-                ductSize1 = this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size];
-                ductSize2 = this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size];
+                ductSize1 = this.getSize(intersection.left);
+                ductSize2 = this.getSize(intersection.down);
     
                 compareSizes(sizes, ductSize1, ductSize2);
                 intersection.left.proxyLengths.proxyMedian = sizes[selectedSize];
             }
 
             if(intersection.down != null && intersection.right != null) {
-                ductSize1 = this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size];
-                ductSize2 = this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size];
+                ductSize1 = this.getSize(intersection.down);
+                ductSize2 = this.getSize(intersection.right);
     
                 compareSizes(sizes, ductSize1, ductSize2);
                 intersection.down.proxyLengths.proxyMedian = sizes[selectedSize];
             }
 
             if(intersection.right != null && intersection.up != null) {
-                ductSize1 = this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size];
-                ductSize2 = this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size];
+                ductSize1 = this.getSize(intersection.right);
+                ductSize2 = this.getSize(intersection.up);
     
                 compareSizes(sizes, ductSize1, ductSize2);
                 intersection.right.proxyLengths.proxyMedian = sizes[selectedSize];
@@ -322,9 +305,12 @@ export default class Joints {
                 //////////////////
                 // up-left proxies
                 //////////////////
+
+                console.log("calculateAdjacentContext step 6");
     
-                ductSize1 = this.getSize("up");
-                ductSize2 = this.getSize("left");
+                ductSize1 = this.getSize(intersection.up);
+                console.log("calculateAdjacentContext step 7");
+                ductSize2 = this.getSize( intersection.left );
     
                 compareSizes(sizes, ductSize1, ductSize2);
     
@@ -336,8 +322,8 @@ export default class Joints {
                 // down-left proxies
                 //////////////////
                 
-                ductSize1 = this.getSize("left");
-                ductSize2 = this.getSize("down");
+                ductSize1 = this.getSize( intersection.left );
+                ductSize2 = this.getSize( intersection.down );
     
                 compareSizes(sizes, ductSize1, ductSize2)
     
@@ -349,8 +335,8 @@ export default class Joints {
                 // down-right proxies
                 //////////////////
                 
-                ductSize1 = this.getSize("down");
-                ductSize2 = this.getSize("right");
+                ductSize1 = this.getSize( intersection.down );
+                ductSize2 = this.getSize( intersection.right );
     
                 compareSizes(sizes, ductSize1, ductSize2);
     
@@ -362,8 +348,8 @@ export default class Joints {
                 // up-right proxies
                 //////////////////
                 
-                ductSize1 = this.getSize("right");
-                ductSize2 = this.getSize("up");
+                ductSize1 = this.getSize( intersection.right );
+                ductSize2 = this.getSize( intersection.up);
     
                 compareSizes(sizes, ductSize1, ductSize2);
     
@@ -378,8 +364,8 @@ export default class Joints {
                 //////////////////
     
                 if(intersection.up != null && intersection.left != null) {
-                    ductSize1 = this.getSize("up");
-                    ductSize2 = this.getSize("left");
+                    ductSize1 = this.getSize( intersection.up);
+                    ductSize2 = this.getSize( intersection.left );
     
                     compareSizes(sizes, ductSize1, ductSize2);
     
@@ -393,8 +379,8 @@ export default class Joints {
                 //////////////////
     
                 if(intersection.left != null && intersection.down != null) {
-                    ductSize1 = this.getSize("left");
-                    ductSize2 = this.getSize("down");
+                    ductSize1 = this.getSize( intersection.left );
+                    ductSize2 = this.getSize( intersection.down );
     
                     compareSizes(sizes, ductSize1, ductSize2)
     
@@ -408,8 +394,8 @@ export default class Joints {
                 //////////////////
     
                 if(intersection.down != null && intersection.right != null) {
-                    ductSize1 = this.getSize("down");
-                    ductSize2 = this.getSize("right");
+                    ductSize1 = this.getSize( intersection.down );
+                    ductSize2 = this.getSize( intersection.right );
     
                     compareSizes(sizes, ductSize1, ductSize2);
     
@@ -423,8 +409,8 @@ export default class Joints {
                 //////////////////
     
                 if(intersection.right != null && intersection.up != null) {
-                    ductSize1 = this.getSize("right");
-                    ductSize2 = this.getSize("up");
+                    ductSize1 = this.getSize( intersection.right );
+                    ductSize2 = this.getSize( intersection.up);
     
                     compareSizes(sizes, ductSize1, ductSize2);
     
@@ -438,8 +424,8 @@ export default class Joints {
                 //////////////////
     
                 if(intersection.left == null) {
-                    ductSize1 = this.getSize("up");
-                    ductSize2 = this.getSize("down");
+                    ductSize1 = this.getSize( intersection.up);
+                    ductSize2 = this.getSize( intersection.down );
     
                     compareSizes(sizes, ductSize1, ductSize2);
     
@@ -448,8 +434,8 @@ export default class Joints {
                     intersection.up.proxyLengths.proxy2 = sizes[selectedSize];
                 }
                 if(intersection.right != null) {
-                    ductSize1 = this.getSize("up");
-                    ductSize2 = this.getSize("down");
+                    ductSize1 = this.getSize( intersection.up);
+                    ductSize2 = this.getSize( intersection.down );
     
                     compareSizes(sizes, ductSize1, ductSize2);
     
@@ -463,8 +449,8 @@ export default class Joints {
                 //////////////////
     
                 if(intersection.down == null) {
-                    ductSize1 = this.getSize("left");
-                    ductSize2 = this.getSize("right");
+                    ductSize1 = this.getSize( intersection.left );
+                    ductSize2 = this.getSize( intersection.right );
     
                     compareSizes(sizes, ductSize1, ductSize2);
     
@@ -473,8 +459,8 @@ export default class Joints {
                     intersection.right.proxyLengths.proxy2 = sizes[selectedSize];
                 }
                 else if(intersection.up == null) {
-                    ductSize1 = this.getSize("left");
-                    ductSize2 = this.getSize("right");
+                    ductSize1 = this.getSize( intersection.left );
+                    ductSize2 = this.getSize( intersection.right );
     
                     compareSizes(sizes, ductSize1, ductSize2);
     
@@ -494,8 +480,8 @@ export default class Joints {
     
                 if(intersection.up != null && intersection.left != null) {
 
-                    ductSize1 = this.getSize("up");
-                    ductSize2 = this.getSize("left");
+                    ductSize1 = this.getSize( intersection.up);
+                    ductSize2 = this.getSize( intersection.left );
     
                     compareSizes(sizes, ductSize1, ductSize2);
     
@@ -509,8 +495,8 @@ export default class Joints {
                 //////////////////
     
                 if(intersection.left != null && intersection.down != null) {
-                    ductSize1 = this.getSize("left");
-                    ductSize2 = this.getSize("down");
+                    ductSize1 = this.getSize( intersection.left );
+                    ductSize2 = this.getSize( intersection.down );
     
                     compareSizes(sizes, ductSize1, ductSize2)
     
@@ -524,8 +510,8 @@ export default class Joints {
                 //////////////////
     
                 if(intersection.down != null && intersection.right != null) {
-                    ductSize1 = this.getSize("down");
-                    ductSize2 = this.getSize("right");
+                    ductSize1 = this.getSize( intersection.down );
+                    ductSize2 = this.getSize( intersection.right );
     
                     compareSizes(sizes, ductSize1, ductSize2);
     
@@ -764,19 +750,25 @@ export default class Joints {
 
         }
         else if(definedIntersectionCount == 3) {
+            console.log("alignProxyMediansInwards step 3");
             if(intersection.right == null) {
+                console.log("alignProxyMediansInwards step 4");
                 upProxies.proxyMedian.position.z = leftProxies.proxy1.position.z;
+
+                console.log("alignProxyMediansInwards step 5");
 
                 leftProxies.proxyMedian.position.x = downProxies.proxy1.position.x;
                 leftProxies.proxyMedian.position.z = leftProxies.proxy2.position.z;
 
-                if(this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size] > this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size]) {
+                if(upProxies.ductDimensions.y > downProxies.ductDimensions.y) {
                     downProxies.proxyMedian.position.x = upProxies.proxy2.position.x;
                 }
                 else {
                     downProxies.proxyMedian.position.x = downProxies.proxy2.position.x;
                     downProxies.proxyMedian.position.z = upProxies.proxy2.position.z;
                 }
+
+                console.log("alignProxyMediansInwards step 6");
 
                 if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
                     const distances = {
@@ -816,9 +808,11 @@ export default class Joints {
                     downProxies.proxyMedian.position.z += cornerWidth;
                 }
 
+                console.log("alignProxyMediansInwards step 7");
+
             }
             else if(intersection.left == null) {
-                if(this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size] > this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size]) {
+                if(upProxies.ductDimensions.y > downProxies.ductDimensions.y) {
                     upProxies.proxyMedian.position.z = downProxies.proxy2.position.z;
                 }
                 else {
@@ -867,7 +861,7 @@ export default class Joints {
                 }
             }
             else if(intersection.down == null) {
-                if(this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size] > this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size]) {
+                if( leftProxies.ductDimensions.y > rightProxies.ductDimensions.y) {
                     leftProxies.proxyMedian.position.x = rightProxies.proxy2.position.x;
                     leftProxies.proxyMedian.position.z = leftProxies.proxy2.position.z;
                 }
@@ -925,7 +919,9 @@ export default class Joints {
                 downProxies.proxyMedian.position.x = downProxies.proxy2.position.x;
                 downProxies.proxyMedian.position.z = rightProxies.proxy2.position.z;
 
-                if(this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size] > this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size]) {
+                // this.innerDuctDimensions[intersection.
+
+                if(leftProxies.ductDimensions.y > rightProxies.ductDimensions.y) {
                     rightProxies.proxyMedian.position.z = leftProxies.proxy1.position.z;
                 }
                 else {
@@ -1084,426 +1080,7 @@ export default class Joints {
         console.log("alignProxyMediansInwards step 8");
     }
 
-    // alignProxyMediansOutwards(intersection) {        
-    //     let definedIntersectionCount = 0;
-    //     for(const key in intersection) {
-    //         if(intersection[key] != null)  {
-    //             definedIntersectionCount++;
-    //         }
-    //     }
-
-    //     let upProxies, rightProxies, leftProxies, downProxies = null;
-
-    //     if(intersection.up) {
-    //         upProxies =  intersection.up.segment.duct.userData.proxies;
-    //     }
-    //     if(intersection.right) {
-    //         rightProxies =  intersection.right.segment.duct.userData.proxies;
-    //     }
-    //     if(intersection.left) {
-    //         leftProxies =  intersection.left.segment.duct.userData.proxies;
-    //     }
-    //     if(intersection.down) {
-    //         downProxies =  intersection.down.segment.duct.userData.proxies;
-    //     }
-
-    //     if(definedIntersectionCount == 2) {
-    //         if(intersection.up != null && intersection.right != null) {
-    //             upProxies.proxyMedian.position.z = rightProxies.proxy2.position.z;
-    //             rightProxies.proxyMedian.position.z = upProxies.proxy2.position.z;
-
-    //             if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
-    //                 const distances = {
-    //                     right: {
-    //                         x: Math.abs(rightProxies.proxyMedian.position.x - upProxies.proxy2.position.x),
-    //                         z: Math.abs(rightProxies.proxyMedian.position.z - rightProxies.proxy1.position.z)
-    //                     }
-    //                 }
-    
-    //                 if(distances.right.x > distances.right.z) {
-    //                     rightProxies.proxyMedian.position.x -= distances.right.z;
-    //                 }
-    //                 else if(distances.right.x <= distances.right.z) {
-    //                     rightProxies.proxyMedian.position.z -= distances.right.x;
-    //                 }
-
-    //                 let medianOffset = Math.min(
-    //                     this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size],
-    //                     this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size]
-    //                 );
-    //                 medianOffset += sharedData.xzJointPadding;
-    //                 const medianClone = upProxies.proxyMedian.clone();
-    //                 medianClone.position.x += medianOffset;
-    //                 const proxyMedianVerticesClone = this.mapProxyVertices(medianClone);
-    //                 intersection.up.segment.duct.userData.proxyMedianVertices2 = proxyMedianVerticesClone;
-    //                 intersection.up.segment.duct.userData.proxies["medianClone"] = medianClone;
-    //                 upProxies.proxyMedian.position.z += medianOffset;
-
-    //             }
-    //         }
-    //         else if(intersection.down != null && intersection.right != null) {
-    //             downProxies.proxyMedian.position.x = rightProxies.proxy2.position.x;
-    //             rightProxies.proxyMedian.position.x = downProxies.proxy1.position.x;
-
-    //             if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
-    //                 const distances = {
-    //                     down: {
-    //                         x: Math.abs(downProxies.proxyMedian.position.x - downProxies.proxy2.position.x),
-    //                         z: Math.abs(downProxies.proxyMedian.position.z - rightProxies.proxy2.position.z)
-    //                     }
-    //                 }
-    //                 if(distances.down.x > distances.down.z) {
-    //                     downProxies.proxyMedian.position.x -= distances.down.z;
-    //                 }
-    //                 else if(distances.down.x <= distances.down.z) {
-    //                     downProxies.proxyMedian.position.z += distances.down.x;
-    //                 }
-
-    //                 let medianOffset = Math.min(
-    //                     this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size],
-    //                     this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size]
-    //                 );
-    //                 medianOffset += sharedData.xzJointPadding;
-    //                 const medianClone = rightProxies.proxyMedian.clone();
-    //                 medianClone.position.x += medianOffset;
-    //                 const proxyMedianVerticesClone = this.mapProxyVertices(medianClone);
-    //                 intersection.right.segment.duct.userData.proxyMedianVertices2 = proxyMedianVerticesClone;
-    //                 intersection.up.segment.duct.userData.proxies["medianClone"] = medianClone;
-    //                 rightProxies.proxyMedian.position.z -= medianOffset;
-    //             }
-    //         }
-    //         else if(intersection.up != null && intersection.left != null) {
-    //             upProxies.proxyMedian.position.x = leftProxies.proxy2.position.x;
-    //             leftProxies.proxyMedian.position.x = upProxies.proxy2.position.x;
-    //             leftProxies.proxyMedian.position.z = leftProxies.proxy2.position.z;
-
-    //             if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
-    //                 const distances = {
-    //                     up: {
-    //                         x: Math.abs(upProxies.proxyMedian.position.x - upProxies.proxy1.position.x),
-    //                         z: Math.abs(upProxies.proxyMedian.position.z - leftProxies.proxy1.position.z)
-    //                     }
-    //                 }
-    
-    //                 if(distances.up.x > distances.up.z) {
-    //                     upProxies.proxyMedian.position.x += distances.up.z;
-    //                 }
-    //                 else if(distances.up.x <= distances.up.z) {
-    //                     upProxies.proxyMedian.position.z -= distances.up.x;
-    //                 }
-
-    //                 let medianOffset = Math.min(
-    //                     this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size],
-    //                     this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size]
-    //                 );
-    //                 medianOffset += sharedData.xzJointPadding;
-    //                 const medianClone = leftProxies.proxyMedian.clone();
-    //                 medianClone.position.x -= medianOffset;
-    //                 const proxyMedianVerticesClone = this.mapProxyVertices(medianClone);
-    //                 intersection.left.segment.duct.userData.proxyMedianVertices2 = proxyMedianVerticesClone;
-    //                 intersection.up.segment.duct.userData.proxies["medianClone"] = medianClone;
-    //                 leftProxies.proxyMedian.position.z += medianOffset;
-    //             }
-    //         }
-    //         else if(intersection.down != null && intersection.left != null) {
-    //             leftProxies.proxyMedian.position.z = downProxies.proxy1.position.z;
-    //             downProxies.proxyMedian.position.x = downProxies.proxy2.position.x;
-    //             downProxies.proxyMedian.position.z = leftProxies.proxy1.position.z;
-                
-    //             if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
-    //                 const distances = {
-    //                     left: {
-    //                         x: Math.abs(leftProxies.proxyMedian.position.x - downProxies.proxy1.position.x),
-    //                         z: Math.abs(leftProxies.proxyMedian.position.z - leftProxies.proxy2.position.z)
-    //                     },
-    //                 }    
-    //                 if(distances.left.x > distances.left.z) {
-    //                     leftProxies.proxyMedian.position.x += distances.left.z;
-    //                 }
-    //                 else if(distances.left.x <= distances.left.z) {
-    //                     leftProxies.proxyMedian.position.z += distances.left.x;
-    //                 }
-
-    //                 let medianOffset = Math.min(
-    //                     this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size],
-    //                     this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size]
-    //                 );
-    //                 medianOffset += sharedData.xzJointPadding;
-    //                 const medianClone = downProxies.proxyMedian.clone();
-    //                 medianClone.position.x -= medianOffset;
-    //                 const proxyMedianVerticesClone = this.mapProxyVertices(medianClone);
-    //                 intersection.down.segment.duct.userData.proxyMedianVertices2 = proxyMedianVerticesClone;
-    //                 intersection.up.segment.duct.userData.proxies["medianClone"] = medianClone;
-    //                 downProxies.proxyMedian.position.z -= medianOffset;
-    //             }
-    //         }
-    //     }
-    //     else if(definedIntersectionCount == 3) {
-            
-    //         if(intersection.right == null) {
-    //             upProxies.proxyMedian.position.x = leftProxies.proxyMedian.position.x;
-    //             leftProxies.proxyMedian.position.z = downProxies.proxyMedian.position.z;
-
-    //             if(this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size] > this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size]) {
-    //                 downProxies.proxyMedian.position.x = upProxies.proxy2.position.x;
-    //             }
-    //             else {
-    //                 downProxies.proxyMedian.position.x = downProxies.proxy2.position.x;
-    //                 downProxies.proxyMedian.position.z = upProxies.proxy2.position.z;
-    //             }
-
-    //             if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
-    //                 const distances = {
-    //                     left: {
-    //                         x: Math.abs(leftProxies.proxyMedian.position.x - downProxies.proxy1.position.x),
-    //                         z: Math.abs(leftProxies.proxyMedian.position.z - leftProxies.proxy2.position.z)
-    //                     },
-    //                     up: {
-    //                         x: Math.abs(upProxies.proxyMedian.position.x - upProxies.proxy1.position.x),
-    //                         z: Math.abs(upProxies.proxyMedian.position.z - leftProxies.proxy1.position.z)
-    //                     },
-    //                 }
-    
-    //                 if(distances.up.x > distances.up.z) {
-    //                     upProxies.proxyMedian.position.x += distances.up.z;
-    //                 }
-    //                 else if(distances.up.x <= distances.up.z) {
-    //                     upProxies.proxyMedian.position.z -= distances.up.x;
-    //                 }
-    
-    //                 if(distances.left.x > distances.left.z) {
-    //                     leftProxies.proxyMedian.position.x += distances.left.z;
-    //                 }
-    //                 else if(distances.left.x <= distances.left.z) {
-    //                     leftProxies.proxyMedian.position.z += distances.left.x;
-    //                 }
-
-    //                 let cornerWidth = 0;
-    //                 if(downProxies.proxyMedian.position.z == downProxies.proxy2.position.z) {
-    //                     cornerWidth = downProxies.proxyMedian.position.x - downProxies.proxy2.position.x;
-    //                 }
-    //                 else {
-    //                     cornerWidth = downProxies.proxyMedian.position.x - upProxies.proxy2.position.x;
-    //                     cornerWidth *= -1;
-    //                 }
-
-    //                 downProxies.proxyMedian.position.z += cornerWidth;
-    //             }
-    //         }
-    //         else if(intersection.left == null) {
-    //             if(this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size] > this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size]) {
-    //                 upProxies.proxyMedian.position.z = downProxies.proxy2.position.z;
-    //             }
-    //             else {
-    //                 upProxies.proxyMedian.position.x = downProxies.proxy1.position.x;
-    //             }
-    //             downProxies.proxyMedian.position.z = downProxies.proxy2.position.z;
-    //             downProxies.proxyMedian.position.x = rightProxies.proxy2.position.x;
-
-    //             rightProxies.proxyMedian.position.z = upProxies.proxy2.position.z;   
-                
-    //             if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
-    //                 const distances = {
-    //                     down: {
-    //                         x: Math.abs(downProxies.proxyMedian.position.x - downProxies.proxy2.position.x),
-    //                         z: Math.abs(downProxies.proxyMedian.position.z - rightProxies.proxy2.position.z)
-    //                     },
-    //                     right: {
-    //                         x: Math.abs(rightProxies.proxyMedian.position.x - upProxies.proxy2.position.x),
-    //                         z: Math.abs(rightProxies.proxyMedian.position.z - rightProxies.proxy1.position.z)
-    //                     }
-    //                 }
-    //                 if(distances.down.x > distances.down.z) {
-    //                     downProxies.proxyMedian.position.x -= distances.down.z;
-    //                 }
-    //                 else if(distances.down.x <= distances.down.z) {
-    //                     downProxies.proxyMedian.position.z += distances.down.x;
-    //                 }
-    
-    //                 if(distances.right.x > distances.right.z) {
-    //                     rightProxies.proxyMedian.position.x -= distances.right.z;
-    //                 }
-    //                 else if(distances.right.x <= distances.right.z) {
-    //                     rightProxies.proxyMedian.position.z -= distances.right.x;
-    //                 }
-
-    //                 let cornerWidth = 0;
-    //                 if(upProxies.proxyMedian.position.z == upProxies.proxy1.position.z) {
-    //                     cornerWidth = upProxies.proxyMedian.position.x - upProxies.proxy1.position.x;
-    //                 }
-    //                 else {
-    //                     cornerWidth = upProxies.proxyMedian.position.x - downProxies.proxy1.position.x;
-    //                     cornerWidth *= -1;
-    //                 }
-
-    //                 upProxies.proxyMedian.position.z += cornerWidth;
-    //             }
-    //         }
-    //         else if(intersection.down == null) {
-    //             if(this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size] > this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size]) {
-    //                 leftProxies.proxyMedian.position.x = rightProxies.proxy2.position.x;
-    //                 leftProxies.proxyMedian.position.z = leftProxies.proxy2.position.z;
-    //             }
-    //             else {
-    //                 leftProxies.proxyMedian.position.z = rightProxies.proxy2.position.z;
-    //             } 
-
-    //             upProxies.proxyMedian.position.x = leftProxies.proxy1.position.x;
-
-    //             rightProxies.proxyMedian.position.z = upProxies.proxy2.position.z;
-
-    //             if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
-    //                 const distances = {
-    //                     up: {
-    //                         x: Math.abs(upProxies.proxyMedian.position.x - upProxies.proxy1.position.x),
-    //                         z: Math.abs(upProxies.proxyMedian.position.z - leftProxies.proxy1.position.z)
-    //                     },
-    //                     right: {
-    //                         x: Math.abs(rightProxies.proxyMedian.position.x - upProxies.proxy2.position.x),
-    //                         z: Math.abs(rightProxies.proxyMedian.position.z - rightProxies.proxy1.position.z)
-    //                     }
-    //                 }
-    //                 if(distances.right.x > distances.right.z) {
-    //                     rightProxies.proxyMedian.position.x -= distances.right.z;
-    //                 }
-    //                 else if(distances.right.x <= distances.right.z) {
-    //                     rightProxies.proxyMedian.position.z -= distances.right.x;
-    //                 }
-    
-    //                 if(distances.up.x > distances.up.z) {
-    //                     upProxies.proxyMedian.position.x += distances.up.z;
-    //                 }
-    //                 else if(distances.up.x <= distances.up.z) {
-    //                     upProxies.proxyMedian.position.z -= distances.up.x;
-    //                 }
-
-    //                 let cornerWidth = 0;
-    //                 if(leftProxies.proxy2.position.x == leftProxies.proxyMedian.position.x) {
-    //                     cornerWidth = leftProxies.proxy2.position.z - leftProxies.proxyMedian.position.z;
-    //                 }
-    //                 else {
-    //                     cornerWidth = rightProxies.proxy2.position.z - leftProxies.proxyMedian.position.z;
-    //                     cornerWidth *= -1;
-    //                 }
-
-    //                 leftProxies.proxyMedian.position.x += cornerWidth;
-    //             }
-                
-    //         }
-    //         else if(intersection.up == null) {
-    //             leftProxies.proxyMedian.position.z = downProxies.proxy1.position.z;
-    //             leftProxies.proxyMedian.position.x = leftProxies.proxy2.position.x;
-
-    //             downProxies.proxyMedian.position.z = downProxies.proxy2.position.z;
-    //             downProxies.proxyMedian.position.x = rightProxies.proxy2.position.x;
-
-    //             if(this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size] > this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size]) {
-    //                 rightProxies.proxyMedian.position.z = leftProxies.proxy1.position.z;
-    //             }
-    //             else {
-    //                 rightProxies.proxyMedian.position.x = leftProxies.proxy1.position.x;
-    //             } 
-                
-    //             if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
-    //                 const distances = {
-    //                     down: {
-    //                         x: Math.abs(downProxies.proxyMedian.position.x - downProxies.proxy2.position.x),
-    //                         z: Math.abs(downProxies.proxyMedian.position.z - rightProxies.proxy2.position.z)
-    //                     },
-    //                     left: {
-    //                         x: Math.abs(leftProxies.proxyMedian.position.x - downProxies.proxy1.position.x),
-    //                         z: Math.abs(leftProxies.proxyMedian.position.z - leftProxies.proxy2.position.z)
-    //                     },
-    //                 }
-    //                 if(distances.down.x > distances.down.z) {
-    //                     downProxies.proxyMedian.position.x -= distances.down.z;
-    //                 }
-    //                 else if(distances.down.x <= distances.down.z) {
-    //                     downProxies.proxyMedian.position.z += distances.down.x;
-    //                 }
-    
-    //                 if(distances.left.x > distances.left.z) {
-    //                     leftProxies.proxyMedian.position.x += distances.left.z;
-    //                 }
-    //                 else if(distances.left.x <= distances.left.z) {
-    //                     leftProxies.proxyMedian.position.z += distances.left.x;
-    //                 }
-
-    //                 let cornerWidth = 0;
-    //                 if(leftProxies.proxy1.position.x == rightProxies.proxyMedian.position.x) {
-    //                     cornerWidth = leftProxies.proxy1.position.z - rightProxies.proxyMedian.position.z;
-    //                     cornerWidth *= -1;
-    //                 }
-    //                 else {
-    //                     cornerWidth = rightProxies.proxyMedian.position.z - rightProxies.proxy1.position.z;
-    //                     cornerWidth *= -1;
-    //                 }
-
-    //                 rightProxies.proxyMedian.position.x += cornerWidth;
-    //             }
-    //         }
-    //     }
-    //     else if(definedIntersectionCount == 4) {
-    //         // top-left median
-    //         upProxies.proxyMedian.position.x = leftProxies.proxyMedian.position.x;
-    //         // bottom-right median
-    //         downProxies.proxyMedian.position.x = rightProxies.proxyMedian.position.x;
-    //         // bottom-right median
-    //         leftProxies.proxyMedian.position.z = downProxies.proxyMedian.position.z;
-    //         // top-right median
-    //         rightProxies.proxyMedian.position.z = upProxies.proxyMedian.position.z;
-
-    //         if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
-    //             const distances = {
-    //                 down: {
-    //                     x: Math.abs(downProxies.proxyMedian.position.x - downProxies.proxy2.position.x),
-    //                     z: Math.abs(downProxies.proxyMedian.position.z - rightProxies.proxy2.position.z)
-    //                 },
-    //                 left: {
-    //                     x: Math.abs(leftProxies.proxyMedian.position.x - downProxies.proxy1.position.x),
-    //                     z: Math.abs(leftProxies.proxyMedian.position.z - leftProxies.proxy2.position.z)
-    //                 },
-    //                 up: {
-    //                     x: Math.abs(upProxies.proxyMedian.position.x - upProxies.proxy1.position.x),
-    //                     z: Math.abs(upProxies.proxyMedian.position.z - leftProxies.proxy1.position.z)
-    //                 },
-    //                 right: {
-    //                     x: Math.abs(rightProxies.proxyMedian.position.x - upProxies.proxy2.position.x),
-    //                     z: Math.abs(rightProxies.proxyMedian.position.z - rightProxies.proxy1.position.z)
-    //                 }
-    //             }
-    //             if(distances.down.x > distances.down.z) {
-    //                 downProxies.proxyMedian.position.x -= distances.down.z;
-    //             }
-    //             else if(distances.down.x <= distances.down.z) {
-    //                 downProxies.proxyMedian.position.z += distances.down.x;
-    //             }
-
-    //             if(distances.right.x > distances.right.z) {
-    //                 rightProxies.proxyMedian.position.x -= distances.right.z;
-    //             }
-    //             else if(distances.right.x <= distances.right.z) {
-    //                 rightProxies.proxyMedian.position.z -= distances.right.x;
-    //             }
-
-    //             if(distances.up.x > distances.up.z) {
-    //                 upProxies.proxyMedian.position.x += distances.up.z;
-    //             }
-    //             else if(distances.up.x <= distances.up.z) {
-    //                 upProxies.proxyMedian.position.z -= distances.up.x;
-    //             }
-
-    //             if(distances.left.x > distances.left.z) {
-    //                 leftProxies.proxyMedian.position.x += distances.left.z;
-    //             }
-    //             else if(distances.left.x <= distances.left.z) {
-    //                 leftProxies.proxyMedian.position.z += distances.left.x;
-    //             }
-    //         }
-    //     }
-    // }
-
-    alignProxyMediansOutwards2(intersection, gridKey) {        
+    alignProxyMediansOutwards(intersection, gridKey) {        
         let definedIntersectionCount = 0;
         for(const key in intersection) {
             if(intersection[key] != null)  {
@@ -1513,27 +1090,31 @@ export default class Joints {
 
         const jointObject = this.ahuObject.resources.joints[`Joint-${gridKey}`];
 
-        console.log("alignProxyMediansOutwards2 step 1");
+        console.log("alignProxyMediansOutwards step 1");
 
         let upProxies, rightProxies, leftProxies, downProxies = null;
 
         if(intersection.up) {
             upProxies = jointObject.up;
+            upProxies.ductDimensions = this.ahuObject.resources.ducts[intersection.up.id].dimensions;
         }
         if(intersection.right) {
             rightProxies = jointObject.right;
+            rightProxies.ductDimensions = this.ahuObject.resources.ducts[intersection.right.id].dimensions;
         }
         if(intersection.left) {
             leftProxies = jointObject.left;
+            leftProxies.ductDimensions = this.ahuObject.resources.ducts[intersection.left.id].dimensions;
         }
         if(intersection.down) {
             downProxies = jointObject.down;
+            downProxies.ductDimensions = this.ahuObject.resources.ducts[intersection.down.id].dimensions;
         }
 
         if(definedIntersectionCount == 2) {
             if(intersection.up != null && intersection.right != null) {
 
-                console.log("alignProxyMediansOutwards2 step 2");
+                console.log("alignProxyMediansOutwards step 2");
                 upProxies.proxyMedian.position.z = rightProxies.proxy2.position.z;
                 rightProxies.proxyMedian.position.z = upProxies.proxy2.position.z;
 
@@ -1673,7 +1254,9 @@ export default class Joints {
                 upProxies.proxyMedian.position.x = leftProxies.proxyMedian.position.x;
                 leftProxies.proxyMedian.position.z = downProxies.proxyMedian.position.z;
 
-                if(this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size] > this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size]) {
+                // leftProxies.ductDimensions.y
+
+                if(upProxies.ductDimensions.y > downProxies.ductDimensions.y) {
                     downProxies.proxyMedian.position.x = upProxies.proxy2.position.x;
                 }
                 else {
@@ -1720,7 +1303,7 @@ export default class Joints {
                 }
             }
             else if(intersection.left == null) {
-                if(this.innerDuctDimensions[intersection.up.xetoDuct.graphicLocation.size] > this.innerDuctDimensions[intersection.down.xetoDuct.graphicLocation.size]) {
+                if(upProxies.ductDimensions.y > downProxies.ductDimensions.y) {
                     upProxies.proxyMedian.position.z = downProxies.proxy2.position.z;
                 }
                 else {
@@ -1769,7 +1352,7 @@ export default class Joints {
                 }
             }
             else if(intersection.down == null) {
-                if(this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size] > this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size]) {
+                if(leftProxies.ductDimensions.y > rightProxies.ductDimensions.y) {
                     leftProxies.proxyMedian.position.x = rightProxies.proxy2.position.x;
                     leftProxies.proxyMedian.position.z = leftProxies.proxy2.position.z;
                 }
@@ -1826,7 +1409,7 @@ export default class Joints {
                 downProxies.proxyMedian.position.z = downProxies.proxy2.position.z;
                 downProxies.proxyMedian.position.x = rightProxies.proxy2.position.x;
 
-                if(this.innerDuctDimensions[intersection.left.xetoDuct.graphicLocation.size] > this.innerDuctDimensions[intersection.right.xetoDuct.graphicLocation.size]) {
+                if(leftProxies.ductDimensions.y > rightProxies.ductDimensions.y) {
                     rightProxies.proxyMedian.position.z = leftProxies.proxy1.position.z;
                 }
                 else {

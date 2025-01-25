@@ -1,20 +1,20 @@
 import * as THREE from 'three';
 import { 
     calculateJointCenter, 
-    createJointBackwall2, 
+    createJointBackwall, 
     connectProxiesDiagonallyUphill, 
     connectProxiesDiagonallyDownhill,
     createJointClosure,
-    mergeAndAddToScene2
+    mergeGeometries
 } from "./Geometry_3D_Joints_Utils.js";
 import { sharedData } from "../../../Ahu3D/globals.js";
 
 export default class Geometry_3D_Joints_L {
-    createLJoint(intersection, largestGlobalSize, joint) {
+    createLJoint(joint, largestGlobalSize) {
         const geometries = [];
         let diagonalWidth = 0;
 
-        console.log("createLJoint2 started:", intersection, joint);
+        console.log("createLJoint2 started:", joint);
 
         sharedData.backwallArcConfigs = [];
 
@@ -22,12 +22,12 @@ export default class Geometry_3D_Joints_L {
 
         console.log("createLJoint2 step 1");
 
-        // calculateJointCenter(intersection, "L-Joint"); 
+        // calculateJointCenter(joint, "L-Joint"); 
 
         console.log("createLJoint2 step 2:", sharedData.xzJointDirection);
 
         if(sharedData.xzJointDirection == "outwards") {
-            if(intersection.right != null && intersection.up != null) {
+            if(joint.right != null && joint.up != null) {
                 if(sharedData.xzJointStyle == "arc" || sharedData.xzJointStyle == "diagonal") {
 
                     geometries.push(
@@ -97,7 +97,7 @@ export default class Geometry_3D_Joints_L {
                     );
                 }
             }
-            else if(intersection.right != null && intersection.down != null) {
+            else if(joint.right != null && joint.down != null) {
                 if(sharedData.xzJointStyle == "arc" || sharedData.xzJointStyle == "diagonal") {
                     geometries.push(
                         ...connectProxiesDiagonallyUphill(
@@ -153,7 +153,7 @@ export default class Geometry_3D_Joints_L {
                     );
                 }
             } 
-            else if(intersection.left != null && intersection.up != null) {
+            else if(joint.left != null && joint.up != null) {
                 if(sharedData.xzJointStyle == "arc" || sharedData.xzJointStyle == "diagonal") {
                     geometries.push(
                         ...connectProxiesDiagonallyUphill(
@@ -215,7 +215,7 @@ export default class Geometry_3D_Joints_L {
                     );
                 }
             }
-            else if(intersection.left != null && intersection.down != null) {
+            else if(joint.left != null && joint.down != null) {
                 if(sharedData.xzJointStyle == "arc" || sharedData.xzJointStyle == "diagonal") {
                     geometries.push(
                         ...connectProxiesDiagonallyDownhill(
@@ -286,7 +286,7 @@ export default class Geometry_3D_Joints_L {
             }  
         }
         else if(sharedData.xzJointDirection == "inwards") {
-            if(intersection.right != null && intersection.up != null) {
+            if(joint.right != null && joint.up != null) {
                 if(sharedData.xzJointStyle == "arc" || sharedData.xzJointStyle == "diagonal") {
                     geometries.push(
                         ...connectProxiesDiagonallyDownhill(
@@ -346,7 +346,7 @@ export default class Geometry_3D_Joints_L {
                     );
                 }
             }
-            else if(intersection.right != null && intersection.down != null) {
+            else if(joint.right != null && joint.down != null) {
                 if(sharedData.xzJointStyle == "arc" || sharedData.xzJointStyle == "diagonal") {
                     geometries.push(
                         ...connectProxiesDiagonallyUphill(
@@ -408,7 +408,7 @@ export default class Geometry_3D_Joints_L {
                     );
                 }
             }
-            else if(intersection.left != null && intersection.up != null) {
+            else if(joint.left != null && joint.up != null) {
                 if(sharedData.xzJointStyle == "arc" || sharedData.xzJointStyle == "diagonal") {
                     geometries.push(
                         ...connectProxiesDiagonallyUphill(
@@ -470,7 +470,7 @@ export default class Geometry_3D_Joints_L {
                     );
                 }
             }  
-            else if(intersection.left != null && intersection.down != null) {
+            else if(joint.left != null && joint.down != null) {
                 if(sharedData.xzJointStyle == "arc" || sharedData.xzJointStyle == "diagonal") {
                     geometries.push(
                         ...connectProxiesDiagonallyDownhill(
@@ -539,12 +539,12 @@ export default class Geometry_3D_Joints_L {
         if(sharedData.xzJointDirection == "inwards" && sharedData.xzJointStyle == "arc") {
             console.log("createArchedBackwall");
 
-            this.createWallMesh(intersection, largestGlobalSize); 
-            this.patchLJointBackwall(intersection, largestGlobalSize, diagonalWidth);
+            this.createWallMesh(joint, largestGlobalSize); 
+            this.patchLJointBackwall(joint, largestGlobalSize, diagonalWidth);
         }
         else {
             geometries.push(
-                ...this.createLJointBackwall(intersection, largestGlobalSize, joint)
+                ...this.createLJointBackwall(joint, largestGlobalSize)
             );
         }
 
@@ -561,23 +561,15 @@ export default class Geometry_3D_Joints_L {
             ...createJointClosure(joint.left, "vertical")
         ); 
 
-        // const oldMergedGeometry = mergeAndAddToScene(geometries);
-        const newMergedGeometry = mergeAndAddToScene2(geometries);
-
-        console.log("newMergedGeometry bufferGeometry analysis:", geometries, newMergedGeometry);
-
-        // const material = new THREE.MeshStandardMaterial({ color: sharedData.primaryColor, side: THREE.DoubleSide, opacity: 1.0 });
-        // const mesh = new THREE.Mesh(newMergedGeometry, material);
-        // sharedData.sceneHelper.addToScene(mesh);
-
         sharedData.isLJoint = false;
 
+        const newMergedGeometry = mergeGeometries(geometries);
         return newMergedGeometry;
     }
 
-    createLJointBackwall(intersection, largestGlobalSize, joint) {
+    createLJointBackwall(joint, largestGlobalSize) {
         let backwall = [];
-        if(intersection.up != null && intersection.right != null) {    
+        if(joint.up != null && joint.right != null) {    
             backwall = [
                 joint.up.proxyMedian.coordinates[4],
                 joint.up.proxy1.coordinates[4],
@@ -597,7 +589,7 @@ export default class Geometry_3D_Joints_L {
                 backwall.splice(0, 0, joint.up.proxyMedian.coordinates2[4]);
             }
         }
-        else if(intersection.up != null && intersection.left != null) {    
+        else if(joint.up != null && joint.left != null) {    
             backwall = [
                 joint.up.proxyMedian.coordinates[4],
                 joint.up.proxy1.coordinates[4],
@@ -617,7 +609,7 @@ export default class Geometry_3D_Joints_L {
                 backwall.splice(0, 0, leftMidpoint);
             }
         }
-        else if(intersection.down != null && intersection.right != null) {    
+        else if(joint.down != null && joint.right != null) {    
             backwall = [
                 joint.right.proxy1.coordinates[7],
                 joint.right.proxy2.coordinates[7],
@@ -637,7 +629,7 @@ export default class Geometry_3D_Joints_L {
                 backwall.splice(0, 0, joint.right.proxyMedian.coordinates2[4]);
             }
         }
-        else if(intersection.down != null && intersection.left != null) {    
+        else if(joint.down != null && joint.left != null) {    
             backwall = [
                 joint.left.proxy1.coordinates[4],
                 joint.left.proxy2.coordinates[4],
@@ -661,7 +653,7 @@ export default class Geometry_3D_Joints_L {
 
         let geometry = [];
         if(backwall.length >= 3) {
-            geometry.push(createJointBackwall2(backwall, largestGlobalSize));
+            geometry.push(createJointBackwall(backwall, largestGlobalSize));
         }
 
         console.log("createLJointBackwall:", geometry);
@@ -670,9 +662,9 @@ export default class Geometry_3D_Joints_L {
 
     }
 
-    patchLJointBackwall(intersection, largestGlobalSize) {
+    patchLJointBackwall(joint, largestGlobalSize) {
         let backwall = [];
-        if(intersection.up != null && intersection.right != null) {    
+        if(joint.up != null && joint.right != null) {    
             backwall = [
                 joint.up.proxyMedian.coordinates2[4],
                 joint.up.proxyMedian.coordinates2[5],
@@ -680,7 +672,7 @@ export default class Geometry_3D_Joints_L {
                 joint.right.proxy1.coordinates[6],
                 joint.right.proxy1.coordinates[4],
             ];
-            createJointBackwall2(backwall, largestGlobalSize);
+            createJointBackwall(backwall, largestGlobalSize);
             backwall = [
                 joint.up.proxyMedian.coordinates[6],
                 joint.up.proxy2.coordinates[6],
@@ -688,9 +680,9 @@ export default class Geometry_3D_Joints_L {
                 joint.up.proxy1.coordinates[4],
                 joint.up.proxyMedian.coordinates[5],
             ];
-            createJointBackwall2(backwall, largestGlobalSize);
+            createJointBackwall(backwall, largestGlobalSize);
         }
-        else if(intersection.up != null && intersection.left != null) {  
+        else if(joint.up != null && joint.left != null) {  
             backwall = [
                 joint.left.proxyMedian.coordinates2[7],
                 joint.left.proxy1.coordinates[7],
@@ -698,7 +690,7 @@ export default class Geometry_3D_Joints_L {
                 joint.left.proxy2.coordinates[5],
                 joint.left.proxyMedian.coordinates2[6],
             ];
-            createJointBackwall2(backwall, largestGlobalSize);
+            createJointBackwall(backwall, largestGlobalSize);
             backwall = [
                 joint.left.proxyMedian.coordinates[5],
                 joint.left.proxyMedian.coordinates[6],
@@ -706,9 +698,9 @@ export default class Geometry_3D_Joints_L {
                 joint.up.proxy1.coordinates[4],
                 joint.up.proxy1.coordinates[5],
             ];
-            createJointBackwall2(backwall, largestGlobalSize);  
+            createJointBackwall(backwall, largestGlobalSize);  
         }
-        else if(intersection.down != null && intersection.right != null) {  
+        else if(joint.down != null && joint.right != null) {  
             backwall = [
                 joint.right.proxyMedian.coordinates[7],
                 joint.right.proxyMedian.coordinates[4],
@@ -716,7 +708,7 @@ export default class Geometry_3D_Joints_L {
                 joint.down.proxy2.coordinates[6],
                 joint.down.proxy2.coordinates[7],
             ];
-            createJointBackwall2(backwall, largestGlobalSize);
+            createJointBackwall(backwall, largestGlobalSize);
             backwall = [
                 joint.right.proxyMedian.coordinates2[4],
                 joint.right.proxyMedian.coordinates2[5],
@@ -724,9 +716,9 @@ export default class Geometry_3D_Joints_L {
                 joint.right.proxy2.coordinates[6],
                 joint.right.proxy1.coordinates[7],
             ];
-            createJointBackwall2(backwall, largestGlobalSize);   
+            createJointBackwall(backwall, largestGlobalSize);   
         }
-        else if(intersection.down != null && intersection.left != null) {   
+        else if(joint.down != null && joint.left != null) {   
             backwall = [
                 joint.down.proxyMedian.coordinates2[6],
                 joint.down.proxyMedian.coordinates2[7],
@@ -734,7 +726,7 @@ export default class Geometry_3D_Joints_L {
                 joint.left.proxy2.coordinates[5],
                 joint.left.proxy2.coordinates[6],
             ];
-            createJointBackwall2(backwall, largestGlobalSize);
+            createJointBackwall(backwall, largestGlobalSize);
             backwall = [
                 joint.down.proxyMedian.coordinates[4],
                 joint.down.proxy1.coordinates[4],
@@ -742,12 +734,12 @@ export default class Geometry_3D_Joints_L {
                 joint.down.proxy2.coordinates[6],
                 joint.down.proxyMedian.coordinates[7],
             ];
-            createJointBackwall2(backwall, largestGlobalSize);  
+            createJointBackwall(backwall, largestGlobalSize);  
         }
 
     }
 
-    createWallMesh(intersection, largestGlobalSize) {
+    createWallMesh(joint, largestGlobalSize) {
         const mergeLineValue = 5;
         const backwallArcConfigs = sharedData.backwallArcConfigs;
 
@@ -784,10 +776,10 @@ export default class Geometry_3D_Joints_L {
 
         let xFactor = 1;
         let zFactor = 1;
-        if(intersection.left != null) {
+        if(joint.left != null) {
             xFactor = -1;
         }
-        if(intersection.down != null) {
+        if(joint.down != null) {
             zFactor = -1;
         }
 

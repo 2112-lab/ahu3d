@@ -4,199 +4,200 @@ import {
     connectProxiesDiagonallyUphill, 
     connectProxiesDiagonallyDownhill,
     createJointClosure,
-    mergeAndAddToScene
+    mergeGeometries
 } from "./Geometry_3D_Joints_Utils.js";
 
 export default class Geometry_3D_Joints_Cross {
-    createCrossJoint(intersection, largestGlobalSize) {
+    createCrossJoint(intersection, largestGlobalSize, joint) {
         const geometries = [];
 
         this.backwallArcConfigs = [];
 
-        calculateJointCenter(intersection, "Cross-Joint");        
+        // calculateJointCenter(intersection, "Cross-Joint");        
 
         if(this.xzJointStyle == "arc") {     
 
             let upMidpoint = {
-                x: intersection.up.segment.duct.userData.proxy1Vertices[4].x,
-                z: intersection.up.segment.duct.userData.proxyMedianVertices[4].z
+                x: joint.up.proxy1.coordinates[4].x,
+                z: joint.up.proxyMedian.coordinates[4].z
             }
             let rightMidpoint = {
-                x: intersection.up.segment.duct.userData.proxy2Vertices[4].x,
-                z: intersection.right.segment.duct.userData.proxyMedianVertices[4].z
+                x: joint.up.proxy2.coordinates[4].x,
+                z: joint.right.proxyMedian.coordinates[4].z
             }
             let downMidpoint = {
-                x: intersection.down.segment.duct.userData.proxyMedianVertices[4].x,
-                z: intersection.right.segment.duct.userData.proxy2Vertices[4].z
+                x: joint.down.proxyMedian.coordinates[4].x,
+                z: joint.right.proxy2.coordinates[4].z
             }
             let leftMidpoint = {
-                x: intersection.down.segment.duct.userData.proxy1Vertices[4].x,
-                z: intersection.left.segment.duct.userData.proxyMedianVertices[4].z
+                x: joint.down.proxy1.coordinates[4].x,
+                z: joint.left.proxyMedian.coordinates[4].z
             }
 
             let backwall = [
-                intersection.up.segment.duct.userData.proxyMedianVertices[4],
-                intersection.up.segment.duct.userData.proxy1Vertices[4],
-                intersection.up.segment.duct.userData.proxy2Vertices[7],
-                intersection.right.segment.duct.userData.proxyMedianVertices[7],
-                intersection.right.segment.duct.userData.proxy1Vertices[7],
-                intersection.right.segment.duct.userData.proxy2Vertices[6],
-                intersection.down.segment.duct.userData.proxyMedianVertices[6],
-                intersection.down.segment.duct.userData.proxy2Vertices[6],
-                intersection.down.segment.duct.userData.proxy1Vertices[5],
-                intersection.left.segment.duct.userData.proxyMedianVertices[5],
-                intersection.left.segment.duct.userData.proxy2Vertices[5],
-                intersection.left.segment.duct.userData.proxy1Vertices[4]
+                joint.up.proxyMedian.coordinates[4],
+                joint.up.proxy1.coordinates[4],
+                joint.up.proxy2.coordinates[7],
+                joint.right.proxyMedian.coordinates[7],
+                joint.right.proxy1.coordinates[7],
+                joint.right.proxy2.coordinates[6],
+                joint.down.proxyMedian.coordinates[6],
+                joint.down.proxy2.coordinates[6],
+                joint.down.proxy1.coordinates[5],
+                joint.left.proxyMedian.coordinates[5],
+                joint.left.proxy2.coordinates[5],
+                joint.left.proxy1.coordinates[4]
             ];
 
             if(this.xzJointDirection == "inwards") {
                 upMidpoint = {
-                    x: intersection.up.segment.duct.userData.proxy1Vertices[4].x,
-                    z: intersection.up.segment.duct.userData.proxyMedianVertices[4].z
+                    x: joint.up.proxy1.coordinates[4].x,
+                    z: joint.up.proxyMedian.coordinates[4].z
                 }
                 let upMidpoint2 = {
-                    x: intersection.up.segment.duct.userData.proxy1Vertices[4].x,
-                    z: intersection.left.segment.duct.userData.proxy1Vertices[4].z
+                    x: joint.up.proxy1.coordinates[4].x,
+                    z: joint.left.proxy1.coordinates[4].z
                 }
 
                 rightMidpoint = {
-                    x: intersection.up.segment.duct.userData.proxy2Vertices[4].x,
-                    z: intersection.right.segment.duct.userData.proxyMedianVertices[4].z
+                    x: joint.up.proxy2.coordinates[4].x,
+                    z: joint.right.proxyMedian.coordinates[4].z
                 }
                 let rightMidpoint2 = {
-                    x: intersection.up.segment.duct.userData.proxy2Vertices[4].x,
-                    z: intersection.right.segment.duct.userData.proxy1Vertices[4].z
+                    x: joint.up.proxy2.coordinates[4].x,
+                    z: joint.right.proxy1.coordinates[4].z
                 }
                 
                 leftMidpoint = {
-                    x: intersection.down.segment.duct.userData.proxy1Vertices[4].x,
-                    z: intersection.left.segment.duct.userData.proxyMedianVertices[4].z
+                    x: joint.down.proxy1.coordinates[4].x,
+                    z: joint.left.proxyMedian.coordinates[4].z
                 }
                 let leftMidpoint2 = {
-                    x: intersection.down.segment.duct.userData.proxy1Vertices[4].x,
-                    z: intersection.left.segment.duct.userData.proxy2Vertices[4].z
+                    x: joint.down.proxy1.coordinates[4].x,
+                    z: joint.left.proxy2.coordinates[4].z
                 }
 
                 downMidpoint = {
-                    x: intersection.down.segment.duct.userData.proxyMedianVertices[4].x,
-                    z: intersection.right.segment.duct.userData.proxy2Vertices[4].z
+                    x: joint.down.proxyMedian.coordinates[4].x,
+                    z: joint.right.proxy2.coordinates[4].z
                 }
                 let downMidpoint2 = {
-                    x: intersection.down.segment.duct.userData.proxy2Vertices[4].x,
-                    z: intersection.right.segment.duct.userData.proxy2Vertices[4].z
+                    x: joint.down.proxy2.coordinates[4].x,
+                    z: joint.right.proxy2.coordinates[4].z
                 }
 
                 backwall = [
                     upMidpoint2,
-                    intersection.up.segment.duct.userData.proxyMedianVertices[4],
+                    joint.up.proxyMedian.coordinates[4],
                     upMidpoint,
-                    intersection.up.segment.duct.userData.proxy1Vertices[4],
-                    intersection.up.segment.duct.userData.proxy2Vertices[7],
+                    joint.up.proxy1.coordinates[4],
+                    joint.up.proxy2.coordinates[7],
                     rightMidpoint,
-                    intersection.right.segment.duct.userData.proxyMedianVertices[7],
+                    joint.right.proxyMedian.coordinates[7],
                     rightMidpoint2,
-                    intersection.right.segment.duct.userData.proxy1Vertices[7],
-                    intersection.right.segment.duct.userData.proxy2Vertices[6],
+                    joint.right.proxy1.coordinates[7],
+                    joint.right.proxy2.coordinates[6],
                     downMidpoint,
-                    intersection.down.segment.duct.userData.proxyMedianVertices[6],
+                    joint.down.proxyMedian.coordinates[6],
                     downMidpoint2,
-                    intersection.down.segment.duct.userData.proxy2Vertices[6],
-                    intersection.down.segment.duct.userData.proxy1Vertices[5],
+                    joint.down.proxy2.coordinates[6],
+                    joint.down.proxy1.coordinates[5],
                     leftMidpoint,
-                    intersection.left.segment.duct.userData.proxyMedianVertices[5],
+                    joint.left.proxyMedian.coordinates[5],
                     leftMidpoint2,
-                    intersection.left.segment.duct.userData.proxy2Vertices[5],
-                    intersection.left.segment.duct.userData.proxy1Vertices[4]
+                    joint.left.proxy2.coordinates[5],
+                    joint.left.proxy1.coordinates[4]
                 ];
             }
 
-            createJointBackwall(backwall, largestGlobalSize);
+            geometries.push(createJointBackwall(backwall, largestGlobalSize));
         }
         else {
             let backwall = [
-                intersection.up.segment.duct.userData.proxyMedianVertices[4],
-                intersection.up.segment.duct.userData.proxy1Vertices[4],
-                intersection.up.segment.duct.userData.proxy2Vertices[7],
-                intersection.right.segment.duct.userData.proxyMedianVertices[7],
-                intersection.right.segment.duct.userData.proxy1Vertices[7],
-                intersection.right.segment.duct.userData.proxy2Vertices[6],
-                intersection.down.segment.duct.userData.proxyMedianVertices[6],
-                intersection.down.segment.duct.userData.proxy2Vertices[6],
-                intersection.down.segment.duct.userData.proxy1Vertices[5],
-                intersection.left.segment.duct.userData.proxyMedianVertices[5],
-                intersection.left.segment.duct.userData.proxy2Vertices[5],
-                intersection.left.segment.duct.userData.proxy1Vertices[4]
+                joint.up.proxyMedian.coordinates[4],
+                joint.up.proxy1.coordinates[4],
+                joint.up.proxy2.coordinates[7],
+                joint.right.proxyMedian.coordinates[7],
+                joint.right.proxy1.coordinates[7],
+                joint.right.proxy2.coordinates[6],
+                joint.down.proxyMedian.coordinates[6],
+                joint.down.proxy2.coordinates[6],
+                joint.down.proxy1.coordinates[5],
+                joint.left.proxyMedian.coordinates[5],
+                joint.left.proxy2.coordinates[5],
+                joint.left.proxy1.coordinates[4]
             ];
-    
-            createJointBackwall(backwall, largestGlobalSize);
+
+            geometries.push(createJointBackwall(backwall, largestGlobalSize));
         }  
 
         geometries.push(
             ...connectProxiesDiagonallyUphill(
-                intersection.left.segment.duct.userData.proxy1Vertices,
-                intersection.up.segment.duct.userData.proxyMedianVertices
+                joint.left.proxy1.coordinates,
+                joint.up.proxyMedian.coordinates
             )
         ); 
         geometries.push(
             ...connectProxiesDiagonallyUphill(
-                intersection.up.segment.duct.userData.proxyMedianVertices, 
-                intersection.up.segment.duct.userData.proxy1Vertices
+                joint.up.proxyMedian.coordinates, 
+                joint.up.proxy1.coordinates
             )
         );
 
         geometries.push(
             ...connectProxiesDiagonallyDownhill(
-                intersection.left.segment.duct.userData.proxy2Vertices, 
-                intersection.left.segment.duct.userData.proxyMedianVertices
+                joint.left.proxy2.coordinates, 
+                joint.left.proxyMedian.coordinates
             )
         );
         geometries.push(
             ...connectProxiesDiagonallyDownhill(
-                intersection.left.segment.duct.userData.proxyMedianVertices,
-                intersection.down.segment.duct.userData.proxy1Vertices
+                joint.left.proxyMedian.coordinates,
+                joint.down.proxy1.coordinates
             )  
         );
 
         geometries.push(
             ...connectProxiesDiagonallyUphill(
-                intersection.down.segment.duct.userData.proxy2Vertices,
-                intersection.down.segment.duct.userData.proxyMedianVertices
+                joint.down.proxy2.coordinates,
+                joint.down.proxyMedian.coordinates
             )
         );
         geometries.push(
             ...connectProxiesDiagonallyUphill(
-                intersection.down.segment.duct.userData.proxyMedianVertices,
-                intersection.right.segment.duct.userData.proxy2Vertices
+                joint.down.proxyMedian.coordinates,
+                joint.right.proxy2.coordinates
             )
         );
 
         geometries.push(
             ...connectProxiesDiagonallyDownhill(
-                intersection.right.segment.duct.userData.proxyMedianVertices, 
-                intersection.right.segment.duct.userData.proxy1Vertices
+                joint.right.proxyMedian.coordinates, 
+                joint.right.proxy1.coordinates
             )
         );
         geometries.push(
             ...connectProxiesDiagonallyDownhill(
-                intersection.up.segment.duct.userData.proxy2Vertices, 
-                intersection.right.segment.duct.userData.proxyMedianVertices
+                joint.up.proxy2.coordinates, 
+                joint.right.proxyMedian.coordinates
             )
         );        
 
         geometries.push(
-            ...createJointClosure(intersection.up, "horizontal")
+            ...createJointClosure(joint.up, "horizontal")
         );
         geometries.push(
-            ...createJointClosure(intersection.right, "vertical")
+            ...createJointClosure(joint.right, "vertical")
         );
         geometries.push(
-            ...createJointClosure(intersection.down, "horizontal")
+            ...createJointClosure(joint.down, "horizontal")
         );
         geometries.push(
-            ...createJointClosure(intersection.left, "vertical")
+            ...createJointClosure(joint.left, "vertical")
         );
 
-        mergeAndAddToScene(geometries);
+        const newMergedGeometry = mergeGeometries(geometries);
+        return newMergedGeometry;
 
     }
 }

@@ -1,3 +1,5 @@
+import { sharedData } from "../Ahu3D/globals.js"
+
 export default class Canvas2D {
     createCenteredRect(x, y, width, height, options = {}) {
         return new Konva.Rect({
@@ -9,8 +11,8 @@ export default class Canvas2D {
         });
       }
     
-    drawToSecondaryViewport(assembly){
-        console.log("drawToSecondaryViewport assembly", assembly);
+    drawToSecondaryViewport(ahuObject){
+        console.log("drawToSecondaryViewport ahuObject", ahuObject);
         const container = document.getElementById('secondaryKonvaContainer');
     
         const containerWidth = container.offsetWidth;
@@ -29,26 +31,22 @@ export default class Canvas2D {
         // Add the layer to the stage
         stage.add(layer);
     
-        for(const index of assembly) {
+        for(const ductKey in ahuObject.resources.ducts) {
+
+          const duct = ahuObject.resources.ducts[ductKey];
     
-          const sizes = {
-            small: 500,
-            medium: 1000,
-            large: 1500
-          }
+          let width = duct.dimensions.x;
+          let height = duct.dimensions.z;
     
-          let width = sizes[index.xetoDuct.graphicLocation.size] * index.segment.duct.userData.component.object.scale.x;
-          let height = sizes[index.xetoDuct.graphicLocation.size];
-    
-          if(index.segment.duct.userData.component.object.rotation.y != 0) {
+          if(duct.rotation.y != 0 && duct.rotation.y != 180) {
             let temp = width;
             width = height;
             height = temp;
           }
     
           const rect = this.createCenteredRect(
-            index.segment.duct.userData.component.object.position.x, 
-            index.segment.duct.userData.component.object.position.z * -1, 
+            duct.position.x, 
+            duct.position.z * -1, 
             width, 
             height, 
             {
@@ -68,10 +66,38 @@ export default class Canvas2D {
         this.setKonvaWheel(stage);
     
         layer.draw(); // Redraw layer to show changes
+
+        // Function to resize the stage dynamically
+        const resizeStage = () => {
+          const newWidth = container.offsetWidth;
+          const newHeight = container.offsetHeight;
+      
+          // Update stage size
+          stage.width(newWidth);
+          stage.height(newHeight);
+      
+          // Reset layer scale and position before refitting
+          layer.scale({ x: 1, y: 1 });
+          layer.position({ x: 0, y: 0 });
+      
+          // Call your fit function to re-adjust the content correctly
+          this.fitLayerToRects(layer, newWidth, newHeight, 0.90);
+      
+          layer.draw();
+      };
+
+        // Observe container size changes and trigger resize
+        window.addEventListener('resize', resizeStage);
+
+        // Optional: Use ResizeObserver for better efficiency
+        const resizeObserver = new ResizeObserver(() => {
+            resizeStage();
+        });
+        resizeObserver.observe(container);
     }
-    
-    drawToPrimaryViewport(assembly){
-        console.log("drawToPrimaryViewport assembly", assembly);
+
+    drawToPrimaryViewport(ahuObject){
+        console.log("drawToPrimaryViewport ahuObject", ahuObject);
         const container = document.getElementById('primaryKonvaContainer');
     
         const containerWidth = container.offsetWidth;
@@ -90,26 +116,22 @@ export default class Canvas2D {
         // Add the layer to the stage
         stage.add(layer);
     
-        for(const index of assembly) {
+        for(const ductKey in ahuObject.resources.ducts) {
+
+          const duct = ahuObject.resources.ducts[ductKey];
     
-          const sizes = {
-            small: 500,
-            medium: 1000,
-            large: 1500
-          }
+          let width = duct.dimensions.x;
+          let height = duct.dimensions.z;
     
-          let width = sizes[index.xetoDuct.graphicLocation.size] * index.segment.duct.userData.component.object.scale.x;
-          let height = sizes[index.xetoDuct.graphicLocation.size];
-    
-          if(index.segment.duct.userData.component.object.rotation.y != 0) {
+          if(duct.rotation.y != 0 && duct.rotation.y != 180) {
             let temp = width;
             width = height;
             height = temp;
           }
     
           const rect = this.createCenteredRect(
-            index.segment.duct.userData.component.object.position.x, 
-            index.segment.duct.userData.component.object.position.z * -1, 
+            duct.position.x, 
+            duct.position.z * -1, 
             width, 
             height, 
             {
@@ -129,6 +151,34 @@ export default class Canvas2D {
         this.setKonvaWheel(stage);
     
         layer.draw(); // Redraw layer to show changes
+
+        // Function to resize the stage dynamically
+        const resizeStage = () => {
+          const newWidth = container.offsetWidth;
+          const newHeight = container.offsetHeight;
+      
+          // Update stage size
+          stage.width(newWidth);
+          stage.height(newHeight);
+      
+          // Reset layer scale and position before refitting
+          layer.scale({ x: 1, y: 1 });
+          layer.position({ x: 0, y: 0 });
+      
+          // Call your fit function to re-adjust the content correctly
+          this.fitLayerToRects(layer, newWidth, newHeight, 0.90);
+      
+          layer.draw();
+      };
+
+        // Observe container size changes and trigger resize
+        window.addEventListener('resize', resizeStage);
+
+        // Optional: Use ResizeObserver for better efficiency
+        const resizeObserver = new ResizeObserver(() => {
+            resizeStage();
+        });
+        resizeObserver.observe(container);
     }
       
     fitLayerToRects(layer, containerWidth, containerHeight, zoomOutFactor = 0.90) {

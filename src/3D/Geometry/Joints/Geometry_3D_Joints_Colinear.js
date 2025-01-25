@@ -4,214 +4,213 @@ import {
     connectProxiesDiagonallyUphill, 
     connectProxiesDiagonallyDownhill,
     createJointClosure,
-    mergeAndAddToScene,
+    mergeGeometries,
     createGeometryFromPoints
 } from "./Geometry_3D_Joints_Utils.js";
 import { sharedData } from "../../../Ahu3D/globals.js";
 
 export default class Geometry_3D_Joints_Colinear {
-    createParallelJoint(intersection, pairDirection) {
+    createParallelJoint(intersection, pairDirection, joint) {
         const geometries = [];
 
         if(pairDirection == "vertical") {
             geometries.push(
                 createGeometryFromPoints(
-                    intersection.up.segment.duct.userData.proxy1Vertices[1],
-                    intersection.down.segment.duct.userData.proxy1Vertices[1],
-                    intersection.down.segment.duct.userData.proxy1Vertices[5],
-                    intersection.up.segment.duct.userData.proxy1Vertices[5]
+                    joint.up.proxy1.coordinates[1],
+                    joint.down.proxy1.coordinates[1],
+                    joint.down.proxy1.coordinates[5],
+                    joint.up.proxy1.coordinates[5]
                 )
             );
             geometries.push(
                 createGeometryFromPoints(
-                    intersection.up.segment.duct.userData.proxy1Vertices[0],
-                    intersection.down.segment.duct.userData.proxy1Vertices[0],
-                    intersection.down.segment.duct.userData.proxy1Vertices[4],
-                    intersection.up.segment.duct.userData.proxy1Vertices[4]
+                    joint.up.proxy1.coordinates[0],
+                    joint.down.proxy1.coordinates[0],
+                    joint.down.proxy1.coordinates[4],
+                    joint.up.proxy1.coordinates[4]
                 )
             );
             geometries.push(
                 createGeometryFromPoints(
-                    intersection.up.segment.duct.userData.proxy1Vertices[0],
-                    intersection.down.segment.duct.userData.proxy1Vertices[3],
-                    intersection.down.segment.duct.userData.proxy1Vertices[2],
-                    intersection.up.segment.duct.userData.proxy1Vertices[1]
+                    joint.up.proxy1.coordinates[0],
+                    joint.down.proxy1.coordinates[3],
+                    joint.down.proxy1.coordinates[2],
+                    joint.up.proxy1.coordinates[1]
                 )
             );
             geometries.push(
                 createGeometryFromPoints(
-                    intersection.up.segment.duct.userData.proxy1Vertices[4],
-                    intersection.down.segment.duct.userData.proxy1Vertices[4],
-                    intersection.down.segment.duct.userData.proxy1Vertices[5],
-                    intersection.up.segment.duct.userData.proxy1Vertices[5]
+                    joint.up.proxy1.coordinates[4],
+                    joint.down.proxy1.coordinates[4],
+                    joint.down.proxy1.coordinates[5],
+                    joint.up.proxy1.coordinates[5]
                 )
             );
             geometries.push(
                 createGeometryFromPoints(
-                    intersection.up.segment.duct.userData.proxyOriginal1Vertices[7],
-                    intersection.up.segment.duct.userData.proxyOriginal2Vertices[7],
-                    intersection.up.segment.duct.userData.proxy2Vertices[7],
-                    intersection.up.segment.duct.userData.proxy1Vertices[7]
+                    joint.up.proxyOriginal1.coordinates[7],
+                    joint.up.proxyOriginal2.coordinates[7],
+                    joint.up.proxy2.coordinates[7],
+                    joint.up.proxy1.coordinates[7]
                 )
             );
             geometries.push(
                 createGeometryFromPoints(
-                    intersection.down.segment.duct.userData.proxyOriginal1Vertices[5],
-                    intersection.down.segment.duct.userData.proxyOriginal2Vertices[5],
-                    intersection.down.segment.duct.userData.proxy2Vertices[5],
-                    intersection.down.segment.duct.userData.proxy1Vertices[5]
+                    joint.down.proxyOriginal1.coordinates[5],
+                    joint.down.proxyOriginal2.coordinates[5],
+                    joint.down.proxy2.coordinates[5],
+                    joint.down.proxy1.coordinates[5]
                 )
             );
             geometries.push(
                 createGeometryFromPoints(
-                    intersection.down.segment.duct.userData.proxyOriginal1Vertices[4],
-                    intersection.down.segment.duct.userData.proxyOriginal2Vertices[4],
-                    intersection.down.segment.duct.userData.proxyOriginal2Vertices[5],
-                    intersection.down.segment.duct.userData.proxyOriginal1Vertices[5]
+                    joint.down.proxyOriginal1.coordinates[4],
+                    joint.down.proxyOriginal2.coordinates[4],
+                    joint.down.proxyOriginal2.coordinates[5],
+                    joint.down.proxyOriginal1.coordinates[5]
                 )
             );
             geometries.push(
                 createGeometryFromPoints(
-                    intersection.up.segment.duct.userData.proxy1Vertices[4],
-                    intersection.down.segment.duct.userData.proxy2Vertices[4],
-                    intersection.down.segment.duct.userData.proxy2Vertices[5],
-                    intersection.up.segment.duct.userData.proxy1Vertices[5]
+                    joint.up.proxy1.coordinates[4],
+                    joint.down.proxy2.coordinates[4],
+                    joint.down.proxy2.coordinates[5],
+                    joint.up.proxy1.coordinates[5]
                 )
             );
             geometries.push(
                 createGeometryFromPoints(
-                    intersection.up.segment.duct.userData.proxy2Vertices[1],
-                    intersection.down.segment.duct.userData.proxy2Vertices[1],
-                    intersection.down.segment.duct.userData.proxy2Vertices[5],
-                    intersection.up.segment.duct.userData.proxy2Vertices[5]
+                    joint.up.proxy2.coordinates[1],
+                    joint.down.proxy2.coordinates[1],
+                    joint.down.proxy2.coordinates[5],
+                    joint.up.proxy2.coordinates[5]
                 )
             );
             geometries.push(
                 createGeometryFromPoints(
-                    intersection.up.segment.duct.userData.proxy2Vertices[0],
-                    intersection.down.segment.duct.userData.proxy2Vertices[0],
-                    intersection.down.segment.duct.userData.proxy2Vertices[4],
-                    intersection.up.segment.duct.userData.proxy2Vertices[4]
+                    joint.up.proxy2.coordinates[0],
+                    joint.down.proxy2.coordinates[0],
+                    joint.down.proxy2.coordinates[4],
+                    joint.up.proxy2.coordinates[4]
                 )
             );
             geometries.push(
                 createGeometryFromPoints(
-                    intersection.up.segment.duct.userData.proxy2Vertices[0],
-                    intersection.down.segment.duct.userData.proxy2Vertices[3],
-                    intersection.down.segment.duct.userData.proxy2Vertices[2],
-                    intersection.up.segment.duct.userData.proxy2Vertices[1]
+                    joint.up.proxy2.coordinates[0],
+                    joint.down.proxy2.coordinates[3],
+                    joint.down.proxy2.coordinates[2],
+                    joint.up.proxy2.coordinates[1]
                 )
             );
             geometries.push(
                 createGeometryFromPoints(
-                    intersection.up.segment.duct.userData.proxy2Vertices[4],
-                    intersection.down.segment.duct.userData.proxy2Vertices[4],
-                    intersection.down.segment.duct.userData.proxy2Vertices[5],
-                    intersection.up.segment.duct.userData.proxy2Vertices[5]
+                    joint.up.proxy2.coordinates[4],
+                    joint.down.proxy2.coordinates[4],
+                    joint.down.proxy2.coordinates[5],
+                    joint.up.proxy2.coordinates[5]
                 )
             );
         }
         if(pairDirection == "horizontal") {
             geometries.push(
                 createGeometryFromPoints(
-                    intersection.left.segment.duct.userData.proxy1Vertices[2],
-                    intersection.right.segment.duct.userData.proxy1Vertices[2],
-                    intersection.right.segment.duct.userData.proxy1Vertices[6],
-                    intersection.left.segment.duct.userData.proxy1Vertices[6]
+                    joint.left.proxy1.coordinates[2],
+                    joint.right.proxy1.coordinates[2],
+                    joint.right.proxy1.coordinates[6],
+                    joint.left.proxy1.coordinates[6]
                 )
             );
             geometries.push(
                 createGeometryFromPoints(
-                    intersection.left.segment.duct.userData.proxy1Vertices[1],
-                    intersection.right.segment.duct.userData.proxy1Vertices[1],
-                    intersection.right.segment.duct.userData.proxy1Vertices[5],
-                    intersection.left.segment.duct.userData.proxy1Vertices[5]
+                    joint.left.proxy1.coordinates[1],
+                    joint.right.proxy1.coordinates[1],
+                    joint.right.proxy1.coordinates[5],
+                    joint.left.proxy1.coordinates[5]
                 )
             );
             geometries.push(
                 createGeometryFromPoints(
-                    intersection.left.segment.duct.userData.proxy1Vertices[1],
-                    intersection.right.segment.duct.userData.proxy1Vertices[0],
-                    intersection.right.segment.duct.userData.proxy1Vertices[3],
-                    intersection.left.segment.duct.userData.proxy1Vertices[2]
+                    joint.left.proxy1.coordinates[1],
+                    joint.right.proxy1.coordinates[0],
+                    joint.right.proxy1.coordinates[3],
+                    joint.left.proxy1.coordinates[2]
                 )
             );
             geometries.push(
                 createGeometryFromPoints(
-                    intersection.left.segment.duct.userData.proxy1Vertices[5],
-                    intersection.right.segment.duct.userData.proxy1Vertices[5],
-                    intersection.right.segment.duct.userData.proxy1Vertices[6],
-                    intersection.left.segment.duct.userData.proxy1Vertices[6]
+                    joint.left.proxy1.coordinates[5],
+                    joint.right.proxy1.coordinates[5],
+                    joint.right.proxy1.coordinates[6],
+                    joint.left.proxy1.coordinates[6]
                 )
             );
             geometries.push(
                 createGeometryFromPoints(
-                    intersection.right.segment.duct.userData.proxyOriginal1Vertices[5],
-                    intersection.right.segment.duct.userData.proxyOriginal2Vertices[5],
-                    intersection.right.segment.duct.userData.proxy2Vertices[5],
-                    intersection.right.segment.duct.userData.proxy1Vertices[5]
+                    joint.right.proxyOriginal1.coordinates[5],
+                    joint.right.proxyOriginal2.coordinates[5],
+                    joint.right.proxy2.coordinates[5],
+                    joint.right.proxy1.coordinates[5]
                 )
             );
             geometries.push(
                 createGeometryFromPoints(
-                    intersection.right.segment.duct.userData.proxyOriginal1Vertices[6],
-                    intersection.right.segment.duct.userData.proxyOriginal2Vertices[6],
-                    intersection.right.segment.duct.userData.proxy2Vertices[6],
-                    intersection.right.segment.duct.userData.proxy1Vertices[6]
+                    joint.right.proxyOriginal1.coordinates[6],
+                    joint.right.proxyOriginal2.coordinates[6],
+                    joint.right.proxy2.coordinates[6],
+                    joint.right.proxy1.coordinates[6]
                 )
             );
             geometries.push(
                 createGeometryFromPoints(
-                    intersection.right.segment.duct.userData.proxyOriginal1Vertices[5],
-                    intersection.right.segment.duct.userData.proxyOriginal2Vertices[5],
-                    intersection.right.segment.duct.userData.proxyOriginal2Vertices[6],
-                    intersection.right.segment.duct.userData.proxyOriginal1Vertices[6]
+                    joint.right.proxyOriginal1.coordinates[5],
+                    joint.right.proxyOriginal2.coordinates[5],
+                    joint.right.proxyOriginal2.coordinates[6],
+                    joint.right.proxyOriginal1.coordinates[6]
                 )
             );
             geometries.push(
                 createGeometryFromPoints(
-                    intersection.left.segment.duct.userData.proxy1Vertices[5],
-                    intersection.right.segment.duct.userData.proxy2Vertices[5],
-                    intersection.right.segment.duct.userData.proxy2Vertices[6],
-                    intersection.left.segment.duct.userData.proxy1Vertices[6]
+                    joint.left.proxy1.coordinates[5],
+                    joint.right.proxy2.coordinates[5],
+                    joint.right.proxy2.coordinates[6],
+                    joint.left.proxy1.coordinates[6]
                 )
             );
             geometries.push(
                 createGeometryFromPoints(
-                    intersection.left.segment.duct.userData.proxy2Vertices[2],
-                    intersection.right.segment.duct.userData.proxy2Vertices[2],
-                    intersection.right.segment.duct.userData.proxy2Vertices[6],
-                    intersection.left.segment.duct.userData.proxy2Vertices[6]
+                    joint.left.proxy2.coordinates[2],
+                    joint.right.proxy2.coordinates[2],
+                    joint.right.proxy2.coordinates[6],
+                    joint.left.proxy2.coordinates[6]
                 )
             );
             geometries.push(
                 createGeometryFromPoints(
-                    intersection.left.segment.duct.userData.proxy2Vertices[1],
-                    intersection.right.segment.duct.userData.proxy2Vertices[1],
-                    intersection.right.segment.duct.userData.proxy2Vertices[5],
-                    intersection.left.segment.duct.userData.proxy2Vertices[5]
+                    joint.left.proxy2.coordinates[1],
+                    joint.right.proxy2.coordinates[1],
+                    joint.right.proxy2.coordinates[5],
+                    joint.left.proxy2.coordinates[5]
                 )
             );
             geometries.push(
                 createGeometryFromPoints(
-                    intersection.left.segment.duct.userData.proxy2Vertices[1],
-                    intersection.right.segment.duct.userData.proxy2Vertices[0],
-                    intersection.right.segment.duct.userData.proxy2Vertices[3],
-                    intersection.left.segment.duct.userData.proxy2Vertices[2]
+                    joint.left.proxy2.coordinates[1],
+                    joint.right.proxy2.coordinates[0],
+                    joint.right.proxy2.coordinates[3],
+                    joint.left.proxy2.coordinates[2]
                 )
             );
             geometries.push(
                 createGeometryFromPoints(
-                    intersection.left.segment.duct.userData.proxy2Vertices[5],
-                    intersection.right.segment.duct.userData.proxy2Vertices[5],
-                    intersection.right.segment.duct.userData.proxy2Vertices[6],
-                    intersection.left.segment.duct.userData.proxy2Vertices[6]
+                    joint.left.proxy2.coordinates[5],
+                    joint.right.proxy2.coordinates[5],
+                    joint.right.proxy2.coordinates[6],
+                    joint.left.proxy2.coordinates[6]
                 )
             );
         }
 
-        // return geometries;
-
-        mergeAndAddToScene(geometries);
+        const newMergedGeometry = mergeGeometries(geometries);
+        return newMergedGeometry;
     }
 }

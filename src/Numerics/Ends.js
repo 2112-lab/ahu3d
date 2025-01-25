@@ -10,25 +10,25 @@ export default class Ends {
     }
 
     /**
-     * createDuctEnds
+     * createEnds
      * 
      * Creates the necessary duct ends based on the segment's orientation and style,
      * and positions them correctly within the assembly.
      */
-    createDuctEnds(ahuObject) {
-        console.log("createDuctEnds started:", ahuObject);
+    createEnds(ahuObject) {
+        console.log("createEnds started:", ahuObject);
         for (const ductKey in ahuObject.resources.ducts) { // Iterate over each segment.
             const duct = ahuObject.resources.ducts[ductKey];
 
-            console.log("createDuctEnds duct:", duct);
-            console.log("createDuctEnds ductKey:", ductKey);
+            console.log("createEnds duct:", duct);
+            console.log("createEnds ductKey:", ductKey);
 
             const ductXeto = ahuObject.xetoDictionary.edges[ductKey];
 
-            console.log("createDuctEnds ductXeto:", ductXeto);
-            console.log("createDuctEnds duct:", duct);
+            console.log("createEnds ductXeto:", ductXeto);
+            console.log("createEnds duct:", duct);
 
-            console.log("createDuctEnds step 1");
+            console.log("createEnds step 1");
 
             const ductEndTypes = ['cap', 'insert'];
 
@@ -36,7 +36,7 @@ export default class Ends {
 
                 const ductLoc = ductXeto.graphicLocation; // Get the segment's graphic location.
 
-                console.log("createDuctEnds step 2:", ahuObject.xetoDictionary.edges);
+                console.log("createEnds step 2:", ahuObject.xetoDictionary.edges);
 
                 let startIntersections = [];
                 for(const edgeKey in ahuObject.xetoDictionary.edges) {
@@ -51,7 +51,7 @@ export default class Ends {
                     }
                 }
 
-                console.log("createDuctEnds step 3");
+                console.log("createEnds step 3");
 
                 let endIntersections = [];
                 for(const edgeKey in ahuObject.xetoDictionary.edges) {
@@ -69,7 +69,7 @@ export default class Ends {
                 let segmentOrientation = ductXeto.orientation
                 let ductEnd = null;
 
-                console.log("createDuctEnds step 3");
+                console.log("createEnds step 3");
 
                 if (startIntersections.length == 0 || endIntersections.length == 0) {
                     if(ductXeto.blockStyle.ductEnds == 'insert') {
@@ -84,13 +84,13 @@ export default class Ends {
                     }
                 }
 
-                console.log("createDuctEnds step 3:", ductEnd);
+                console.log("createEnds step 3:", ductEnd);
 
-                console.log("createDuctEnds step 4:", ductXeto.id);  
+                console.log("createEnds step 4:", ductXeto.id);  
                 
                 let ductLength = duct.dimensions.x;
 
-                console.log("createDuctEnds step 5:", ductLength); 
+                console.log("createEnds step 5:", ductLength); 
 
                 let ductHalfLength = 500;
                 let halfWallThickness = 15;
@@ -147,8 +147,6 @@ export default class Ends {
     }
 
     createParametricInsert(size = 500) {
-        const material = new THREE.MeshStandardMaterial({ color: this.primaryColor });
-
         const sectionHeight = 60;
         
         const topGeometry = new THREE.BoxGeometry(size + 30, size + 30, sectionHeight);
@@ -198,17 +196,15 @@ export default class Ends {
             mergedGeometry2
         ], false);
         
+        const material = new THREE.MeshStandardMaterial({ color: this.primaryColor });
         const mergedMesh = new THREE.Mesh(mergedGeometryTotal, material);
         mergedMesh.name = "ductEnd";
-        mergedMesh.userData.height = sectionHeight * 3;
         this.sceneHelper.addToScene(mergedMesh);
         
         return mergedMesh;
     }
 
-    createParametricCap(size = 500) {
-        const material = new THREE.MeshStandardMaterial({ color: this.primaryColor });
-        
+    createParametricCap(size = 500) {        
         const topGeometry = new THREE.BoxGeometry(size + 30, size + 30, 30);
         const leftGeometry = new THREE.BoxGeometry(30, size + 30, 30);
         const rightGeometry = new THREE.BoxGeometry(30, size + 30, 30);
@@ -236,10 +232,10 @@ export default class Ends {
             rightGeometry,
             backGeometry
         ], false);
-        
+
+        const material = new THREE.MeshStandardMaterial({ color: this.primaryColor });        
         const mergedMesh = new THREE.Mesh(mergedGeometry, material);
         mergedMesh.name = "ductEnd";
-        mergedMesh.userData.height = 60;
         this.sceneHelper.addToScene(mergedMesh);
         
         return mergedMesh;

@@ -95,6 +95,24 @@ export default class Utils3D {
     });
   }
 
+  setEndsOpacity(opacity) {
+    this.sceneHelper.scene.traverse((object3d) => {
+      if (object3d.isObject3D) {
+        if(object3d.name.includes('ductEnd')) {
+          if(opacity < 1) {
+            object3d.material.transparent = true;
+            object3d.material.depthWrite = false;
+          }
+          else {
+            object3d.material.transparent = false;
+            object3d.material.depthWrite = true;
+          }
+          object3d.material.opacity = opacity;
+        }
+      }
+    });
+  }
+
   setJointWireframe(value) {
     this.sceneHelper.scene.traverse((object3d) => {
       if(object3d.isObject3D) {
@@ -105,6 +123,48 @@ export default class Utils3D {
               child.visible = value;
             }
           }
+        }
+      }
+    });
+  }
+
+  setVertexHelperOpacity(opacity) {
+    this.sceneHelper.scene.traverse((object3d) => {
+      if (object3d.isObject3D) {
+        if(object3d.name.includes('jointVertexHelpers')) {
+          if(opacity > 0) {
+            object3d.visible = true;
+          }
+          else {
+            object3d.visible = false;
+          }
+          if(opacity < 1) {
+            object3d.material.transparent = true;
+            object3d.material.depthWrite = false;
+          }
+          else {
+            object3d.material.transparent = false;
+            object3d.material.depthWrite = true;
+          }
+          object3d.material.opacity = opacity;
+        }
+      }
+    });
+  }
+
+  setProxyOpacity(opacity) {
+    this.sceneHelper.scene.traverse((object3d) => {
+      if (object3d.isObject3D) {
+        if(object3d.name.includes('jointProxy')) {
+          if(opacity < 1) {
+            object3d.material.transparent = true;
+            object3d.material.depthWrite = false;
+          }
+          else {
+            object3d.material.transparent = false;
+            object3d.material.depthWrite = true;
+          }
+          object3d.material.opacity = opacity;
         }
       }
     });

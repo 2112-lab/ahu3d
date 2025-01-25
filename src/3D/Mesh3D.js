@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import Canvas2D from "../2D/Canvas2D.js";
 import { sharedData } from "../Ahu3D/globals.js";
+import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 import { createTextMesh } from "./Geometry/Helpers/Geometry_Text.js"
 
@@ -49,7 +50,7 @@ export default class Mesh3D {
       for(const ductId in ahuObject.resources.ducts) {
 
         const duct = ahuObject.resources.ducts[ductId];
-        const ductInstance = this.createDuct2(duct, ductId);
+        const ductInstance = this.createDuct(duct, ductId);
         ahuObject["3d"].ducts.meshes[ductId] = ductInstance;
 
         let componentMeshes = [];
@@ -70,9 +71,9 @@ export default class Mesh3D {
         console.log("render3D addCubesFromData starting:", ahuObject);
 
         this.renderProxies(ahuObject.resources.joints);
-        // this.renderProxyCoordinateHelpers(ahuObject.resources.joints);
+        this.renderJointVertexHelpers(ahuObject.resources.joints);
 
-        console.log("render3D renderJoints starting");
+        console.log("render3D renderJoints starting:", ahuObject["3d"]);
 
         this.renderJoints(ahuObject["3d"]);
 
@@ -84,17 +85,44 @@ export default class Mesh3D {
   }
 
   renderJoints(items3d) {
-    const jointGeometries = items3d.joints.geometry;
-    for(const jointGeometryKey in jointGeometries) {
-      const jointGeometry = jointGeometries[jointGeometryKey];
-      const material = new THREE.MeshStandardMaterial({ color: sharedData.primaryColor, side: THREE.DoubleSide });
-      const jointMesh = new THREE.Mesh(jointGeometry, material);
-      jointMesh.name = "joint";
-      sharedData.sceneHelper.addToScene(jointMesh);
+      const jointGeometries = items3d.joints.geometry;
+      const geometriesArray = [];
 
-      items3d.joints.meshes[jointGeometryKey] = jointMesh;
-    }
-    delete items3d.joints.geometry;
+      // Collect all joint geometries
+      for (const jointGeometryKey in jointGeometries) {
+          const jointGeometry = jointGeometries[jointGeometryKey];
+
+          // Clone to prevent modifying the original geometry
+          geometriesArray.push(jointGeometry.clone());
+      }
+
+      if (geometriesArray.length > 0) {
+          // Merge all geometries into a single one
+          const mergedGeometry = BufferGeometryUtils.mergeGeometries(geometriesArray);
+
+          // Create a material and mesh for the merged geometry
+          const material = new THREE.MeshStandardMaterial({ color: sharedData.primaryColor, side: THREE.DoubleSide });
+          const mergedMesh = new THREE.Mesh(mergedGeometry, material);
+          mergedMesh.name = "joint";
+
+          // Create a triangle wireframe from the merged geometry
+          const wireframeGeometry = new THREE.WireframeGeometry(mergedGeometry);
+          const wireframeMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
+          const wireframe = new THREE.LineSegments(wireframeGeometry, wireframeMaterial);
+
+          wireframe.visible = false;
+
+          mergedMesh.add(wireframe);
+
+          // Add the combined object to the scene
+          sharedData.sceneHelper.addToScene(mergedMesh);
+
+          // Store the merged mesh reference
+          items3d.joints.mergedMesh = mergedMesh;
+      }
+
+      // Clean up the original geometry data
+      delete items3d.joints.geometry;
   }
 
   renderProxies(data) {
@@ -102,7 +130,7 @@ export default class Mesh3D {
 
     const wt = sharedData.moduleConfigs.parametricOptions.wallThickness;
 
-    let length = 60;
+    let length = 0;
     let position = {x: 0, y: 0, z:0};
 
     const material1 = new THREE.MeshStandardMaterial({ color: sharedData.primaryColor });
@@ -137,41 +165,50 @@ export default class Mesh3D {
     }
   }
 
-  renderProxyCoordinateHelpers(data) {
-    console.log("renderProxyCoordinateHelpers data:", data);
+  renderJointVertexHelpers(data) {
+    console.log("renderJointVertexHelpers data:", data);
     const geometry = new THREE.BoxGeometry(26, 26, 26);
 
     for (const jointKey in data) {
         const directions = data[jointKey];
 
         for (const direction in directions) {
-            console.log("renderProxyCoordinateHelpers direction:", direction);
+            console.log("renderJointVertexHelpers direction:", direction);
           
             const proxies = directions[direction];
 
-            console.log("renderProxyCoordinateHelpers proxies:", proxies);
+            console.log("renderJointVertexHelpers proxies:", proxies);
 
-            const material1 = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+            const vertexMaterialConfigs = {
+              transparent: true,
+              depthWrite: false,
+              opacity: 0
+            }
+
+            const material1 = new THREE.MeshStandardMaterial({ color: 0xff0000, ...vertexMaterialConfigs });
             proxies.proxy1.coordinates.forEach(coord => {
               const proxy = new THREE.Mesh(geometry, material1);
-              proxy.name = "jointProxyHelper";
+              proxy.name = "jointVertexHelpers";
               proxy.position.set(coord.x, coord.y, coord.z);
+              proxy.visible = false;
               sharedData.sceneHelper.addToScene(proxy);
             });
 
-            const material2 = new THREE.MeshStandardMaterial({ color: 0x0000ff });
+            const material2 = new THREE.MeshStandardMaterial({ color: 0x0000ff, ...vertexMaterialConfigs });
             proxies.proxy2.coordinates.forEach(coord => {
               const proxy = new THREE.Mesh(geometry, material2);
-              proxy.name = "jointProxyHelper";
+              proxy.name = "jointVertexHelpers";
               proxy.position.set(coord.x, coord.y, coord.z);
+              proxy.visible = false;
               sharedData.sceneHelper.addToScene(proxy);
             });
 
-            const material3 = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
+            const material3 = new THREE.MeshStandardMaterial({ color: 0x00ff00, ...vertexMaterialConfigs });
             proxies.proxyMedian.coordinates.forEach(coord => {
               const proxy = new THREE.Mesh(geometry, material3);
-              proxy.name = "jointProxyHelper";
+              proxy.name = "jointVertexHelpers";
               proxy.position.set(coord.x, coord.y, coord.z);
+              proxy.visible = false;
               sharedData.sceneHelper.addToScene(proxy);
             });
         }
@@ -228,176 +265,53 @@ export default class Mesh3D {
       ductMesh.rotateY(angle);
     }
 
-    createDuct(segment) {
-        const userData = segment.segment.duct.userData;
-        const name = segment.xetoDuct.id;
-    
-        const size = segment.xetoDuct.graphicLocation.size;
-    
-        const innerDim = { // inner-dimensions
-            small: 500,
-            medium: 1000,
-            large: 1500
-        }
-    
-        const wt = 30; // wall-thickness
-    
-        // Create the geometries with the specified dimensions
-        const ceilingGeometry = new THREE.BoxGeometry(
-            innerDim[size], 
-            innerDim[size] + wt, 
-            wt
-        );
-        const backWallGeometry = new THREE.BoxGeometry(
-            innerDim[size], 
-            wt, 
-            innerDim[size]
-        );
-        const floorGeometry = new THREE.BoxGeometry(
-            innerDim[size], 
-            innerDim[size] + wt, 
-            wt
-        );
-    
-        // Create materials
-        const ductMaterial = new THREE.MeshStandardMaterial({ 
-          color: 0xAEB9C2
-        });
-    
-        // Create the meshes
-        const ceiling = new THREE.Mesh(ceilingGeometry, ductMaterial);
-        const backWall = new THREE.Mesh(backWallGeometry, ductMaterial);
-        const floor = new THREE.Mesh(floorGeometry, ductMaterial);
-    
-        // Position the cubes to make them appear joined
-        ceiling.position.set(
-            0,
-            0,
-            (innerDim[size] / 2) * 1
-        );
-        backWall.position.set(
-            0,
-            innerDim[size]/2,
-            0
-        );
-        floor.position.set(
-            0,
-            0,
-            (innerDim[size] / 2) * -1
-        );        
-    
-        // Create an empty Object3D container (works as an empty mesh or group)
-        const parentObject = new THREE.Object3D();
-    
-        // Add the cubes to the parent object
-        parentObject.add(ceiling);
-        parentObject.add(backWall);
-        parentObject.add(floor); 
-    
-        parentObject.userData = userData;
-    
-        // Apply position transformations to the cloned instance
-        parentObject.position.x = userData.component.object.position.x;
-        parentObject.position.y = userData.component.object.position.y;
-        parentObject.position.z = userData.component.object.position.z;
-    
-        // Apply rotation transformations to the cloned instance
-        parentObject.rotation.z = userData.component.object.rotation.z;
-        parentObject.rotation.y = userData.component.object.rotation.y;
-    
-        // Apply scale transformations to the cloned instance
-        parentObject.scale.x = userData.component.object.scale.x;
-    
-        // Assign the component's name to the cloned instance
-        parentObject.userData.component.componentName = name;
-    
-        parentObject.name = "duct";
-    
-        // Clone the materials of all children of the cloned instance
-        parentObject.traverse(child => {
-            if (child.isMesh && child.material) {  // Ensure child is a mesh and has a material
-                child.material = child.material.clone(); // Clone the material
-            }
-        });
-    
-        // parentObject.sceneHelper = sharedData.sceneHelper;
-    
-        // this.extendObject3D(parentObject); 
-    
-        // Add the cubes to the scene
-        sharedData.sceneHelper.addToScene(parentObject);
-    
-        return parentObject;
-    }
-
-    createDuct2(duct, ductKey) {
-      console.log("createDuct2 started:", duct, ductKey, sharedData.moduleConfigs);
+    createDuct(duct, ductKey) {
+      console.log("createDuct started:", duct, ductKey, sharedData.moduleConfigs);
       const dims = duct.dimensions;
-  
       const wt = sharedData.moduleConfigs.parametricOptions.wallThickness; // wall-thickness
   
-      // Create the geometries with the specified dimensions
-      const ceilingGeometry = new THREE.BoxGeometry(
-          dims.x, 
-          dims.y + wt, 
-          wt
-      );
-      const backWallGeometry = new THREE.BoxGeometry(
-          dims.x, 
-          wt, 
-          dims.z
-      );
-      const floorGeometry = new THREE.BoxGeometry(
-          dims.x, 
-          dims.y + wt, 
-          wt
-      );
+      // Create geometries with specified dimensions
+      const ceilingGeometry = new THREE.BoxGeometry(dims.x, dims.y + wt, wt);
+      const backWallGeometry = new THREE.BoxGeometry(dims.x, wt, dims.z);
+      const floorGeometry = new THREE.BoxGeometry(dims.x, dims.y + wt, wt);
   
-      // Create materials
-      const ductMaterial = new THREE.MeshStandardMaterial({ 
-        color: 0xAEB9C2
-      });
+      // Position the geometries to align properly
+      ceilingGeometry.translate(0, 0, dims.z / 2);
+      backWallGeometry.translate(0, dims.y / 2, 0);
+      floorGeometry.translate(0, 0, -dims.z / 2);
   
-      // Create the meshes
-      const ceiling = new THREE.Mesh(ceilingGeometry, ductMaterial);
-      const backWall = new THREE.Mesh(backWallGeometry, ductMaterial);
-      const floor = new THREE.Mesh(floorGeometry, ductMaterial);
+      // Merge geometries into a single one
+      const mergedGeometry = BufferGeometryUtils.mergeGeometries([
+          ceilingGeometry, 
+          backWallGeometry, 
+          floorGeometry
+      ]);
   
-      // Position the cubes to make them appear joined
-      ceiling.position.set(
-          0,
-          0,
-          (dims.z / 2) * 1
-      );
-      backWall.position.set(
-          0,
-          dims.y/2,
-          0
-      );
-      floor.position.set(
-          0,
-          0,
-          (dims.z / 2) * -1
-      );        
+      // Create a material and mesh for the merged geometry
+      const ductMaterial = new THREE.MeshStandardMaterial({ color: 0xAEB9C2 });
+      const mergedMesh = new THREE.Mesh(mergedGeometry, ductMaterial);
   
-      // Create an empty Object3D container (works as an empty mesh or group)
+      // Create the wireframe from the merged geometry
+      const edges = new THREE.EdgesGeometry(mergedGeometry);
+      const wireframeMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
+      const wireframe = new THREE.LineSegments(edges, wireframeMaterial);
+  
+      // Create an empty Object3D to hold both the solid mesh and wireframe
       const parentObject = new THREE.Object3D();
+      parentObject.add(mergedMesh);
+      // parentObject.add(wireframe);
   
-      // Add the cubes to the parent object
-      parentObject.add(ceiling);
-      parentObject.add(backWall);
-      parentObject.add(floor); 
-  
+      // Position the entire parent object
       parentObject.position.copy(duct.position);
-      // parentObject.rotation.y = THREE.MathUtils.degToRad(duct.rotation.y);
-  
       parentObject.name = "duct";
   
-      // Add the cubes to the scene
+      // Add the combined object to the scene
       sharedData.sceneHelper.addToScene(parentObject);
+
+      console.log("createDuct parentObject:", parentObject);
   
       return parentObject;
-  }
+    }  
 
     renderArrow(segment) {
         const clonedArrow = sharedData.sceneHelper.instanceSet.arrow.clone();

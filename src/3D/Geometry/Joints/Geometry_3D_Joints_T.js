@@ -4,111 +4,112 @@ import {
     connectProxiesDiagonallyUphill, 
     connectProxiesDiagonallyDownhill,
     createJointClosure,
-    mergeAndAddToScene
+    mergeGeometries
 } from "./Geometry_3D_Joints_Utils.js";
 import { sharedData } from "../../../Ahu3D/globals.js";
 
 export default class Geometry_3D_Joints_T {
-    createTJoint(intersection, largestGlobalSize) {
+    createTJoint(intersection, largestGlobalSize, joint) {
+        console.log("createTJoint started:", joint);
         const geometries = [];
 
         sharedData.backwallArcConfigs = [];
 
-        calculateJointCenter(intersection, "T-Joint");  
+        // calculateJointCenter(joint, "T-Joint");
 
         if(sharedData.xzJointDirection == "outwards") {
-            if(intersection.right == null) {
+            if(joint.right == null) {
 
                 geometries.push(
                     ...connectProxiesDiagonallyUphill(
-                        intersection.down.segment.duct.userData.proxy2Vertices, 
-                        intersection.down.segment.duct.userData.proxyMedianVertices
+                        joint.down.proxy2.coordinates, 
+                        joint.down.proxyMedian.coordinates
                     )
                 );
                 geometries.push(
                     ...connectProxiesDiagonallyDownhill( 
-                        intersection.up.segment.duct.userData.proxy2Vertices,
-                        intersection.down.segment.duct.userData.proxyMedianVertices
+                        joint.up.proxy2.coordinates,
+                        joint.down.proxyMedian.coordinates
                     )
                 );
 
                 geometries.push(
                     ...connectProxiesDiagonallyDownhill(
-                        intersection.left.segment.duct.userData.proxy2Vertices, 
-                        intersection.left.segment.duct.userData.proxyMedianVertices
+                        joint.left.proxy2.coordinates, 
+                        joint.left.proxyMedian.coordinates
                     )  
                 );
                 geometries.push(
                     ...connectProxiesDiagonallyUphill(
-                        intersection.left.segment.duct.userData.proxy1Vertices,
-                        intersection.up.segment.duct.userData.proxyMedianVertices
+                        joint.left.proxy1.coordinates,
+                        joint.up.proxyMedian.coordinates
                     )
                 );
                 geometries.push(
                     ...connectProxiesDiagonallyUphill(
-                        intersection.up.segment.duct.userData.proxyMedianVertices, 
-                        intersection.up.segment.duct.userData.proxy1Vertices
+                        joint.up.proxyMedian.coordinates, 
+                        joint.up.proxy1.coordinates
                     ) 
                 );
 
                 geometries.push(
                     ...connectProxiesDiagonallyDownhill(
-                        intersection.down.segment.duct.userData.proxy1Vertices,
-                        intersection.left.segment.duct.userData.proxyMedianVertices
+                        joint.down.proxy1.coordinates,
+                        joint.left.proxyMedian.coordinates
                     )   
                 );
             }
-            else if(intersection.left == null) {
+            else if(joint.left == null) {
                 geometries.push(
                     ...connectProxiesDiagonallyUphill(
-                        intersection.up.segment.duct.userData.proxyMedianVertices, 
-                        intersection.up.segment.duct.userData.proxy1Vertices
+                        joint.up.proxyMedian.coordinates, 
+                        joint.up.proxy1.coordinates
                     )
                 );
                 geometries.push(
                     ...connectProxiesDiagonallyDownhill(
-                        intersection.down.segment.duct.userData.proxy1Vertices,
-                        intersection.up.segment.duct.userData.proxyMedianVertices
+                        joint.down.proxy1.coordinates,
+                        joint.up.proxyMedian.coordinates
                     )
                 );
 
                 geometries.push(
                     ...connectProxiesDiagonallyDownhill(
-                        intersection.up.segment.duct.userData.proxy2Vertices,
-                        intersection.right.segment.duct.userData.proxyMedianVertices
+                        joint.up.proxy2.coordinates,
+                        joint.right.proxyMedian.coordinates
                     )  
                 );
                 geometries.push(
                     ...connectProxiesDiagonallyDownhill(
-                        intersection.right.segment.duct.userData.proxyMedianVertices,
-                        intersection.right.segment.duct.userData.proxy1Vertices
+                        joint.right.proxyMedian.coordinates,
+                        joint.right.proxy1.coordinates
                     )
                 );
                 geometries.push(
                     ...connectProxiesDiagonallyUphill(
-                        intersection.down.segment.duct.userData.proxy2Vertices, 
-                        intersection.down.segment.duct.userData.proxyMedianVertices
+                        joint.down.proxy2.coordinates, 
+                        joint.down.proxyMedian.coordinates
                     )
                 );
                 geometries.push(
                     ...connectProxiesDiagonallyUphill(
-                        intersection.right.segment.duct.userData.proxy2Vertices,
-                        intersection.down.segment.duct.userData.proxyMedianVertices
+                        joint.right.proxy2.coordinates,
+                        joint.down.proxyMedian.coordinates
                     )
                 );
             }
-            else if(intersection.down == null) {
+            else if(joint.down == null) {
 
                 geometries.push(
                     ...connectProxiesDiagonallyUphill(
-                        intersection.left.segment.duct.userData.proxy2Vertices,
-                        intersection.left.segment.duct.userData.proxyMedianVertices
+                        joint.left.proxy2.coordinates,
+                        joint.left.proxyMedian.coordinates
                     )
                 );
                 geometries.push(
                     ...connectProxiesDiagonallyUphill(
-                        intersection.left.segment.duct.userData.proxyMedianVertices, 
-                        intersection.right.segment.duct.userData.proxy2Vertices,
+                        joint.left.proxyMedian.coordinates, 
+                        joint.right.proxy2.coordinates,
                         true,
                         Math.PI / 2
                     )
@@ -116,282 +117,285 @@ export default class Geometry_3D_Joints_T {
 
                 geometries.push(
                     ...connectProxiesDiagonallyUphill(
-                        intersection.up.segment.duct.userData.proxy1Vertices, 
-                        intersection.up.segment.duct.userData.proxyMedianVertices
+                        joint.up.proxy1.coordinates, 
+                        joint.up.proxyMedian.coordinates
                     )
                 );
                 geometries.push(
                     ...connectProxiesDiagonallyUphill(
-                        intersection.left.segment.duct.userData.proxy1Vertices,
-                        intersection.up.segment.duct.userData.proxyMedianVertices
+                        joint.left.proxy1.coordinates,
+                        joint.up.proxyMedian.coordinates
                     )
                 );
                 geometries.push(
                     ...connectProxiesDiagonallyDownhill(
-                        intersection.right.segment.duct.userData.proxy1Vertices,
-                        intersection.right.segment.duct.userData.proxyMedianVertices
+                        joint.right.proxy1.coordinates,
+                        joint.right.proxyMedian.coordinates
                     )
                 );
                 geometries.push(
                     ...connectProxiesDiagonallyDownhill(
-                        intersection.right.segment.duct.userData.proxyMedianVertices,
-                        intersection.up.segment.duct.userData.proxy2Vertices
+                        joint.right.proxyMedian.coordinates,
+                        joint.up.proxy2.coordinates
                     )
                 );
             }
-            else if(intersection.up == null) {
+            else if(joint.up == null) {
 
                 geometries.push(
                     ...connectProxiesDiagonallyUphill(
-                        intersection.right.segment.duct.userData.proxyMedianVertices, 
-                        intersection.left.segment.duct.userData.proxy1Vertices
+                        joint.right.proxyMedian.coordinates, 
+                        joint.left.proxy1.coordinates
                     )
                 );
                 geometries.push(
                     ...connectProxiesDiagonallyUphill(
-                        intersection.right.segment.duct.userData.proxy1Vertices,
-                        intersection.right.segment.duct.userData.proxyMedianVertices
+                        joint.right.proxy1.coordinates,
+                        joint.right.proxyMedian.coordinates
                     ) 
                 );
 
                 geometries.push(
                     ...connectProxiesDiagonallyDownhill(
-                        intersection.left.segment.duct.userData.proxyMedianVertices, 
-                        intersection.down.segment.duct.userData.proxy1Vertices
+                        joint.left.proxyMedian.coordinates, 
+                        joint.down.proxy1.coordinates
                     )
                 );
                 geometries.push(
                     ...connectProxiesDiagonallyUphill(
-                        intersection.down.segment.duct.userData.proxy2Vertices, 
-                        intersection.down.segment.duct.userData.proxyMedianVertices
+                        joint.down.proxy2.coordinates, 
+                        joint.down.proxyMedian.coordinates
                     )
                 );
                 geometries.push(
                     ...connectProxiesDiagonallyUphill(
-                        intersection.down.segment.duct.userData.proxyMedianVertices,
-                        intersection.right.segment.duct.userData.proxy2Vertices
+                        joint.down.proxyMedian.coordinates,
+                        joint.right.proxy2.coordinates
                     )
                 );
                 geometries.push(
                     ...connectProxiesDiagonallyDownhill(
-                        intersection.left.segment.duct.userData.proxy2Vertices,
-                        intersection.left.segment.duct.userData.proxyMedianVertices
+                        joint.left.proxy2.coordinates,
+                        joint.left.proxyMedian.coordinates
                     ) 
                 );       
             }
         }
         else if(sharedData.xzJointDirection == "inwards") {
-            if(intersection.right == null) {
+            if(joint.right == null) {
                 geometries.push(
                     ...connectProxiesDiagonallyUphill(
-                        intersection.down.segment.duct.userData.proxy2Vertices, 
-                        intersection.down.segment.duct.userData.proxyMedianVertices,
+                        joint.down.proxy2.coordinates, 
+                        joint.down.proxyMedian.coordinates,
                         true
                     )
                 );
                 geometries.push(
                     ...connectProxiesDiagonallyDownhill(
-                        intersection.up.segment.duct.userData.proxy2Vertices,
-                        intersection.down.segment.duct.userData.proxyMedianVertices,
+                        joint.up.proxy2.coordinates,
+                        joint.down.proxyMedian.coordinates,
                         true
                     )
                 );
 
                 geometries.push(
                     ...connectProxiesDiagonallyDownhill(
-                        intersection.down.segment.duct.userData.proxy1Vertices,
-                        intersection.left.segment.duct.userData.proxyMedianVertices
+                        joint.down.proxy1.coordinates,
+                        joint.left.proxyMedian.coordinates
                     )  
                 );
                 geometries.push(
                     ...connectProxiesDiagonallyDownhill(
-                        intersection.left.segment.duct.userData.proxy2Vertices, 
-                        intersection.left.segment.duct.userData.proxyMedianVertices
+                        joint.left.proxy2.coordinates, 
+                        joint.left.proxyMedian.coordinates
                     )
                 );
                 geometries.push(
                     ...connectProxiesDiagonallyUphill(
-                        intersection.up.segment.duct.userData.proxyMedianVertices, 
-                        intersection.left.segment.duct.userData.proxy1Vertices
+                        joint.up.proxyMedian.coordinates, 
+                        joint.left.proxy1.coordinates
                     )
                 );
                 geometries.push(
                     ...connectProxiesDiagonallyUphill(
-                        intersection.up.segment.duct.userData.proxyMedianVertices, 
-                        intersection.up.segment.duct.userData.proxy1Vertices
+                        joint.up.proxyMedian.coordinates, 
+                        joint.up.proxy1.coordinates
                     )
                 );
             }
-            else if(intersection.left == null) {
+            else if(joint.left == null) {
 
                 geometries.push(
                     ...connectProxiesDiagonallyUphill(
-                        intersection.up.segment.duct.userData.proxyMedianVertices, 
-                        intersection.up.segment.duct.userData.proxy1Vertices
+                        joint.up.proxyMedian.coordinates, 
+                        joint.up.proxy1.coordinates
                     )
                 );
                 geometries.push(
                     ...connectProxiesDiagonallyDownhill(
-                        intersection.down.segment.duct.userData.proxy1Vertices,
-                        intersection.up.segment.duct.userData.proxyMedianVertices,
+                        joint.down.proxy1.coordinates,
+                        joint.up.proxyMedian.coordinates,
                         true
                     )
                 );
                 geometries.push(
                     ...connectProxiesDiagonallyDownhill(
-                        intersection.up.segment.duct.userData.proxy2Vertices,
-                        intersection.right.segment.duct.userData.proxyMedianVertices
+                        joint.up.proxy2.coordinates,
+                        joint.right.proxyMedian.coordinates
                     )   
                 );
                 geometries.push(
                     ...connectProxiesDiagonallyDownhill(
-                        intersection.right.segment.duct.userData.proxyMedianVertices,
-                        intersection.right.segment.duct.userData.proxy1Vertices
+                        joint.right.proxyMedian.coordinates,
+                        joint.right.proxy1.coordinates
                     )
                 );
                 geometries.push(
                     ...connectProxiesDiagonallyUphill(
-                        intersection.down.segment.duct.userData.proxy2Vertices, 
-                        intersection.down.segment.duct.userData.proxyMedianVertices
+                        joint.down.proxy2.coordinates, 
+                        joint.down.proxyMedian.coordinates
                     )
                 );
                 geometries.push(
                     ...connectProxiesDiagonallyUphill(
-                        intersection.right.segment.duct.userData.proxy2Vertices,
-                        intersection.down.segment.duct.userData.proxyMedianVertices
+                        joint.right.proxy2.coordinates,
+                        joint.down.proxyMedian.coordinates
                     )
                 );
             }
-            else if(intersection.down == null) {
+            else if(joint.down == null) {
 
                 geometries.push(
                     ...connectProxiesDiagonallyUphill(
-                        intersection.left.segment.duct.userData.proxy2Vertices,
-                        intersection.left.segment.duct.userData.proxyMedianVertices,
+                        joint.left.proxy2.coordinates,
+                        joint.left.proxyMedian.coordinates,
                         true
                     )
                 );
                 geometries.push(
                     ...connectProxiesDiagonallyUphill(
-                        intersection.left.segment.duct.userData.proxyMedianVertices, 
-                        intersection.right.segment.duct.userData.proxy2Vertices,
+                        joint.left.proxyMedian.coordinates, 
+                        joint.right.proxy2.coordinates,
                         true
                     )
                 );
 
                 geometries.push(
                     ...connectProxiesDiagonallyUphill(
-                        intersection.up.segment.duct.userData.proxy1Vertices, 
-                        intersection.up.segment.duct.userData.proxyMedianVertices
+                        joint.up.proxy1.coordinates, 
+                        joint.up.proxyMedian.coordinates
                     )
                 );
                 geometries.push(
                     ...connectProxiesDiagonallyUphill(
-                        intersection.left.segment.duct.userData.proxy1Vertices,
-                        intersection.up.segment.duct.userData.proxyMedianVertices
+                        joint.left.proxy1.coordinates,
+                        joint.up.proxyMedian.coordinates
                     )
                 );
                 geometries.push(
                     ...connectProxiesDiagonallyDownhill(
-                        intersection.right.segment.duct.userData.proxy1Vertices,
-                        intersection.right.segment.duct.userData.proxyMedianVertices
+                        joint.right.proxy1.coordinates,
+                        joint.right.proxyMedian.coordinates
                     )
                 );
                 geometries.push(
                     ...connectProxiesDiagonallyDownhill(
-                        intersection.right.segment.duct.userData.proxyMedianVertices,
-                        intersection.up.segment.duct.userData.proxy2Vertices
+                        joint.right.proxyMedian.coordinates,
+                        joint.up.proxy2.coordinates
                     )
                 );
             }
-            else if(intersection.up == null) {
+            else if(joint.up == null) {
 
                 geometries.push(
                     ...connectProxiesDiagonallyUphill(
-                        intersection.right.segment.duct.userData.proxyMedianVertices, 
-                        intersection.left.segment.duct.userData.proxy1Vertices,
+                        joint.right.proxyMedian.coordinates, 
+                        joint.left.proxy1.coordinates,
                         true
                     )
                 );
                 geometries.push(
                     ...connectProxiesDiagonallyUphill(
-                        intersection.right.segment.duct.userData.proxy1Vertices,
-                        intersection.right.segment.duct.userData.proxyMedianVertices,
+                        joint.right.proxy1.coordinates,
+                        joint.right.proxyMedian.coordinates,
                         true
                     ) 
                 );
 
                 geometries.push(
                     ...connectProxiesDiagonallyDownhill(
-                        intersection.left.segment.duct.userData.proxyMedianVertices, 
-                        intersection.down.segment.duct.userData.proxy1Vertices
+                        joint.left.proxyMedian.coordinates, 
+                        joint.down.proxy1.coordinates
                     )
                 );
                 geometries.push(
                     ...connectProxiesDiagonallyUphill(
-                        intersection.down.segment.duct.userData.proxy2Vertices, 
-                        intersection.down.segment.duct.userData.proxyMedianVertices
+                        joint.down.proxy2.coordinates, 
+                        joint.down.proxyMedian.coordinates
                     )
                 );
                 geometries.push(
                     ...connectProxiesDiagonallyUphill(
-                        intersection.down.segment.duct.userData.proxyMedianVertices,
-                        intersection.right.segment.duct.userData.proxy2Vertices
+                        joint.down.proxyMedian.coordinates,
+                        joint.right.proxy2.coordinates
                     )
                 );
                 geometries.push(
                     ...connectProxiesDiagonallyDownhill(
-                        intersection.left.segment.duct.userData.proxy2Vertices,
-                        intersection.left.segment.duct.userData.proxyMedianVertices
+                        joint.left.proxy2.coordinates,
+                        joint.left.proxyMedian.coordinates
                     ) 
                 );   
             }
         }
 
-        this.createTJointBackwall(intersection, largestGlobalSize);
+        geometries.push(...this.createTJointBackwall(joint, largestGlobalSize));
 
         geometries.push(
-            ...createJointClosure(intersection.up, "horizontal")
+            ...createJointClosure(joint.up, "horizontal")
         );
         geometries.push(
-            ...createJointClosure(intersection.right, "vertical")
+            ...createJointClosure(joint.right, "vertical")
         );
         geometries.push(
-            ...createJointClosure(intersection.down, "horizontal")
+            ...createJointClosure(joint.down, "horizontal")
         );
         geometries.push(
-            ...createJointClosure(intersection.left, "vertical")
+            ...createJointClosure(joint.left, "vertical")
         );
 
-        mergeAndAddToScene(geometries);
+        console.log("createTJoint geometries:", geometries);
+
+        const newMergedGeometry = mergeGeometries(geometries);
+        return newMergedGeometry;
     }
 
-    createTJointBackwall(intersection, largestGlobalSize) {
+    createTJointBackwall(joint, largestGlobalSize) {
         let backwall = [];
 
         let topLeftMidpoint = {};
         let topRightMidpoint = {};
         let bottomRightMidpoint = {};
         let bottomLeftMidpoint = {};
-        if(intersection.right == null) {
+        if(joint.right == null) {
             topLeftMidpoint = {
-                x: intersection.up.segment.duct.userData.proxy1Vertices[4].x,
-                z: intersection.left.segment.duct.userData.proxy1Vertices[4].z
+                x: joint.up.proxy1.coordinates[4].x,
+                z: joint.left.proxy1.coordinates[4].z
             }
             bottomLeftMidpoint = {
-                x: intersection.down.segment.duct.userData.proxy1Vertices[4].x,
-                z: intersection.left.segment.duct.userData.proxy2Vertices[4].z
+                x: joint.down.proxy1.coordinates[4].x,
+                z: joint.left.proxy2.coordinates[4].z
             }
             backwall = [
-                intersection.up.segment.duct.userData.proxyMedianVertices[4],
-                intersection.up.segment.duct.userData.proxy1Vertices[4],
-                intersection.up.segment.duct.userData.proxy2Vertices[7],
-                intersection.down.segment.duct.userData.proxyMedianVertices[6],
-                intersection.down.segment.duct.userData.proxy2Vertices[6],
-                intersection.down.segment.duct.userData.proxy1Vertices[5],
-                intersection.left.segment.duct.userData.proxyMedianVertices[5],
-                intersection.left.segment.duct.userData.proxy2Vertices[5],
-                intersection.left.segment.duct.userData.proxy1Vertices[4],
+                joint.up.proxyMedian.coordinates[4],
+                joint.up.proxy1.coordinates[4],
+                joint.up.proxy2.coordinates[7],
+                joint.down.proxyMedian.coordinates[6],
+                joint.down.proxy2.coordinates[6],
+                joint.down.proxy1.coordinates[5],
+                joint.left.proxyMedian.coordinates[5],
+                joint.left.proxy2.coordinates[5],
+                joint.left.proxy1.coordinates[4],
             ];
             if(sharedData.xzJointDirection == "inwards" && sharedData.xzJointStyle == "arc") {
                 backwall.splice(6, 0, bottomLeftMidpoint);
@@ -400,29 +404,29 @@ export default class Geometry_3D_Joints_T {
                 backwall.splice(2, 0, topLeftMidpoint);
             }
         }
-        else if(intersection.left == null) {
+        else if(joint.left == null) {
             topRightMidpoint = {
-                x: intersection.up.segment.duct.userData.proxy2Vertices[4].x,
-                z: intersection.right.segment.duct.userData.proxy1Vertices[4].z
+                x: joint.up.proxy2.coordinates[4].x,
+                z: joint.right.proxy1.coordinates[4].z
             }
             bottomRightMidpoint = {
-                x: intersection.down.segment.duct.userData.proxy2Vertices[4].x,
-                z: intersection.right.segment.duct.userData.proxy2Vertices[4].z
+                x: joint.down.proxy2.coordinates[4].x,
+                z: joint.right.proxy2.coordinates[4].z
             }
             topLeftMidpoint = {
-                x: intersection.up.segment.duct.userData.proxy1Vertices[4].x,
-                z: intersection.up.segment.duct.userData.proxyMedianVertices[4].z
+                x: joint.up.proxy1.coordinates[4].x,
+                z: joint.up.proxyMedian.coordinates[4].z
             }
             backwall = [
-                intersection.up.segment.duct.userData.proxyMedianVertices[4],
-                intersection.up.segment.duct.userData.proxy1Vertices[4],
-                intersection.up.segment.duct.userData.proxy2Vertices[7],
-                intersection.right.segment.duct.userData.proxyMedianVertices[6],
-                intersection.right.segment.duct.userData.proxy1Vertices[6],
-                intersection.right.segment.duct.userData.proxy2Vertices[6],
-                intersection.down.segment.duct.userData.proxyMedianVertices[6],
-                intersection.down.segment.duct.userData.proxy2Vertices[6],
-                intersection.down.segment.duct.userData.proxy1Vertices[5],
+                joint.up.proxyMedian.coordinates[4],
+                joint.up.proxy1.coordinates[4],
+                joint.up.proxy2.coordinates[7],
+                joint.right.proxyMedian.coordinates[6],
+                joint.right.proxy1.coordinates[6],
+                joint.right.proxy2.coordinates[6],
+                joint.down.proxyMedian.coordinates[6],
+                joint.down.proxy2.coordinates[6],
+                joint.down.proxy1.coordinates[5],
             ];
             if(sharedData.xzJointDirection == "inwards" && sharedData.xzJointStyle == "arc") {
                 backwall.splice(3, 0, topRightMidpoint);
@@ -431,50 +435,50 @@ export default class Geometry_3D_Joints_T {
                 backwall.splice(10, 0, bottomRightMidpoint);
             }
         }
-        else if(intersection.down == null) {
+        else if(joint.down == null) {
             topLeftMidpoint = {
-                x: intersection.up.segment.duct.userData.proxy1Vertices[4].x,
-                z: intersection.left.segment.duct.userData.proxy1Vertices[4].z
+                x: joint.up.proxy1.coordinates[4].x,
+                z: joint.left.proxy1.coordinates[4].z
             }
             topRightMidpoint = {
-                x: intersection.up.segment.duct.userData.proxy2Vertices[4].x,
-                z: intersection.right.segment.duct.userData.proxy1Vertices[4].z
+                x: joint.up.proxy2.coordinates[4].x,
+                z: joint.right.proxy1.coordinates[4].z
             }
             backwall = [
-                intersection.up.segment.duct.userData.proxyMedianVertices[4],
-                intersection.up.segment.duct.userData.proxy1Vertices[4],
-                intersection.up.segment.duct.userData.proxy2Vertices[7],
-                intersection.right.segment.duct.userData.proxyMedianVertices[6],
-                intersection.right.segment.duct.userData.proxy1Vertices[6],
-                intersection.right.segment.duct.userData.proxy2Vertices[6],
-                intersection.left.segment.duct.userData.proxyMedianVertices[6],
-                intersection.left.segment.duct.userData.proxy2Vertices[5],
-                intersection.left.segment.duct.userData.proxy1Vertices[5],
+                joint.up.proxyMedian.coordinates[4],
+                joint.up.proxy1.coordinates[4],
+                joint.up.proxy2.coordinates[7],
+                joint.right.proxyMedian.coordinates[6],
+                joint.right.proxy1.coordinates[6],
+                joint.right.proxy2.coordinates[6],
+                joint.left.proxyMedian.coordinates[6],
+                joint.left.proxy2.coordinates[5],
+                joint.left.proxy1.coordinates[5],
             ];
             if(sharedData.xzJointDirection == "inwards" && sharedData.xzJointStyle == "arc") {
                 backwall.splice(4, 0, topRightMidpoint);
                 backwall.splice(0, 0, topLeftMidpoint);
             }
         }
-        else if(intersection.up == null) {
+        else if(joint.up == null) {
             bottomRightMidpoint = {
-                x: intersection.down.segment.duct.userData.proxy2Vertices[4].x,
-                z: intersection.right.segment.duct.userData.proxy2Vertices[4].z
+                x: joint.down.proxy2.coordinates[4].x,
+                z: joint.right.proxy2.coordinates[4].z
             }
             bottomLeftMidpoint = {
-                x: intersection.down.segment.duct.userData.proxy1Vertices[4].x,
-                z: intersection.left.segment.duct.userData.proxy2Vertices[4].z
+                x: joint.down.proxy1.coordinates[4].x,
+                z: joint.left.proxy2.coordinates[4].z
             }
             backwall = [
-                intersection.down.segment.duct.userData.proxyMedianVertices[5],
-                intersection.down.segment.duct.userData.proxy2Vertices[5],
-                intersection.down.segment.duct.userData.proxy1Vertices[6],
-                intersection.left.segment.duct.userData.proxyMedianVertices[6],
-                intersection.left.segment.duct.userData.proxy2Vertices[4],
-                intersection.left.segment.duct.userData.proxy1Vertices[5],
-                intersection.right.segment.duct.userData.proxyMedianVertices[4],
-                intersection.right.segment.duct.userData.proxy1Vertices[7],
-                intersection.right.segment.duct.userData.proxy2Vertices[6],
+                joint.down.proxyMedian.coordinates[5],
+                joint.down.proxy2.coordinates[5],
+                joint.down.proxy1.coordinates[6],
+                joint.left.proxyMedian.coordinates[6],
+                joint.left.proxy2.coordinates[4],
+                joint.left.proxy1.coordinates[5],
+                joint.right.proxyMedian.coordinates[4],
+                joint.right.proxy1.coordinates[7],
+                joint.right.proxy2.coordinates[6],
             ];
             if(sharedData.xzJointDirection == "inwards" && sharedData.xzJointStyle == "arc") {
                 backwall.splice(4, 0, bottomLeftMidpoint);
@@ -482,8 +486,12 @@ export default class Geometry_3D_Joints_T {
             }
         }
 
+        let geometry = [];
+
         if(backwall.length >= 3) {
-            createJointBackwall(backwall, largestGlobalSize);
+            geometry.push(createJointBackwall(backwall, largestGlobalSize));
         }
+
+        return geometry
     }
 }

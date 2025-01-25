@@ -1,11 +1,11 @@
 import { sharedData } from "./globals.js";
-import Ducts from "../Arithmetics/Ducts.js";
+import Ducts from "../Numerics/Ducts.js";
 import Mesh3D from "../3D/Mesh3D.js";
 import Geometry_3D_Joints_Cross from "../3D/Geometry/Joints/Geometry_3D_Joints_Cross.js";
 import Geometry_3D_Joints_T from "../3D/Geometry/Joints/Geometry_3D_Joints_T.js";
 import Geometry_3D_Joints_L from "../3D/Geometry/Joints/Geometry_3D_Joints_L.js";
 import Geometry_3D_Joints_Colinear from "../3D/Geometry/Joints/Geometry_3D_Joints_Colinear.js";
-import Ends from "../Arithmetics/Ends.js";
+import Ends from "../Numerics/Ends.js";
 import Canvas2D from "../2D/Canvas2D.js";
 
 export default class FlowControl {
@@ -251,28 +251,28 @@ export default class FlowControl {
     }
 
     render2D() {
-        this.Canvas2D.drawToSecondaryViewport(assembly);
-        this.Canvas2D.drawToPrimaryViewport(assembly); 
+        this.Canvas2D.drawToSecondaryViewport(this.ahuObject);
+        this.Canvas2D.drawToPrimaryViewport(this.ahuObject); 
     }
 
     populate3D() {
-        console.log("populate3D started");
+        console.log("populate3D started:", this.ahuObject);
         let jointGeometry = null;
         for(const key in this.ductsDictionary) {
             const joint = this.ahuObject.resources.joints[`Joint-${key}`];
             if(this.ductsDictionary[key].length == 2) {
                 if(joint.pairDirection) {
-                    jointGeometry = this.Geometry_3D_Joints_Colinear.createParallelJoint(joint.intersectDucts, joint.pairDirection);
+                    jointGeometry = this.Geometry_3D_Joints_Colinear.createParallelJoint(joint.intersectDucts, joint.pairDirection, joint);
                 }
                 else {
-                    jointGeometry = this.Geometry_3D_Joints_L.createLJoint(joint.intersectDucts, joint.largestGlobalSize, joint);
+                    jointGeometry = this.Geometry_3D_Joints_L.createLJoint(joint, joint.intersectDucts, joint.largestGlobalSize);
                 }
             }
             if(this.ductsDictionary[key].length == 3) {
-                this.Geometry_3D_Joints_T.createTJoint(intersectDucts, largestGlobalSize);
+                jointGeometry = this.Geometry_3D_Joints_T.createTJoint(joint.intersectDucts, joint.largestGlobalSize, joint);
             }
             if(this.ductsDictionary[key].length == 4) {
-                this.Geometry_3D_Joints_Cross.createCrossJoint(intersectDucts, largestGlobalSize);
+                jointGeometry = this.Geometry_3D_Joints_Cross.createCrossJoint(joint.intersectDucts, joint.largestGlobalSize, joint);
             }         
 
             if(this.ductsDictionary[key].length >= 2) {
@@ -288,7 +288,7 @@ export default class FlowControl {
 
         this.Ends = new Ends();
 
-        this.Ends.createDuctEnds(this.ahuObject);
+        this.Ends.createEnds(this.ahuObject);
     }
 
     cleanupJointMetadata(key) {
