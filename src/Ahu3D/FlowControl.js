@@ -128,7 +128,10 @@ export default class FlowControl {
     defineAssociationsDict() {
         console.log("populateAssociations started:", this.ahuObject);
 
-        const endTypes = sharedData.endTypes;        
+        const endTypes = sharedData.endTypes;  
+        
+        let inserts = 1;
+        let caps = 1;
 
         for(const edge of this.ductEdges) {
 
@@ -158,15 +161,16 @@ export default class FlowControl {
 
                 this.ahuObject.associations.ducts[edge.id]["ends"] = [];
 
-                let inserts = 1;
-                let caps = 1;
+                
                 if (startIntersections.length == 0 || endIntersections.length == 0) {
                     if(edge.blockStyle.ductEnds == 'insert') {
+                        console.log("populateAssociations insert added:", inserts, edge.id);
                         this.ahuObject.associations.ends[`Insert-${inserts}`] = edge.id;
                         this.ahuObject.associations.ducts[edge.id]["ends"].push(`Insert-${inserts}`);
                         inserts++;
                     }
-                    else if(edge.blockStyle.ductEnds == 'cap') {
+                     if(edge.blockStyle.ductEnds == 'cap') {
+                        console.log("populateAssociations cap added:", caps, edge.id);
                         this.ahuObject.associations.ends[`Cap-${caps}`] = edge.id;
                         this.ahuObject.associations.ducts[edge.id]["ends"].push(`Cap-${caps}`);
                         caps++;
@@ -251,8 +255,8 @@ export default class FlowControl {
     }
 
     render2D() {
-        this.Canvas2D.drawToSecondaryViewport(this.ahuObject);
-        this.Canvas2D.drawToPrimaryViewport(this.ahuObject); 
+        this.Canvas2D.drawToViewport(this.ahuObject, "secondaryKonvaContainer");
+        // this.Canvas2D.drawToViewport(this.ahuObject, "primaryKonvaContainer"); 
     }
 
     populate3D() {

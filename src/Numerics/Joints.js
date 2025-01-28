@@ -156,10 +156,10 @@ export default class Joints {
 
                 console.log("createJointProxies step 11");
 
-                this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxy1.coordinates = this.mapProxyVertices2(proxy1Geometry);
-                this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxy2.coordinates = this.mapProxyVertices2(proxy2Geometry);
-                this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxyOriginal1.coordinates = this.mapProxyVertices2(proxyOriginal1Geometry);
-                this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxyOriginal2.coordinates = this.mapProxyVertices2(proxyOriginal2Geometry);
+                this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxy1.coordinates = this.mapProxyVertices(proxy1Geometry);
+                this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxy2.coordinates = this.mapProxyVertices(proxy2Geometry);
+                this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxyOriginal1.coordinates = this.mapProxyVertices(proxyOriginal1Geometry);
+                this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxyOriginal2.coordinates = this.mapProxyVertices(proxyOriginal2Geometry);
                 this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxyMedian.geometry = proxyMedianGeometry;
 
                 console.log("createJointProxies step 12:", this.ahuObject);
@@ -188,10 +188,25 @@ export default class Joints {
                     0, 
                     this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxyMedian.position.z,
                 );
-                let mappedCoordinates = this.mapProxyVertices2(proxyMedianGeometry); 
+                let mappedCoordinates = this.mapProxyVertices(proxyMedianGeometry); 
                 this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxyMedian.coordinates = mappedCoordinates;
 
                 delete this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxyMedian.geometry;
+
+                console.log("createJointProxies step 15:", this.ahuObject);
+
+                if(this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxyMedian2 != undefined) {
+                    console.log("createJointProxies step 16:", this.ahuObject);
+                    const tempProxy = this.ahuObject.resources.joints[`Joint-${gridKey}`][key];
+                    tempProxy.proxyMedian2.position = JSON.parse(JSON.stringify(tempProxy.proxyMedian.position));
+                    tempProxy.proxyMedian2.coordinates = JSON.parse(JSON.stringify(tempProxy.proxyMedian.coordinates));
+                    for(const i in tempProxy.proxyMedian2.coordinates) {
+                        console.log("createJointProxies step 17:", tempProxy.proxyMedian2.coordinates[i]);
+                        console.log("createJointProxies step 18:", tempProxy.proxyMedian2.medianOffset);
+                        tempProxy.proxyMedian2.coordinates[i].x += tempProxy.proxyMedian2.medianOffset;
+                    }
+                }
+                
             }
         }
 
@@ -622,26 +637,16 @@ export default class Joints {
 
                     console.log("alignProxyMediansInwards step 7");
 
-                    medianOffset += sharedData.xzJointPadding;
-                    const medianClone = JSON.parse(JSON.stringify(upProxies.proxyMedian));
+                    upProxies.proxyMedian2 = {};
+                    upProxies.proxyMedian2.medianOffset = medianOffset;
 
-                    console.log("alignProxyMediansInwards step 8");
-                    medianClone.position.x += medianOffset;
+                    medianOffset += sharedData.xzJointPadding;
 
                     console.log("alignProxyMediansInwards step 9");
-                    const proxyMedianVerticesClone = this.mapProxyVertices(medianClone);
-
-                    console.log("alignProxyMediansInwards step 10");
-                    intersection.up.segment.duct.userData.proxyMedianVertices2 = proxyMedianVerticesClone;
-
-                    console.log("alignProxyMediansInwards step 11");
-                    intersection.up.segment.duct.userData.proxies["medianClone"] = medianClone;
-
-                    console.log("alignProxyMediansInwards step 12");
                     upProxies.proxyMedian.position.z += medianOffset;
                 }
 
-                console.log("alignProxyMediansInwards step 13");
+                console.log("alignProxyMediansInwards step 10:", this.ahuObject);
             }
             else if(intersection.down != null && intersection.right != null) {
                 downProxies.proxyMedian.position.x = downProxies.proxy2.position.x;
@@ -745,8 +750,6 @@ export default class Joints {
                     downProxies.proxyMedian.position.z -= medianOffset;
                 }
             }
-
-            console.log("alignProxyMediansInwards step 7");
 
         }
         else if(definedIntersectionCount == 3) {
@@ -1076,8 +1079,6 @@ export default class Joints {
                 }
             }
         }
-
-        console.log("alignProxyMediansInwards step 8");
     }
 
     alignProxyMediansOutwards(intersection, gridKey) {        
@@ -1515,45 +1516,23 @@ export default class Joints {
         }
     }
 
-    mapProxyVertices(proxy) {
-        return
-        const detachedProxy = proxy.clone();
-        const proxyBB = new THREE.Box3().setFromObject(detachedProxy);
-        const proxyMin = proxyBB.min;
-        const proxyMax = proxyBB.max;
-  
-        const proxyCorners = [
-          new THREE.Vector3(proxyMin.x, proxyMin.y, proxyMax.z),
-          new THREE.Vector3(proxyMin.x, proxyMin.y, proxyMin.z),
-          new THREE.Vector3(proxyMax.x, proxyMin.y, proxyMin.z),
-          new THREE.Vector3(proxyMax.x, proxyMin.y, proxyMax.z),
-  
-          new THREE.Vector3(proxyMin.x, proxyMax.y, proxyMax.z),
-          new THREE.Vector3(proxyMin.x, proxyMax.y, proxyMin.z),
-          new THREE.Vector3(proxyMax.x, proxyMax.y, proxyMin.z),
-          new THREE.Vector3(proxyMax.x, proxyMax.y, proxyMax.z),
-        ];
-  
-        return proxyCorners;
-    }
-
-    mapProxyVertices2(proxyGeometry) {
+    mapProxyVertices(proxyGeometry) {
         // const proxyBB = new THREE.Box3().setFromObject(detachedProxy);
         const proxyBB = new THREE.Box3().setFromBufferAttribute(proxyGeometry.attributes.position);
         const proxyMin = proxyBB.min;
         const proxyMax = proxyBB.max;
   
         const proxyCorners = [
-          new THREE.Vector3(proxyMin.x, proxyMin.y, proxyMax.z),
-          new THREE.Vector3(proxyMin.x, proxyMin.y, proxyMin.z),
-          new THREE.Vector3(proxyMax.x, proxyMin.y, proxyMin.z),
-          new THREE.Vector3(proxyMax.x, proxyMin.y, proxyMax.z),
-  
-          new THREE.Vector3(proxyMin.x, proxyMax.y, proxyMax.z),
-          new THREE.Vector3(proxyMin.x, proxyMax.y, proxyMin.z),
-          new THREE.Vector3(proxyMax.x, proxyMax.y, proxyMin.z),
-          new THREE.Vector3(proxyMax.x, proxyMax.y, proxyMax.z),
-        ];
+            new THREE.Vector3(proxyMin.x, proxyMin.y, proxyMax.z),
+            new THREE.Vector3(proxyMin.x, proxyMin.y, proxyMin.z),
+            new THREE.Vector3(proxyMax.x, proxyMin.y, proxyMin.z),
+            new THREE.Vector3(proxyMax.x, proxyMin.y, proxyMax.z),
+    
+            new THREE.Vector3(proxyMin.x, proxyMax.y, proxyMax.z),
+            new THREE.Vector3(proxyMin.x, proxyMax.y, proxyMin.z),
+            new THREE.Vector3(proxyMax.x, proxyMax.y, proxyMin.z),
+            new THREE.Vector3(proxyMax.x, proxyMax.y, proxyMax.z),
+          ];
   
         return proxyCorners;
     }
@@ -1608,66 +1587,6 @@ export default class Joints {
             vertexIndicator.position.copy(proxyCorner);
             vertexIndicator.name = "jointHelperVertices";
             vertexIndicator.visible = areHelpersOn;
-            vertexIndicators.push(vertexIndicator);
-        });
-
-        return vertexIndicators;
-        
-    }
-
-    renderProxyVertices2(proxyCorners, areHelpersOn) {
-
-        let indicatorSize = 27;
-        if(indicatorSize > 30) {
-            indicatorSize = 30;
-        }
-
-        const createTextCanvasTexture = (text) => {
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            const size = 1000; // Higher size for better resolution
-            canvas.width = size;
-            canvas.height = size;
-
-            // Fill the canvas with a background color
-            context.fillStyle = 'green';
-            context.fillRect(0, 0, size, size);
-
-            // Draw the text
-            context.fillStyle = 'black';
-            context.font = 'bold 800px Arial'; // Adjust font size and style
-            context.textAlign = 'center';
-            context.textBaseline = 'middle';
-            context.fillText(text, size / 2, size / 2);
-
-            // Create a texture from the canvas
-            const texture = new THREE.CanvasTexture(canvas);
-            texture.needsUpdate = true; // Ensure the texture is updated
-            return texture;
-        };
-
-        let vertexIndicators = [];
-        proxyCorners.forEach((proxyCorner, index) => {
-            const textTexture = createTextCanvasTexture(index.toString());
-
-            const material = new THREE.MeshStandardMaterial({
-                map: textTexture,
-                transparent: true,
-            });
-
-            const vertexGeometry = new THREE.BoxGeometry(indicatorSize, indicatorSize, indicatorSize);
-            const vertexIndicator = new THREE.Mesh(vertexGeometry, material);
-
-            if(index >= 4 && index <= 7) {
-                vertexIndicator.rotation.y += Math.PI;
-            }            
-
-            vertexIndicator.position.copy(proxyCorner);
-            vertexIndicator.name = "jointHelperVertices";
-            vertexIndicator.visible = areHelpersOn;
-
-            sharedData.sceneHelper.addToScene(vertexIndicator);
-
             vertexIndicators.push(vertexIndicator);
         });
 

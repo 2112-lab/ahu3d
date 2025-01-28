@@ -33,7 +33,7 @@ export default class Geometry_3D_Joints_L {
                     geometries.push(
                         ...connectProxiesDiagonallyDownhill(
                             joint.up.proxyMedian.coordinates, 
-                            joint.up.proxyMedian.coordinates2,
+                            joint.up.proxyMedian2.coordinates,
                             true,
                             Math.PI * 2
                         )
@@ -41,7 +41,7 @@ export default class Geometry_3D_Joints_L {
                     geometries.push(
                         ...connectProxiesDiagonallyDownhill(
                             joint.right.proxy2.coordinates, 
-                            joint.up.proxyMedian.coordinates2
+                            joint.up.proxyMedian2.coordinates
                         )
                     );
                     geometries.push(
@@ -291,7 +291,7 @@ export default class Geometry_3D_Joints_L {
                     geometries.push(
                         ...connectProxiesDiagonallyDownhill(
                             joint.up.proxyMedian.coordinates, 
-                            joint.up.proxyMedian.coordinates2,
+                            joint.up.proxyMedian2.coordinates,
                             true,
                             Math.PI * 2
                         )
@@ -300,7 +300,7 @@ export default class Geometry_3D_Joints_L {
                     geometries.push(
                         ...connectProxiesDiagonallyDownhill(
                             joint.right.proxy2.coordinates, 
-                            joint.up.proxyMedian.coordinates2
+                            joint.up.proxyMedian2.coordinates
                         )
                     );
                     geometries.push(
@@ -586,7 +586,7 @@ export default class Geometry_3D_Joints_L {
                 backwall.splice(4, 0, rightMidpoint);
             }
             if(sharedData.xzJointStyle == "arc" || sharedData.xzJointStyle == "diagonal"){
-                backwall.splice(0, 0, joint.up.proxyMedian.coordinates2[4]);
+                backwall.splice(0, 0, joint.up.proxyMedian2.coordinates[4]);
             }
         }
         else if(joint.up != null && joint.left != null) {    
@@ -666,8 +666,8 @@ export default class Geometry_3D_Joints_L {
         let backwall = [];
         if(joint.up != null && joint.right != null) {    
             backwall = [
-                joint.up.proxyMedian.coordinates2[4],
-                joint.up.proxyMedian.coordinates2[5],
+                joint.up.proxyMedian2.coordinates[4],
+                joint.up.proxyMedian2.coordinates[5],
                 joint.right.proxy2.coordinates[6],
                 joint.right.proxy1.coordinates[6],
                 joint.right.proxy1.coordinates[4],

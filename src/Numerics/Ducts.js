@@ -102,7 +102,7 @@ export default class Ducts {
             ahuObject.resources.components[uniqueId].position = {x: 0, y: 0, z: 0};
             ahuObject.resources.components[uniqueId].rotation = {x: 0, y: 0, z: 0};
 
-            totalSpan += componentPadding.startSpace + ahuObject.resources.components[uniqueId].dimensions.x + componentPadding.endSpace;
+            totalSpan += componentPadding.startSpace + ahuObject.resources.components[uniqueId].dimensions.x + componentPadding.endSpace + 100;
         }
 
         console.log("initializeDuctSegment step 4");
@@ -216,7 +216,7 @@ export default class Ducts {
 
         this.getNextSegment(primarySegmentXeto, primaryKey);     
 
-        this.transformEnds();
+        // this.transformEnds();
         this.reTransformComponents();
 
         console.log("placeSegments this.ahuObject:", this.ahuObject);

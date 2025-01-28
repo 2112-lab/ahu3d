@@ -67,81 +67,69 @@ export default class Ends {
                 }
 
                 let segmentOrientation = ductXeto.orientation
-                let ductEnd = null;
-
-                console.log("createEnds step 3");
-
                 if (startIntersections.length == 0 || endIntersections.length == 0) {
-                    if(ductXeto.blockStyle.ductEnds == 'insert') {
-                        ductEnd = this.createParametricInsert(this.innerDuctDimensions[ductXeto.graphicLocation.size]);
-                        const endId = ahuObject.associations.ducts[ductKey].ends[0];
-                        ahuObject["3d"].ends.meshes[endId] = ductEnd;
+
+                    console.log("createEnds step 4");
+
+                    const endId = ahuObject.associations.ducts[ductKey].ends[0];
+                    ahuObject.resources.ends[endId] = {
+                        position: JSON.parse(JSON.stringify(duct.position)),
+                        rotation: { x: 0, y: 0, z: 0 },
+                        dimensions: { x: 0, y: 0, z: 0 },
                     }
-                    else if(ductXeto.blockStyle.ductEnds == 'cap') {
-                        ductEnd = this.createParametricCap(this.innerDuctDimensions[ductXeto.graphicLocation.size]);
-                        const endId = ahuObject.associations.ducts[ductKey].ends[0];
-                        ahuObject["3d"].ends.meshes[endId] = ductEnd;
+                    let ductEnd = ahuObject.resources.ends[endId];
+
+                    console.log("createEnds step 5 ductEnd:", ductEnd);
+
+                    let ductHalfLength = JSON.parse(JSON.stringify(duct.dimensions.x)) / 2;
+
+                    ductEnd.dimensions.y = JSON.parse(JSON.stringify(duct.dimensions.y)); 
+                    ductEnd.dimensions.z = JSON.parse(JSON.stringify(duct.dimensions.z)); 
+
+                    let halfWt = sharedData.moduleConfigs.parametricOptions.wallThickness / 2;                    
+
+                    if (startIntersections.length == 0) {
+                        
+                        if (segmentOrientation == 'west') {
+                            ductEnd.rotation.y = 90;
+                            ductEnd.position.x += (ductHalfLength * 1) + halfWt;
+                        } 
+                        else if (segmentOrientation == 'east') {
+                            ductEnd.rotation.y = 270;
+                            ductEnd.position.x += (ductHalfLength * -1) - halfWt;
+                        } 
+                        else if (segmentOrientation == 'north') {
+                            ductEnd.rotation.y = 180;
+                            ductEnd.position.z += (ductHalfLength * -1) - halfWt;
+                        } 
+                        else if (segmentOrientation == 'south') {
+                            ductEnd.rotation.y = 0;
+                            ductEnd.position.z += (ductHalfLength * 1) + halfWt;
+                        }
+                    }
+
+                    if (endIntersections.length == 0) {
+                        if (segmentOrientation == 'west') {
+                            ductEnd.rotation.y = 270;
+                            ductEnd.position.x += (ductHalfLength * -1) - halfWt;
+                        } 
+                        else if (segmentOrientation == 'east') {
+                            ductEnd.rotation.y = 90;
+                            ductEnd.position.x += (ductHalfLength * 1) + halfWt;
+                        } 
+                        else if (segmentOrientation == 'north') {
+                            ductEnd.rotation.y = 0;
+                            ductEnd.position.z += (ductHalfLength * 1) + halfWt;
+                        } 
+                        else if (segmentOrientation == 'south') {
+                            ductEnd.rotation.y = 180;
+                            ductEnd.position.z += (ductHalfLength * -1) - halfWt;
+                        }
                     }
                 }
 
-                console.log("createEnds step 3:", ductEnd);
-
-                console.log("createEnds step 4:", ductXeto.id);  
+                console.log("createEnds finished:", ahuObject);
                 
-                let ductLength = duct.dimensions.x;
-
-                console.log("createEnds step 5:", ductLength); 
-
-                let ductHalfLength = 500;
-                let halfWallThickness = 15;
-
-                if (startIntersections.length == 0) {
-                    ductEnd.position.copy(duct.position);
-                    if (segmentOrientation == 'west') {
-                        ductEnd.rotation.y = THREE.MathUtils.degToRad(90);
-                        ductHalfLength = ductLength / 2;
-                        ductEnd.position.x += ductHalfLength + halfWallThickness;
-                    } 
-                    else if (segmentOrientation == 'east') {
-                        ductEnd.rotation.y = THREE.MathUtils.degToRad(270);
-                        ductHalfLength = ductLength / -2;
-                        ductEnd.position.x += ductHalfLength - halfWallThickness;
-                    } 
-                    else if (segmentOrientation == 'north') {
-                        ductEnd.rotation.y = THREE.MathUtils.degToRad(180);
-                        ductHalfLength = ductLength / -2;
-                        ductEnd.position.z += ductHalfLength - halfWallThickness;
-                    } 
-                    else if (segmentOrientation == 'south') {
-                        ductEnd.rotation.y = THREE.MathUtils.degToRad(0);
-                        ductHalfLength = ductLength / 2;
-                        ductEnd.position.z += ductHalfLength + halfWallThickness;
-                    }
-                }
-
-                if (endIntersections.length == 0) {
-                    ductEnd.position.copy(duct.position);
-                    if (segmentOrientation == 'west') {
-                        ductEnd.rotation.y = THREE.MathUtils.degToRad(270);
-                        ductHalfLength = ductLength / -2;
-                        ductEnd.position.x += ductHalfLength - halfWallThickness;
-                    } 
-                    else if (segmentOrientation == 'east') {
-                        ductEnd.rotation.y = THREE.MathUtils.degToRad(90);
-                        ductHalfLength = ductLength / 2;
-                        ductEnd.position.x += ductHalfLength + halfWallThickness;
-                    } 
-                    else if (segmentOrientation == 'north') {
-                        ductEnd.rotation.y = THREE.MathUtils.degToRad(0);
-                        ductHalfLength = ductLength / 2;
-                        ductEnd.position.z += ductHalfLength + halfWallThickness;
-                    } 
-                    else if (segmentOrientation == 'south') {
-                        ductEnd.rotation.y = THREE.MathUtils.degToRad(180);
-                        ductHalfLength = ductLength / -2;
-                        ductEnd.position.z += ductHalfLength - halfWallThickness;
-                    }
-                }
             }
         }
     }
