@@ -188,10 +188,14 @@ export function connectProxiesDiagonallyDownhill(leftProxy, rightProxy, flipArc 
 export function connectProxiesDiagonallyUphill(leftProxy, rightProxy, flipArc = false, overrideRotation) {
     const geometries = [];
 
+    console.log("connectProxiesDiagonallyUphill step 1:", leftProxy);
+
     if(sharedData.xzJointStyle == "arc" && (leftProxy[0].x != rightProxy[0].x && leftProxy[0].z != rightProxy[0].z)) {
         calculateArc(leftProxy, rightProxy, flipArc, overrideRotation);
         return geometries;
     }
+
+    console.log("connectProxiesDiagonallyUphill step 2:", rightProxy);
 
     geometries.push(
         createGeometryFromPoints(

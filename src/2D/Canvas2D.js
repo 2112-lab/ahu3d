@@ -54,82 +54,92 @@ export default class Canvas2D {
   }  
 
   drawToViewport(ahuObject, domID) {
-    console.log("drawToSecondaryViewport ahuObject", ahuObject);
-      const container = document.getElementById(domID);
-  
-      const containerWidth = container.offsetWidth;
-      const containerHeight = container.offsetHeight;
-  
-      // Create a stage attached to the div
-      const stage = new Konva.Stage({
-          container: domID, // Attach to this div
-          width: containerWidth, // Stage size matches the container
-          height: containerHeight,
-          draggable: true,
-      });
-  
-      // Create a layer
-      const layer = new Konva.Layer();
-  
-      // Add the layer to the stage
-      stage.add(layer);
-  
-      for(const ductKey in ahuObject.resources.ducts) {
+    console.log("drawToViewport ahuObject", domID, ahuObject);
+    const container = document.getElementById(domID);
 
-        const duct = ahuObject.resources.ducts[ductKey];
-  
-        let width = duct.dimensions.x;
-        let height = duct.dimensions.z;
-        let activeWalls = {
-          top: true,
-          bottom: true,
-          left: false,
-          right: false,
-        }
-  
-        if(duct.rotation.y != 0 && duct.rotation.y != 180) {
-          let temp = width;
-          width = height;
-          height = temp;
-          activeWalls = {
-            top: false,
-            bottom: false,
-            left: true,
-            right: true,
-          }
-        }
+    const containerWidth = container.offsetWidth;
+    const containerHeight = container.offsetHeight;
 
-        const konvaOptions = {
-          stroke: '#fff', // White stroke
-          strokeWidth: 30,
-        };
-  
-        const lines = this.createCenteredRectWithIndependentLines(
-            duct.position.x,
-            duct.position.z * -1,
-            width,
-            height,
-            konvaOptions,
-            activeWalls
-        );
+    // Create a stage attached to the div
+    const stage = new Konva.Stage({
+        container: domID, // Attach to this div
+        width: containerWidth, // Stage size matches the container
+        height: containerHeight,
+        draggable: true,
+    });
 
-        // Add each line separately to the layer
-        lines.forEach(line => layer.add(line));
+    // Create a layer
+    const layer = new Konva.Layer();
 
-        if(ahuObject.associations.ducts[ductKey].ends[0]) {
-          const endKey = ahuObject.associations.ducts[ductKey].ends[0];
-          const end = ahuObject.resources.ends[endKey];
-          console.log("drawEnd starting:", ahuObject, endKey);
-          this.drawEnd(end, endKey, layer, konvaOptions);
-        }        
-        
+    // Add the layer to the stage
+    stage.add(layer);
+
+    console.log("drawToViewport step 1");
+
+    for(const ductKey in ahuObject.resources.ducts) {
+
+      console.log("drawToViewport step 2:", ductKey);
+
+      const duct = ahuObject.resources.ducts[ductKey];
+
+      console.log("drawToViewport step 3:", duct);
+
+      let width = duct.dimensions.x;
+      let height = duct.dimensions.z;
+      let activeWalls = {
+        top: true,
+        bottom: true,
+        left: false,
+        right: false,
       }
-  
-      this.fitLayerToRects(layer, containerWidth, containerHeight, 0.90);
 
-      this.setCanvasEvents(stage, layer, container);
-  
-      layer.draw(); // Redraw layer to show changes
+      console.log("drawToViewport step 4:", width);
+
+      if(duct.rotation.y != 0 && duct.rotation.y != 180) {
+        let temp = width;
+        width = height;
+        height = temp;
+        activeWalls = {
+          top: false,
+          bottom: false,
+          left: true,
+          right: true,
+        }
+      }
+
+      console.log("drawToViewport step 5:", width);
+
+      const konvaOptions = {
+        stroke: '#fff', // White stroke
+        strokeWidth: 30,
+      };
+
+      const lines = this.createCenteredRectWithIndependentLines(
+          duct.position.x,
+          duct.position.z * -1,
+          width,
+          height,
+          konvaOptions,
+          activeWalls
+      );
+
+      // Add each line separately to the layer
+      lines.forEach(line => layer.add(line));
+
+      if(ahuObject.associations.ducts[ductKey].ends[0]) {
+        const endKey = ahuObject.associations.ducts[ductKey].ends[0];
+        const end = ahuObject.resources.ends[endKey];
+        console.log("drawEnd starting:", ahuObject, endKey);
+        this.drawEnd(end, endKey, layer, konvaOptions);
+      }        
+      
+    }
+
+    this.fitLayerToRects(layer, containerWidth, containerHeight, 0.90);
+
+    this.setCanvasEvents(stage, layer, container);
+
+    layer.draw(); // Redraw layer to show changes
   }
 
   drawEnd(end, endKey, layer, konvaOptions) {

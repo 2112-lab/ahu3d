@@ -29,7 +29,7 @@ export default class Joints {
           
         const wallThickness = sharedData.moduleConfigs.parametricOptions.wallThickness;
   
-        largestGlobalSize = this.innerDuctDimensions["small"];
+        largestGlobalSize = sharedData.innerDuctDimensions["small"];
         for(const key in intersection) {
             let duct = intersection[key];
             if(duct != null) {
@@ -203,7 +203,8 @@ export default class Joints {
                     for(const i in tempProxy.proxyMedian2.coordinates) {
                         console.log("createJointProxies step 17:", tempProxy.proxyMedian2.coordinates[i]);
                         console.log("createJointProxies step 18:", tempProxy.proxyMedian2.medianOffset);
-                        tempProxy.proxyMedian2.coordinates[i].x += tempProxy.proxyMedian2.medianOffset;
+                        tempProxy.proxyMedian2.coordinates[i].x += tempProxy.proxyMedian2.medianOffset.x;
+                        tempProxy.proxyMedian2.coordinates[i].z += tempProxy.proxyMedian2.medianOffset.z;
                     }
                 }
                 
@@ -271,6 +272,8 @@ export default class Joints {
 
         if(sharedData.xzJointYStyle == "diagonal") {
             for(const key in intersection) {
+
+                console.log("calculateAdjacentContext step 60:", intersection[key]);
                 
                 if(intersection[key] != null) {
                     const currentSize = this.innerDuctDimensions[intersection[key].xetoDuct.graphicLocation.size];
@@ -635,15 +638,15 @@ export default class Joints {
                         upProxies.ductDimensions.y
                     );
 
-                    console.log("alignProxyMediansInwards step 7");
+                    medianOffset += sharedData.xzJointPadding;
+
+                    medianOffset = {
+                        x: medianOffset,
+                        z: medianOffset * 0
+                    }
 
                     upProxies.proxyMedian2 = {};
                     upProxies.proxyMedian2.medianOffset = medianOffset;
-
-                    medianOffset += sharedData.xzJointPadding;
-
-                    console.log("alignProxyMediansInwards step 9");
-                    upProxies.proxyMedian.position.z += medianOffset;
                 }
 
                 console.log("alignProxyMediansInwards step 10:", this.ahuObject);
@@ -674,12 +677,14 @@ export default class Joints {
                     );
 
                     medianOffset += sharedData.xzJointPadding;
-                    const medianClone = JSON.parse(JSON.stringify(rightProxies.proxyMedian));
-                    medianClone.position.x += medianOffset;
-                    const proxyMedianVerticesClone = this.mapProxyVertices(medianClone);
-                    intersection.right.segment.duct.userData.proxyMedianVertices2 = proxyMedianVerticesClone;
-                    intersection.up.segment.duct.userData.proxies["medianClone"] = medianClone;
-                    rightProxies.proxyMedian.position.z -= medianOffset;
+
+                    medianOffset = {
+                        x: medianOffset * 0,
+                        z: medianOffset * 0
+                    }
+
+                    rightProxies.proxyMedian2 = {};
+                    rightProxies.proxyMedian2.medianOffset = medianOffset;
                 }
             }
             else if(intersection.up != null && intersection.left != null) {
@@ -708,12 +713,14 @@ export default class Joints {
                     );
 
                     medianOffset += sharedData.xzJointPadding;
-                    const medianClone = JSON.parse(JSON.stringify(leftProxies.proxyMedian));
-                    medianClone.position.x -= medianOffset;
-                    const proxyMedianVerticesClone = this.mapProxyVertices(medianClone);
-                    intersection.left.segment.duct.userData.proxyMedianVertices2 = proxyMedianVerticesClone;
-                    intersection.up.segment.duct.userData.proxies["medianClone"] = medianClone;
-                    leftProxies.proxyMedian.position.z += medianOffset;
+
+                    medianOffset = {
+                        x: medianOffset * 0,
+                        z: medianOffset * 0
+                    }
+
+                    leftProxies.proxyMedian2 = {};
+                    leftProxies.proxyMedian2.medianOffset = medianOffset;
                 }
             }
             else if(intersection.down != null && intersection.left != null) {
@@ -742,12 +749,14 @@ export default class Joints {
                     );
 
                     medianOffset += sharedData.xzJointPadding;
-                    const medianClone = JSON.parse(JSON.stringify(downProxies.proxyMedian));
-                    medianClone.position.x -= medianOffset;
-                    const proxyMedianVerticesClone = this.mapProxyVertices(medianClone);
-                    intersection.down.segment.duct.userData.proxyMedianVertices2 = proxyMedianVerticesClone;
-                    intersection.up.segment.duct.userData.proxies["medianClone"] = medianClone;
-                    downProxies.proxyMedian.position.z -= medianOffset;
+
+                    medianOffset = {
+                        x: medianOffset * 0,
+                        z: medianOffset * 0
+                    }
+
+                    downProxies.proxyMedian2 = {};
+                    downProxies.proxyMedian2.medianOffset = medianOffset;
                 }
             }
 
@@ -1140,12 +1149,14 @@ export default class Joints {
                     );
 
                     medianOffset += sharedData.xzJointPadding;
-                    const medianClone = JSON.parse(JSON.stringify(upProxies.proxyMedian));
-                    medianClone.position.x += medianOffset;
-                    const proxyMedianVerticesClone = this.mapProxyVertices(medianClone);
-                    intersection.up.segment.duct.userData.proxyMedianVertices2 = proxyMedianVerticesClone;
-                    intersection.up.segment.duct.userData.proxies["medianClone"] = medianClone;
-                    upProxies.proxyMedian.position.z += medianOffset;
+
+                    medianOffset = {
+                        x: medianOffset * 0,
+                        z: medianOffset * 0
+                    }
+
+                    upProxies.proxyMedian2 = {};
+                    upProxies.proxyMedian2.medianOffset = medianOffset;
 
                 }
             }
@@ -1173,12 +1184,14 @@ export default class Joints {
                     );
 
                     medianOffset += sharedData.xzJointPadding;
-                    const medianClone = JSON.parse(JSON.stringify(rightProxies.proxyMedian));
-                    medianClone.position.x += medianOffset;
-                    const proxyMedianVerticesClone = this.mapProxyVertices(medianClone);
-                    intersection.right.segment.duct.userData.proxyMedianVertices2 = proxyMedianVerticesClone;
-                    intersection.up.segment.duct.userData.proxies["medianClone"] = medianClone;
-                    rightProxies.proxyMedian.position.z -= medianOffset;
+
+                    medianOffset = {
+                        x: medianOffset * 0,
+                        z: medianOffset * 0
+                    }
+
+                    rightProxies.proxyMedian2 = {};
+                    rightProxies.proxyMedian2.medianOffset = medianOffset;
                 }
             }
             else if(intersection.up != null && intersection.left != null) {
@@ -1207,12 +1220,14 @@ export default class Joints {
                     );
 
                     medianOffset += sharedData.xzJointPadding;
-                    const medianClone = JSON.parse(JSON.stringify(leftProxies.proxyMedian));
-                    medianClone.position.x -= medianOffset;
-                    const proxyMedianVerticesClone = this.mapProxyVertices(medianClone);
-                    intersection.left.segment.duct.userData.proxyMedianVertices2 = proxyMedianVerticesClone;
-                    intersection.up.segment.duct.userData.proxies["medianClone"] = medianClone;
-                    leftProxies.proxyMedian.position.z += medianOffset;
+
+                    medianOffset = {
+                        x: medianOffset * 0,
+                        z: medianOffset * 0
+                    }
+
+                    leftProxies.proxyMedian2 = {};
+                    leftProxies.proxyMedian2.medianOffset = medianOffset;
                 }
             }
             else if(intersection.down != null && intersection.left != null) {
@@ -1240,12 +1255,14 @@ export default class Joints {
                     );
 
                     medianOffset += sharedData.xzJointPadding;
-                    const medianClone = JSON.parse(JSON.stringify(downProxies.proxyMedian));
-                    medianClone.position.x -= medianOffset;
-                    const proxyMedianVerticesClone = this.mapProxyVertices(medianClone);
-                    intersection.down.segment.duct.userData.proxyMedianVertices2 = proxyMedianVerticesClone;
-                    intersection.up.segment.duct.userData.proxies["medianClone"] = medianClone;
-                    downProxies.proxyMedian.position.z -= medianOffset;
+
+                    medianOffset = {
+                        x: medianOffset * 0,
+                        z: medianOffset * 0
+                    }
+
+                    downProxies.proxyMedian2 = {};
+                    downProxies.proxyMedian2.medianOffset = medianOffset;
                 }
             }
         }

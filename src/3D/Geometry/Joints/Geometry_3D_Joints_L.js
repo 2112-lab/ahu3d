@@ -114,14 +114,14 @@ export default class Geometry_3D_Joints_L {
                     geometries.push(
                         ...connectProxiesDiagonallyUphill(
                             joint.right.proxyMedian.coordinates,
-                            joint.right.proxyMedian.coordinates2,
+                            joint.right.proxyMedian2.coordinates,
                             true,
                             Math.PI / -2
                         )
                     );
                     geometries.push(
                         ...connectProxiesDiagonallyUphill(
-                            joint.right.proxyMedian.coordinates2,
+                            joint.right.proxyMedian2.coordinates,
                             joint.right.proxy1.coordinates
                         )
                     );
@@ -176,14 +176,14 @@ export default class Geometry_3D_Joints_L {
                     geometries.push(
                         ...connectProxiesDiagonallyUphill(
                             joint.left.proxyMedian.coordinates, 
-                            joint.left.proxyMedian.coordinates2,
+                            joint.left.proxyMedian2.coordinates,
                             true,
                             Math.PI / 2
                         )
                     );
                     geometries.push(
                         ...connectProxiesDiagonallyUphill(
-                            joint.left.proxyMedian.coordinates2,
+                            joint.left.proxyMedian2.coordinates,
                             joint.left.proxy2.coordinates
                         )
                     );
@@ -244,14 +244,14 @@ export default class Geometry_3D_Joints_L {
                     geometries.push(
                         ...connectProxiesDiagonallyDownhill(
                             joint.down.proxyMedian.coordinates, 
-                            joint.down.proxyMedian.coordinates2,
+                            joint.down.proxyMedian2.coordinates,
                             true,
                             Math.PI
                         ) 
                     );
                     geometries.push(
                         ...connectProxiesDiagonallyDownhill(
-                            joint.down.proxyMedian.coordinates2, 
+                            joint.down.proxyMedian2.coordinates, 
                             joint.left.proxy1.coordinates
                         ) 
                     );
@@ -369,14 +369,14 @@ export default class Geometry_3D_Joints_L {
                     geometries.push(
                         ...connectProxiesDiagonallyUphill(
                             joint.right.proxyMedian.coordinates,
-                            joint.right.proxyMedian.coordinates2,
+                            joint.right.proxyMedian2.coordinates,
                             true,
                             Math.PI / -2
                         )
                     );
                     geometries.push(
                         ...connectProxiesDiagonallyUphill(
-                            joint.right.proxyMedian.coordinates2,
+                            joint.right.proxyMedian2.coordinates,
                             joint.right.proxy1.coordinates
                         )
                     );
@@ -425,14 +425,14 @@ export default class Geometry_3D_Joints_L {
                     geometries.push(
                         ...connectProxiesDiagonallyUphill(
                             joint.left.proxyMedian.coordinates, 
-                            joint.left.proxyMedian.coordinates2,
+                            joint.left.proxyMedian2.coordinates,
                             true,
                             Math.PI / 2
                         )
                     );
                     geometries.push(
                         ...connectProxiesDiagonallyUphill(
-                            joint.left.proxyMedian.coordinates2,
+                            joint.left.proxyMedian2.coordinates,
                             joint.left.proxy2.coordinates
                         )
                     );
@@ -493,14 +493,14 @@ export default class Geometry_3D_Joints_L {
                     geometries.push(
                         ...connectProxiesDiagonallyDownhill(
                             joint.down.proxyMedian.coordinates, 
-                            joint.down.proxyMedian.coordinates2,
+                            joint.down.proxyMedian2.coordinates,
                             true,
                             Math.PI
                         ) 
                     );
                     geometries.push(
                         ...connectProxiesDiagonallyDownhill(
-                            joint.down.proxyMedian.coordinates2, 
+                            joint.down.proxyMedian2.coordinates, 
                             joint.left.proxy1.coordinates
                         ) 
                     );
@@ -599,7 +599,7 @@ export default class Geometry_3D_Joints_L {
                 joint.left.proxy1.coordinates[4],
             ];
             if(sharedData.xzJointStyle == "arc" || sharedData.xzJointStyle == "diagonal"){
-                backwall.splice(4, 0, joint.left.proxyMedian.coordinates2[6]);
+                backwall.splice(4, 0, joint.left.proxyMedian2.coordinates[6]);
             }
             if(sharedData.xzJointStyle == "arc" && sharedData.xzJointDirection == "inwards") {
                 let leftMidpoint = {
@@ -626,7 +626,7 @@ export default class Geometry_3D_Joints_L {
                 backwall.splice(2, 0, downMidpoint);
             }
             if(sharedData.xzJointStyle == "arc" || sharedData.xzJointStyle == "diagonal"){
-                backwall.splice(0, 0, joint.right.proxyMedian.coordinates2[4]);
+                backwall.splice(0, 0, joint.right.proxyMedian2.coordinates[4]);
             }
         }
         else if(joint.down != null && joint.left != null) {    
@@ -646,7 +646,7 @@ export default class Geometry_3D_Joints_L {
                 backwall.splice(2, 0, downMidpoint);
             }
             if(sharedData.xzJointStyle == "arc" || sharedData.xzJointStyle == "diagonal"){
-                backwall.splice(0, 0, joint.down.proxyMedian.coordinates2[4]);
+                backwall.splice(0, 0, joint.down.proxyMedian2.coordinates[4]);
             }
             
         }
@@ -684,11 +684,11 @@ export default class Geometry_3D_Joints_L {
         }
         else if(joint.up != null && joint.left != null) {  
             backwall = [
-                joint.left.proxyMedian.coordinates2[7],
+                joint.left.proxyMedian2.coordinates[7],
                 joint.left.proxy1.coordinates[7],
                 joint.left.proxy1.coordinates[4],
                 joint.left.proxy2.coordinates[5],
-                joint.left.proxyMedian.coordinates2[6],
+                joint.left.proxyMedian2.coordinates[6],
             ];
             createJointBackwall(backwall, largestGlobalSize);
             backwall = [
@@ -710,8 +710,8 @@ export default class Geometry_3D_Joints_L {
             ];
             createJointBackwall(backwall, largestGlobalSize);
             backwall = [
-                joint.right.proxyMedian.coordinates2[4],
-                joint.right.proxyMedian.coordinates2[5],
+                joint.right.proxyMedian2.coordinates[4],
+                joint.right.proxyMedian2.coordinates[5],
                 joint.right.proxy2.coordinates[5],
                 joint.right.proxy2.coordinates[6],
                 joint.right.proxy1.coordinates[7],
@@ -720,8 +720,8 @@ export default class Geometry_3D_Joints_L {
         }
         else if(joint.down != null && joint.left != null) {   
             backwall = [
-                joint.down.proxyMedian.coordinates2[6],
-                joint.down.proxyMedian.coordinates2[7],
+                joint.down.proxyMedian2.coordinates[6],
+                joint.down.proxyMedian2.coordinates[7],
                 joint.left.proxy1.coordinates[4],
                 joint.left.proxy2.coordinates[5],
                 joint.left.proxy2.coordinates[6],
