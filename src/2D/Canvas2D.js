@@ -1,7 +1,96 @@
 import { sharedData } from "../Ahu3D/globals.js"
 
 export default class Canvas2D {
-  createCenteredRectWithIndependentLines(x, y, width, height, konvaOptions, options = {}) {
+  drawToViewport(ahuObject, domID) {
+    console.log("drawToViewport ahuObject", domID, ahuObject);
+    this.ahuObject = ahuObject;
+    const container = document.getElementById(domID);
+
+    const containerWidth = container.offsetWidth;
+    const containerHeight = container.offsetHeight;
+
+    const stage = new Konva.Stage({
+        container: domID,
+        width: containerWidth,
+        height: containerHeight,
+        draggable: true,
+    });
+
+    const layer = new Konva.Layer();
+    stage.add(layer);
+
+    this.renderAhuToLayer(layer);
+
+    console.log("drawToViewport step 1");
+
+    this.fitLayerToRects(layer, containerWidth, containerHeight, 0.90);
+
+    this.setCanvasEvents(layer, stage, container);
+
+    layer.draw();
+  }
+
+  renderAhuToLayer(layer) {
+    for(const ductKey in this.ahuObject.resources.ducts) {
+
+      const duct = this.ahuObject.resources.ducts[ductKey];
+
+      let width = duct.dimensions.x;
+      let height = duct.dimensions.z;
+      let activeWalls = {
+        top: true,
+        bottom: true,
+        left: false,
+        right: false,
+      }
+
+      console.log("drawToViewport step 4:", width);
+
+      if(duct.rotation.y != 0 && duct.rotation.y != 180) {
+        let temp = width;
+        width = height;
+        height = temp;
+        activeWalls = {
+          top: false,
+          bottom: false,
+          left: true,
+          right: true,
+        }
+      }
+
+      console.log("drawToViewport step 5:", width);
+
+      const konvaOptions = {
+        stroke: 'white', // White stroke
+        strokeWidth: 30,
+        perfectDrawEnabled: false,
+      };
+
+      const lines = this.createDuct(
+          duct.position.x,
+          duct.position.z * -1,
+          width,
+          height,
+          konvaOptions,
+          activeWalls
+      );
+      lines.forEach(line => layer.add(line));
+
+      if(this.ahuObject.associations.ducts[ductKey].ends[0]) {
+        const endKey = this.ahuObject.associations.ducts[ductKey].ends[0];
+        const end = this.ahuObject.resources.ends[endKey];
+        console.log("drawEnd starting:", this.ahuObject, endKey);
+        this.drawEnd(layer, end, endKey, konvaOptions);
+      }        
+      
+    }
+
+    for(const jointKey in this.ahuObject.resources.joints) {
+      this.create2DJoint(layer, this.ahuObject.resources.joints[jointKey], jointKey);
+    }
+  }
+  
+  createDuct(x, y, width, height, konvaOptions, options = {}) {
     const { top = true, right = true, bottom = true, left = true } = options;
   
     const lines = [];
@@ -51,111 +140,208 @@ export default class Canvas2D {
     }
   
     return lines;  // Return an array of separate line objects
-  }  
-
-  drawToViewport(ahuObject, domID) {
-    console.log("drawToViewport ahuObject", domID, ahuObject);
-    const container = document.getElementById(domID);
-
-    const containerWidth = container.offsetWidth;
-    const containerHeight = container.offsetHeight;
-
-    // Create a stage attached to the div
-    const stage = new Konva.Stage({
-        container: domID, // Attach to this div
-        width: containerWidth, // Stage size matches the container
-        height: containerHeight,
-        draggable: true,
-    });
-
-    // Create a layer
-    const layer = new Konva.Layer();
-
-    // Add the layer to the stage
-    stage.add(layer);
-
-    console.log("drawToViewport step 1");
-
-    for(const ductKey in ahuObject.resources.ducts) {
-
-      console.log("drawToViewport step 2:", ductKey);
-
-      const duct = ahuObject.resources.ducts[ductKey];
-
-      console.log("drawToViewport step 3:", duct);
-
-      let width = duct.dimensions.x;
-      let height = duct.dimensions.z;
-      let activeWalls = {
-        top: true,
-        bottom: true,
-        left: false,
-        right: false,
-      }
-
-      console.log("drawToViewport step 4:", width);
-
-      if(duct.rotation.y != 0 && duct.rotation.y != 180) {
-        let temp = width;
-        width = height;
-        height = temp;
-        activeWalls = {
-          top: false,
-          bottom: false,
-          left: true,
-          right: true,
-        }
-      }
-
-      console.log("drawToViewport step 5:", width);
-
-      const konvaOptions = {
-        stroke: '#fff', // White stroke
-        strokeWidth: 30,
-      };
-
-      const lines = this.createCenteredRectWithIndependentLines(
-          duct.position.x,
-          duct.position.z * -1,
-          width,
-          height,
-          konvaOptions,
-          activeWalls
-      );
-
-      // Add each line separately to the layer
-      lines.forEach(line => layer.add(line));
-
-      if(ahuObject.associations.ducts[ductKey].ends[0]) {
-        const endKey = ahuObject.associations.ducts[ductKey].ends[0];
-        const end = ahuObject.resources.ends[endKey];
-        console.log("drawEnd starting:", ahuObject, endKey);
-        this.drawEnd(end, endKey, layer, konvaOptions);
-      }        
-      
-    }
-
-    this.fitLayerToRects(layer, containerWidth, containerHeight, 0.90);
-
-    this.setCanvasEvents(stage, layer, container);
-
-    layer.draw(); // Redraw layer to show changes
   }
 
-  drawEnd(end, endKey, layer, konvaOptions) {
+  create2DJoint(layer, joint, jointKey) {
+    console.log("create2DJoint:", joint);
+
+    let point1 = null;
+    let point2 = null;
+    let midPoint = null;
+
+    const jointKeys = Object.keys(joint);
+
+    const jointCenter = this.calculateJointCenter(joint, jointKey);
+
+    console.log("create2DJoint jointCenter:", jointCenter);
+
+    if(sharedData.xzJointStyle == "orthogonal") {
+
+      if(jointKeys.length == 2) {
+        if(joint.up && joint.right) {
+          point1 = joint.up.proxy2.position;
+          point2 = joint.right.proxy1.position;
+          midPoint = this.createMidPoint(point1, point2, jointCenter);
+          this.drawBetweenPoints(layer, point1, point2, midPoint);
+
+          point1 = joint.right.proxy2.position;
+          point2 = joint.up.proxy1.position;
+          midPoint = this.createMidPoint(point1, point2, jointCenter);
+          this.drawBetweenPoints(layer, point1, point2, midPoint);
+        }
+        else if(joint.up && joint.down) {
+          point1 = joint.up.proxy1.position;
+          point2 = joint.down.proxy1.position;
+          midPoint = this.createMidPoint(point1, point2, jointCenter);
+          this.drawBetweenPoints(layer, point1, point2, midPoint);
+
+          point1 = joint.up.proxy2.position;
+          point2 = joint.down.proxy2.position;
+          midPoint = this.createMidPoint(point1, point2, jointCenter);
+          this.drawBetweenPoints(layer, point1, point2, midPoint);
+        }
+        else if(joint.left && joint.right) {
+          point1 = joint.left.proxy1.position;
+          point2 = joint.right.proxy1.position;
+          midPoint = this.createMidPoint(point1, point2, jointCenter);
+          this.drawBetweenPoints(layer, point1, point2, midPoint);
+
+          point1 = joint.left.proxy2.position;
+          point2 = joint.right.proxy2.position;
+          midPoint = this.createMidPoint(point1, point2, jointCenter);
+          this.drawBetweenPoints(layer, point1, point2, midPoint);
+        }
+      }
+      else if(jointKeys.length == 3) {
+        if(joint.left && joint.up && joint.down) {
+          point1 = joint.up.proxy2.position;
+          point2 = joint.down.proxy2.position;
+          midPoint = this.createMidPoint(point1, point2, jointCenter, true);
+          this.drawBetweenPoints(layer, point1, point2, midPoint);
+
+          point1 = joint.down.proxy1.position;
+          point2 = joint.left.proxy2.position;
+          midPoint = this.createMidPoint(point1, point2, jointCenter);
+          this.drawBetweenPoints(layer, point1, point2, midPoint);
+
+          point1 = joint.left.proxy1.position;
+          point2 = joint.up.proxy1.position;
+          midPoint = this.createMidPoint(point1, point2, jointCenter);
+          this.drawBetweenPoints(layer, point1, point2, midPoint);
+        }
+      }
+      else if(jointKeys.length == 4) {
+        point1 = joint.up.proxy2.position;
+        point2 = joint.right.proxy1.position;
+        midPoint = this.createMidPoint(point1, point2, jointCenter);
+        this.drawBetweenPoints(layer, point1, point2, midPoint);
+
+        point1 = joint.right.proxy2.position;
+        point2 = joint.down.proxy2.position;
+        midPoint = this.createMidPoint(point1, point2, jointCenter);
+        this.drawBetweenPoints(layer, point1, point2, midPoint);
+
+        point1 = joint.down.proxy1.position;
+        point2 = joint.left.proxy2.position;
+        midPoint = this.createMidPoint(point1, point2, jointCenter);
+        this.drawBetweenPoints(layer, point1, point2, midPoint);
+
+        point1 = joint.left.proxy1.position;
+        point2 = joint.up.proxy1.position;
+        midPoint = this.createMidPoint(point1, point2, jointCenter);
+        this.drawBetweenPoints(layer, point1, point2, midPoint);
+      }
+      
+    }
+    
+  }
+
+  drawBetweenPoints(layer, point1, point2, midPoint) {
+
+    // Helper to round point coordinates
+    function roundPoint(point) {
+      return {
+          x: Math.round(point.x),
+          z: Math.round(point.z),
+      };
+    }
+
+    // Round all points
+    point1 = roundPoint(point1);
+    point2 = roundPoint(point2);
+    midPoint = roundPoint(midPoint);
+
+    const points = [
+      point1.x, point1.z * -1,
+      midPoint.x, midPoint.z * -1,
+      point2.x, point2.z * -1
+    ];
+
+    const jointLine = new Konva.Line({
+        points: points,
+        stroke: 'white',
+        strokeWidth: 30,
+        lineCap: 'round',
+        lineJoin: 'round',
+        perfectDrawEnabled: false,
+    });
+
+    layer.add(jointLine);
+  }
+
+  createMidPoint(point1, point2, jointCenter, isFlipped = false) {
+    console.log("createMidPoint started");
+
+    // Define the two possible corner points
+    const corners = [
+      { x: point1.x, z: point2.z }, // Corner 1
+      { x: point2.x, z: point1.z }, // Corner 2
+    ];
+
+    // Determine which corner is closest to the jointCenter
+    let [corner1, corner2] = corners;
+
+    const distance1 = Math.sqrt(
+      Math.pow(corner1.x - jointCenter.x, 2) +
+      Math.pow(corner1.z - jointCenter.z, 2)
+    );
+
+    const distance2 = Math.sqrt(
+      Math.pow(corner2.x - jointCenter.x, 2) +
+      Math.pow(corner2.z - jointCenter.z, 2)
+    );
+
+    // Determine the closest and flipped corner
+    let closestCorner = distance1 < distance2 ? corner1 : corner2;
+    let flippedCorner = distance1 < distance2 ? corner2 : corner1;
+
+    // Return the closest or flipped corner based on `isFlipped`
+    return isFlipped ? flippedCorner : closestCorner;
+  }
+
+  renderPoint(point) {
+    const circle = new Konva.Circle({
+      x: point.x,
+      y: point.z * -1,
+      radius: 50,
+      stroke: '#00ff00',
+      strokeWidth: 32,
+    });
+    layer.add(circle);
+  }
+
+  calculateJointCenter(joint, jointKey) {
+    console.log("calculateJointCenter joint:", joint, this.ahuObject);
+
+    let jointCenter = {
+      x: 0,
+      z: 0,
+    }
+
+    for(const ductKey of this.ahuObject.associations.joints[jointKey].ducts) {
+      const duct = this.ahuObject.resources.ducts[ductKey];
+      if(this.ahuObject.xetoDictionary.edges[ductKey].isVertical) {
+        jointCenter.x = duct.position.x;
+      }
+      else {
+        jointCenter.z = duct.position.z;
+      }
+    }  
+
+    // const circle = new Konva.Circle({
+    //   x: jointCenter.x,
+    //   y: jointCenter.z * -1,
+    //   radius: 50,
+    //   stroke: '#ff0000',
+    //   strokeWidth: 32,
+    // });
+    // layer.add(circle);
+
+    return jointCenter;
+}
+
+  drawEnd(layer, end, endKey, konvaOptions) {
     console.log("drawEnd end:", end);
-
-    const factor = 100;
-
-    // const lines = [];
-    // lines.push(new Konva.Line({
-    //   points: [
-    //     end.position.x / 2, end.position.z / 2,    // Top-left
-    //     0, 0,   // Top-right
-    //   ],
-    //   closed: false,
-    //   ...konvaOptions
-    // }));
 
     let width = end.dimensions.z;
     let height = 200;
@@ -235,7 +421,7 @@ export default class Canvas2D {
     return cap;
   }
 
-  setCanvasEvents(stage, layer, container){
+  setCanvasEvents(layer, stage, container){
 
     this.setKonvaWheel(stage);
 
@@ -284,26 +470,21 @@ export default class Canvas2D {
         { x: Infinity, y: Infinity, width: 0, height: 0 }
       );
   
-      // Calculate scale to fit the bounding box into the container
       const scaleX = containerWidth / boundingBox.width;
       const scaleY = containerHeight / boundingBox.height;
-      let scale = Math.min(scaleX, scaleY); // Uniform scaling
+      let scale = Math.min(scaleX, scaleY);
   
-      // Apply zoom out factor
       scale *= zoomOutFactor;
   
-      // Center the layer content
       const offsetX = (containerWidth - boundingBox.width * scale) / 2;
       const offsetY = (containerHeight - boundingBox.height * scale) / 2;
   
-      // Apply scale and position
       layer.scale({ x: scale, y: scale });
       layer.position({
         x: -boundingBox.x * scale + offsetX,
         y: -boundingBox.y * scale + offsetY,
       });
   
-      // Redraw the layer to apply changes
       layer.draw();
   }
   

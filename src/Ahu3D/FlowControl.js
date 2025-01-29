@@ -256,7 +256,11 @@ export default class FlowControl {
 
     render2D() {
         this.Canvas2D.drawToViewport(this.ahuObject, "secondaryKonvaContainer");
-        this.Canvas2D.drawToViewport(this.ahuObject, "primaryKonvaContainer"); 
+        this.Canvas2D.drawToViewport(this.ahuObject, "primaryKonvaContainer");
+        // if(process.env.NODE_ENV === "development") {
+        //     this.Canvas2D.drawToViewport(this.ahuObject, "primaryKonvaContainer"); 
+        // }
+        
     }
 
     populate3D() {
