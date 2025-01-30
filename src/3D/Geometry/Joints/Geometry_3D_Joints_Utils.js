@@ -2,95 +2,38 @@ import * as THREE from 'three';
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { sharedData } from "../../../Ahu3D/globals.js";
 
-export function calculateJointCenter(joint, type) {
-    let xPositions = [];
-    let zPositions = [];
-    let ductKeys = [];
+export function calculateJointCenter(jointKey, ahuObject) {
+    console.log("calculateJointCenter utils jointKey:", jointKey);
+    console.log("calculateJointCenter utils ahuObject:", ahuObject);
 
-    console.log("calculateJointCenter joint:", joint);
-
-    return
-
-    if(intersection.left) {
-        ductKeys.push("left");
-        xPositions.push(intersection.left.segment.duct.userData.component.object.position.x);
-        zPositions.push(intersection.left.segment.duct.userData.component.object.position.z);
+    let jointCenter = {
+        x: 0,
+        z: 0,
     }
-    if(intersection.right) {
-        ductKeys.push("right");
-        xPositions.push(intersection.right.segment.duct.userData.component.object.position.x);
-        zPositions.push(intersection.right.segment.duct.userData.component.object.position.z);
-    }
-    if(intersection.up) {
-        ductKeys.push("up");
-        xPositions.push(intersection.up.segment.duct.userData.component.object.position.x);
-        zPositions.push(intersection.up.segment.duct.userData.component.object.position.z);
-    }
-    if(intersection.down) {
-        ductKeys.push("down");
-        xPositions.push(intersection.down.segment.duct.userData.component.object.position.x);
-        zPositions.push(intersection.down.segment.duct.userData.component.object.position.z);
-    }
-
-    let xCenter = (Math.max(...xPositions) + Math.min(...xPositions)) / 2;
-    let zCenter = (Math.max(...zPositions) + Math.min(...zPositions)) / 2;
-
-    if(type == "Cross-Joint" || type == "T-Joint") {
-        if(intersection.up) {
-            xCenter = intersection.up.segment.duct.userData.component.object.position.x;
+  
+    for(const ductKey of ahuObject.associations.joints[jointKey].ducts) {
+        const duct = ahuObject.resources.ducts[ductKey];
+        console.log("calculateJointCenter utils ductKey:", ductKey);
+        console.log("calculateJointCenter utils duct:", duct);
+        if(ahuObject.xetoDictionary.edges[ductKey].isVertical) {
+            jointCenter.x = duct.position.x;
         }
-        else if(intersection.down) {
-            xCenter = intersection.down.segment.duct.userData.component.object.position.x;
+        else {
+            jointCenter.z = duct.position.z;
         }
-        if(intersection.left) {
-            zCenter = intersection.left.segment.duct.userData.component.object.position.z;
-        }
-        else if(intersection.right) {
-            zCenter = intersection.right.segment.duct.userData.component.object.position.z;
-        }
-    }
-
-    else if(type == "L-Joint") {
-        if(ductKeys.includes("left") && ductKeys.includes("down")) {
-            xCenter = Math.max(...xPositions);
-            zCenter = Math.max(...zPositions);
-        }
-        else if(ductKeys.includes("right") && ductKeys.includes("down")) {
-            xCenter = Math.min(...xPositions);
-            zCenter = Math.max(...zPositions);
-        }
-        else if(ductKeys.includes("left") && ductKeys.includes("up")) {
-            xCenter = Math.max(...xPositions);
-            zCenter = Math.min(...zPositions);
-        }
-        else if(ductKeys.includes("right") && ductKeys.includes("up")) {
-            xCenter = Math.min(...xPositions);
-            zCenter = Math.min(...zPositions);
-        }
-    }
+    } 
 
     // const geometry = new THREE.BoxGeometry(100, 100, 100);
-    // const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-    // for(const i in xPositions) {            
-    //     const cube = new THREE.Mesh(geometry, material);
-    //     cube.position.x = xPositions[i];
-    //     cube.position.z = zPositions[i];
-    //     cube.name = "joint";
-
-    //     this.sceneHelper.addToScene(cube);
-    // }     
-    
-    // const material2 = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-    // const cube = new THREE.Mesh(geometry, material2);
-    // cube.position.x = xCenter;
-    // cube.position.z = zCenter;
+    // const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+    // const cube = new THREE.Mesh(geometry, material);
+    // cube.position.x = jointCenter.x;
+    // cube.position.z = jointCenter.z;
     // cube.name = "joint";
-    // this.sceneHelper.addToScene(cube);        
+    // sharedData.sceneHelper.addToScene(cube);        
 
-    sharedData.jointCenter = {
-        x: xCenter,
-        z: zCenter
-    }        
+    sharedData.jointCenter = jointCenter   
+
+    return        
 }
 
 export function createJointBackwall(points, largestGlobalSize = 1000) {

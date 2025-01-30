@@ -108,7 +108,7 @@ class Ahu3DAPI {
             });
         }        
 
-        const {cleanedXeto, ductsDictionary} = this.preprocess.preprocessXeto2(xeto);
+        const {cleanedXeto, ductsDictionary} = this.preprocess.preprocessXeto(xeto);
 
         console.log("runAhu3D cleanedXeto:", cleanedXeto);
         console.log("runAhu3D ductsDictionary:", ductsDictionary);

@@ -10,7 +10,7 @@ import {
 import { sharedData } from "../../../Ahu3D/globals.js";
 
 export default class Geometry_3D_Joints_Colinear {
-    createParallelJoint(intersection, pairDirection, joint) {
+    createParallelJoint(joint, pairDirection) {
         const geometries = [];
 
         if(pairDirection == "vertical") {

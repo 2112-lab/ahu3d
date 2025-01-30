@@ -8,12 +8,10 @@ import {
 } from "./Geometry_3D_Joints_Utils.js";
 
 export default class Geometry_3D_Joints_Cross {
-    createCrossJoint(intersection, largestGlobalSize, joint) {
+    createCrossJoint(joint, largestGlobalSize) {
         const geometries = [];
 
-        this.backwallArcConfigs = [];
-
-        // calculateJointCenter(intersection, "Cross-Joint");        
+        this.backwallArcConfigs = [];     
 
         if(this.xzJointStyle == "arc") {     
 

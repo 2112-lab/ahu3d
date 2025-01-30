@@ -9,7 +9,7 @@ import {
 import { sharedData } from "../../../Ahu3D/globals.js";
 
 export default class Geometry_3D_Joints_T {
-    createTJoint(intersection, largestGlobalSize, joint) {
+    createTJoint(joint, largestGlobalSize) {
         console.log("createTJoint started:", joint);
         const geometries = [];
 
@@ -100,12 +100,24 @@ export default class Geometry_3D_Joints_T {
             }
             else if(joint.down == null) {
 
-                geometries.push(
-                    ...connectProxiesDiagonallyUphill(
-                        joint.left.proxy2.coordinates,
-                        joint.left.proxyMedian.coordinates
-                    )
-                );
+                if(joint.left.ductDimensions.y < joint.right.ductDimensions.y) {
+                    geometries.push(
+                        ...connectProxiesDiagonallyDownhill(
+                            joint.left.proxy2.coordinates,
+                            joint.left.proxyMedian.coordinates
+                        )
+                    );
+                }
+                else {
+                    geometries.push(
+                        ...connectProxiesDiagonallyUphill(
+                            joint.left.proxy2.coordinates,
+                            joint.left.proxyMedian.coordinates
+                        )
+                    );
+                }
+
+                
                 geometries.push(
                     ...connectProxiesDiagonallyUphill(
                         joint.left.proxyMedian.coordinates, 
@@ -148,12 +160,24 @@ export default class Geometry_3D_Joints_T {
                         joint.left.proxy1.coordinates
                     )
                 );
-                geometries.push(
-                    ...connectProxiesDiagonallyUphill(
-                        joint.right.proxy1.coordinates,
-                        joint.right.proxyMedian.coordinates
-                    ) 
-                );
+
+                if(joint.left.ductDimensions.y > joint.right.ductDimensions.y) {
+                    geometries.push(
+                        ...connectProxiesDiagonallyDownhill(
+                            joint.right.proxy1.coordinates,
+                            joint.right.proxyMedian.coordinates
+                        ) 
+                    );
+                    
+                }
+                else {
+                    geometries.push(
+                        ...connectProxiesDiagonallyUphill(
+                            joint.right.proxy1.coordinates,
+                            joint.right.proxyMedian.coordinates
+                        ) 
+                    );
+                }                
 
                 geometries.push(
                     ...connectProxiesDiagonallyDownhill(

@@ -14,6 +14,7 @@ export default class Canvas2D {
         width: containerWidth,
         height: containerHeight,
         draggable: true,
+        pixelRatio: 1
     });
 
     const layer = new Konva.Layer();
@@ -31,11 +32,13 @@ export default class Canvas2D {
   }
 
   renderAhuToLayer(layer) {
+    console.log("renderAhuToLayer step 1");
     for(const ductKey in this.ahuObject.resources.ducts) {
+      // console.log("renderAhuToLayer step 2");
 
       const duct = this.ahuObject.resources.ducts[ductKey];
 
-      let width = duct.dimensions.x;
+      let width = duct.dimensions.x + 5;
       let height = duct.dimensions.z;
       let activeWalls = {
         top: true,
@@ -44,7 +47,7 @@ export default class Canvas2D {
         right: false,
       }
 
-      console.log("drawToViewport step 4:", width);
+      // console.log("renderAhuToLayer step 3");
 
       if(duct.rotation.y != 0 && duct.rotation.y != 180) {
         let temp = width;
@@ -58,12 +61,15 @@ export default class Canvas2D {
         }
       }
 
-      console.log("drawToViewport step 5:", width);
+      // console.log("renderAhuToLayer step 4");
 
       const konvaOptions = {
         stroke: 'white', // White stroke
         strokeWidth: 30,
-        perfectDrawEnabled: false,
+        perfectDrawEnabled: true,
+        filters: [Konva.Filters.Blur],
+        blurRadius: 15,  // Softens the line edges
+        opacity: 0.95,
       };
 
       const lines = this.createDuct(
@@ -76,12 +82,19 @@ export default class Canvas2D {
       );
       lines.forEach(line => layer.add(line));
 
-      if(this.ahuObject.associations.ducts[ductKey].ends[0]) {
-        const endKey = this.ahuObject.associations.ducts[ductKey].ends[0];
-        const end = this.ahuObject.resources.ends[endKey];
-        console.log("drawEnd starting:", this.ahuObject, endKey);
-        this.drawEnd(layer, end, endKey, konvaOptions);
-      }        
+      console.log("renderAhuToLayer step 5:", this.ahuObject.associations.ducts[ductKey]);
+
+      if(this.ahuObject.associations.ducts[ductKey].ends) {
+        for(const endKey in this.ahuObject.associations.ducts[ductKey].ends) {
+          const endKey = this.ahuObject.associations.ducts[ductKey].ends[0];
+          const end = this.ahuObject.resources.ends[endKey];
+          console.log("renderAhuToLayer drawEnd starting:", this.ahuObject, endKey);
+          this.drawEnd(layer, end, endKey, konvaOptions);
+        }
+        
+      }     
+      
+      console.log("renderAhuToLayer step 6");
       
     }
 
@@ -151,92 +164,96 @@ export default class Canvas2D {
 
     const jointKeys = Object.keys(joint);
 
-    const jointCenter = this.calculateJointCenter(joint, jointKey);
+    const jointCenter = this.calculate2DJointCenter(joint, jointKey);
 
     console.log("create2DJoint jointCenter:", jointCenter);
 
     if(sharedData.xzJointStyle == "orthogonal") {
 
-      if(jointKeys.length == 2) {
-        if(joint.up && joint.right) {
+      let isOutwards = sharedData.xzJointDirection == "outwards";
+
+        if(jointKeys.length == 2) {
+          if(joint.up && joint.right) {
+            point1 = joint.up.proxy2.position;
+            point2 = joint.right.proxy1.position;
+            midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
+            this.drawBetweenPoints(layer, point1, point2, midPoint);
+  
+            point1 = joint.right.proxy2.position;
+            point2 = joint.up.proxy1.position;
+            midPoint = this.createMidPoint(point1, point2, jointCenter);
+            this.drawBetweenPoints(layer, point1, point2, midPoint);
+          }
+          else if(joint.up && joint.down) {
+            point1 = joint.up.proxy1.position;
+            point2 = joint.down.proxy1.position;
+            midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
+            this.drawBetweenPoints(layer, point1, point2, midPoint);
+  
+            point1 = joint.up.proxy2.position;
+            point2 = joint.down.proxy2.position;
+            midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
+            this.drawBetweenPoints(layer, point1, point2, midPoint);
+          }
+          else if(joint.left && joint.right) {
+            point1 = joint.left.proxy1.position;
+            point2 = joint.right.proxy1.position;
+            midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
+            this.drawBetweenPoints(layer, point1, point2, midPoint);
+  
+            point1 = joint.left.proxy2.position;
+            point2 = joint.right.proxy2.position;
+            midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
+            this.drawBetweenPoints(layer, point1, point2, midPoint);
+          }
+        }
+        else if(jointKeys.length == 3) {
+          if(joint.left && joint.up && joint.down) {
+            point1 = joint.up.proxy2.position;
+            point2 = joint.down.proxy2.position;
+            midPoint = this.createMidPoint(point1, point2, jointCenter, true);
+            this.drawBetweenPoints(layer, point1, point2, midPoint);
+  
+            point1 = joint.down.proxy1.position;
+            point2 = joint.left.proxy2.position;
+            midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
+            this.drawBetweenPoints(layer, point1, point2, midPoint);
+  
+            point1 = joint.left.proxy1.position;
+            point2 = joint.up.proxy1.position;
+            midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
+            this.drawBetweenPoints(layer, point1, point2, midPoint);
+          }
+        }
+        else if(jointKeys.length == 4) {
           point1 = joint.up.proxy2.position;
           point2 = joint.right.proxy1.position;
-          midPoint = this.createMidPoint(point1, point2, jointCenter);
+          midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
           this.drawBetweenPoints(layer, point1, point2, midPoint);
-
+  
           point1 = joint.right.proxy2.position;
-          point2 = joint.up.proxy1.position;
-          midPoint = this.createMidPoint(point1, point2, jointCenter);
-          this.drawBetweenPoints(layer, point1, point2, midPoint);
-        }
-        else if(joint.up && joint.down) {
-          point1 = joint.up.proxy1.position;
-          point2 = joint.down.proxy1.position;
-          midPoint = this.createMidPoint(point1, point2, jointCenter);
-          this.drawBetweenPoints(layer, point1, point2, midPoint);
-
-          point1 = joint.up.proxy2.position;
           point2 = joint.down.proxy2.position;
-          midPoint = this.createMidPoint(point1, point2, jointCenter);
+          midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
           this.drawBetweenPoints(layer, point1, point2, midPoint);
-        }
-        else if(joint.left && joint.right) {
-          point1 = joint.left.proxy1.position;
-          point2 = joint.right.proxy1.position;
-          midPoint = this.createMidPoint(point1, point2, jointCenter);
-          this.drawBetweenPoints(layer, point1, point2, midPoint);
-
-          point1 = joint.left.proxy2.position;
-          point2 = joint.right.proxy2.position;
-          midPoint = this.createMidPoint(point1, point2, jointCenter);
-          this.drawBetweenPoints(layer, point1, point2, midPoint);
-        }
-      }
-      else if(jointKeys.length == 3) {
-        if(joint.left && joint.up && joint.down) {
-          point1 = joint.up.proxy2.position;
-          point2 = joint.down.proxy2.position;
-          midPoint = this.createMidPoint(point1, point2, jointCenter, true);
-          this.drawBetweenPoints(layer, point1, point2, midPoint);
-
+  
           point1 = joint.down.proxy1.position;
           point2 = joint.left.proxy2.position;
-          midPoint = this.createMidPoint(point1, point2, jointCenter);
+          midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
           this.drawBetweenPoints(layer, point1, point2, midPoint);
-
+  
           point1 = joint.left.proxy1.position;
           point2 = joint.up.proxy1.position;
-          midPoint = this.createMidPoint(point1, point2, jointCenter);
+          midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
           this.drawBetweenPoints(layer, point1, point2, midPoint);
-        }
-      }
-      else if(jointKeys.length == 4) {
-        point1 = joint.up.proxy2.position;
-        point2 = joint.right.proxy1.position;
-        midPoint = this.createMidPoint(point1, point2, jointCenter);
-        this.drawBetweenPoints(layer, point1, point2, midPoint);
-
-        point1 = joint.right.proxy2.position;
-        point2 = joint.down.proxy2.position;
-        midPoint = this.createMidPoint(point1, point2, jointCenter);
-        this.drawBetweenPoints(layer, point1, point2, midPoint);
-
-        point1 = joint.down.proxy1.position;
-        point2 = joint.left.proxy2.position;
-        midPoint = this.createMidPoint(point1, point2, jointCenter);
-        this.drawBetweenPoints(layer, point1, point2, midPoint);
-
-        point1 = joint.left.proxy1.position;
-        point2 = joint.up.proxy1.position;
-        midPoint = this.createMidPoint(point1, point2, jointCenter);
-        this.drawBetweenPoints(layer, point1, point2, midPoint);
-      }
-      
+        }      
     }
     
   }
 
   drawBetweenPoints(layer, point1, point2, midPoint) {
+
+    let xOffset = 0;
+    let zOffset = 0;
 
     // Helper to round point coordinates
     function roundPoint(point) {
@@ -252,18 +269,20 @@ export default class Canvas2D {
     midPoint = roundPoint(midPoint);
 
     const points = [
-      point1.x, point1.z * -1,
-      midPoint.x, midPoint.z * -1,
-      point2.x, point2.z * -1
+      point1.x + xOffset, (point1.z + zOffset) * -1,
+      midPoint.x + xOffset, (midPoint.z + zOffset) * -1,
+      point2.x + xOffset, (point2.z + zOffset) * -1
     ];
 
     const jointLine = new Konva.Line({
         points: points,
         stroke: 'white',
-        strokeWidth: 30,
         lineCap: 'round',
         lineJoin: 'round',
-        perfectDrawEnabled: false,
+        strokeWidth: 30,
+        perfectDrawEnabled: true,
+        filters: [Konva.Filters.Blur],
+        blurRadius: 15,
     });
 
     layer.add(jointLine);
@@ -310,8 +329,8 @@ export default class Canvas2D {
     layer.add(circle);
   }
 
-  calculateJointCenter(joint, jointKey) {
-    console.log("calculateJointCenter joint:", joint, this.ahuObject);
+  calculate2DJointCenter(joint, jointKey) {
+    console.log("calculate2DJointCenter joint:", joint, this.ahuObject);
 
     let jointCenter = {
       x: 0,
@@ -338,7 +357,7 @@ export default class Canvas2D {
     // layer.add(circle);
 
     return jointCenter;
-}
+  }
 
   drawEnd(layer, end, endKey, konvaOptions) {
     console.log("drawEnd end:", end);
@@ -358,13 +377,15 @@ export default class Canvas2D {
   }
 
   createInsert(end, width, height) {
-    let offset = 15;
+    let offset = 14;
     const insert = new Konva.Shape({
       x: end.position.x,
       y: end.position.z * -1,
       rotation: end.rotation.y, // Ensure rotation is applied if necessary
       sceneFunc: (context, shape) => {
         context.beginPath();
+
+        context.lineCap = 'round';
     
         // Define your custom shape's path
         context.moveTo(
@@ -399,16 +420,19 @@ export default class Canvas2D {
   }
 
   createCap(end, width, height) {
+    let offset = 14;
     const cap = new Konva.Shape({
       x: end.position.x,
       y: end.position.z * -1,
       rotation: end.rotation.y, // Ensure rotation is applied if necessary
       sceneFunc: (context, shape) => {
         context.beginPath();
+
+        context.lineCap = 'round';
     
         // Define your custom shape's path
-        context.moveTo((-width / 2), 0); // Top-left corner
-        context.lineTo((width / 2), 0);  // Top-right corner
+        context.moveTo((-width / 2), 0 + offset); // Top-left corner
+        context.lineTo((width / 2), 0 + offset);  // Top-right corner
         // context.closePath();
     
         // Fill and/or stroke the shape

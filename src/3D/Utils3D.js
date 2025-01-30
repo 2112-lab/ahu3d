@@ -62,6 +62,33 @@ export default class Utils3D {
     return orientation;
   }
 
+  getRow(location) {
+    return parseInt(location.slice(1, location.length));
+  }
+
+  setDuctOpacity(opacity) {
+    this.sceneHelper.scene.traverse((object3d) => {
+      if (object3d.isObject3D) {
+        if(object3d.name === 'duct') {
+          object3d.traverse(child => {
+            if (child.isMesh && child.material) {
+              if(opacity < 1) {
+                child.material.transparent = true;
+                child.material.depthWrite = false;
+              }
+              else {
+                child.material.transparent = false;
+                child.material.depthWrite = true;
+              }
+              child.material.opacity = opacity;
+            }
+          });
+
+        }
+      }
+    });
+  }
+
   setJointOpacity(opacity) {
     this.sceneHelper.scene.traverse((object3d) => {
       if (object3d.isObject3D) {
@@ -170,53 +197,30 @@ export default class Utils3D {
     });
   }
 
-  setJointProxyHelpers(value) {
-    this.sceneHelper.scene.traverse((object3d) => {
-      if(object3d.isObject3D) {
-        if(object3d.name === 'jointHelperProxy') {
-          if(value == true) {
-            object3d.material.color.setHex(object3d.userData.helperColor);
-          }
-          else {
-            object3d.material.color.setHex(object3d.userData.productionColor);
-          }
-        }
-      }
-    });
-  }
+  // setJointProxyHelpers(value) {
+  //   this.sceneHelper.scene.traverse((object3d) => {
+  //     if(object3d.isObject3D) {
+  //       if(object3d.name === 'jointHelperProxy') {
+  //         if(value == true) {
+  //           object3d.material.color.setHex(object3d.userData.helperColor);
+  //         }
+  //         else {
+  //           object3d.material.color.setHex(object3d.userData.productionColor);
+  //         }
+  //       }
+  //     }
+  //   });
+  // }
 
-  setJointVertexHelpers(value) {
-    this.sceneHelper.scene.traverse((object3d) => {
-      if(object3d.isObject3D) {
-        if(object3d.name === 'jointHelperVertices') {
-          object3d.visible = value;
-        }
-      }
-    });
-  }
-
-  setDuctOpacity(opacity) {
-    this.sceneHelper.scene.traverse((object3d) => {
-      if (object3d.isObject3D) {
-        if(object3d.name === 'duct') {
-          object3d.traverse(child => {
-            if (child.isMesh && child.material) {
-              if(opacity < 1) {
-                child.material.transparent = true;
-                child.material.depthWrite = false;
-              }
-              else {
-                child.material.transparent = false;
-                child.material.depthWrite = true;
-              }
-              child.material.opacity = opacity;
-            }
-          });
-
-        }
-      }
-    });
-  }
+  // setJointVertexHelpers(value) {
+  //   this.sceneHelper.scene.traverse((object3d) => {
+  //     if(object3d.isObject3D) {
+  //       if(object3d.name === 'jointHelperVertices') {
+  //         object3d.visible = value;
+  //       }
+  //     }
+  //   });
+  // }
 
   setComponentOpacity(opacity) {
     this.sceneHelper.scene.traverse((object3d) => {

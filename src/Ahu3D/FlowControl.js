@@ -7,6 +7,7 @@ import Geometry_3D_Joints_L from "../3D/Geometry/Joints/Geometry_3D_Joints_L.js"
 import Geometry_3D_Joints_Colinear from "../3D/Geometry/Joints/Geometry_3D_Joints_Colinear.js";
 import Ends from "../Numerics/Ends.js";
 import Canvas2D from "../2D/Canvas2D.js";
+import { calculateJointCenter } from "../3D/Geometry/Joints/Geometry_3D_Joints_Utils.js";
 
 export default class FlowControl {
 
@@ -256,37 +257,39 @@ export default class FlowControl {
 
     render2D() {
         this.Canvas2D.drawToViewport(this.ahuObject, "secondaryKonvaContainer");
-        this.Canvas2D.drawToViewport(this.ahuObject, "primaryKonvaContainer");
-        // if(process.env.NODE_ENV === "development") {
-        //     this.Canvas2D.drawToViewport(this.ahuObject, "primaryKonvaContainer"); 
-        // }
-        
+        this.Canvas2D.drawToViewport(this.ahuObject, "primaryKonvaContainer");        
     }
 
     populate3D() {
         console.log("populate3D started:", this.ahuObject);
+        console.log("populate3D ductsDictionary:", this.ductsDictionary);
         let jointGeometry = null;
         for(const key in this.ductsDictionary) {
-            const joint = this.ahuObject.resources.joints[`Joint-${key}`];
+            const jointKey = `Joint-${key}`;
+            const joint = this.ahuObject.resources.joints[jointKey];
+
             if(this.ductsDictionary[key].length == 2) {
                 if(joint.pairDirection) {
-                    jointGeometry = this.Geometry_3D_Joints_Colinear.createParallelJoint(joint.intersectDucts, joint.pairDirection, joint);
+                    jointGeometry = this.Geometry_3D_Joints_Colinear.createParallelJoint(joint, joint.pairDirection);
                 }
                 else {
-                    jointGeometry = this.Geometry_3D_Joints_L.createLJoint(joint, joint.intersectDucts, joint.largestGlobalSize);
+                    calculateJointCenter(jointKey, this.ahuObject);
+                    jointGeometry = this.Geometry_3D_Joints_L.createLJoint(joint, joint.largestGlobalSize);
                 }
             }
             if(this.ductsDictionary[key].length == 3) {
-                jointGeometry = this.Geometry_3D_Joints_T.createTJoint(joint.intersectDucts, joint.largestGlobalSize, joint);
+                calculateJointCenter(jointKey, this.ahuObject);
+                jointGeometry = this.Geometry_3D_Joints_T.createTJoint(joint, joint.largestGlobalSize);
             }
             if(this.ductsDictionary[key].length == 4) {
-                jointGeometry = this.Geometry_3D_Joints_Cross.createCrossJoint(joint.intersectDucts, joint.largestGlobalSize, joint);
+                calculateJointCenter(jointKey, this.ahuObject);
+                jointGeometry = this.Geometry_3D_Joints_Cross.createCrossJoint(joint, joint.largestGlobalSize);
             }         
 
             if(this.ductsDictionary[key].length >= 2) {
                 console.log("populate3D key:", key);
-                this.ahuObject["3d"].joints.geometry[`Joint-${key}`] = jointGeometry;
-                this.ahuObject["3d"].joints.meshes[`Joint-${key}`] = null;
+                this.ahuObject["3d"].joints.geometry[jointKey] = jointGeometry;
+                this.ahuObject["3d"].joints.meshes[jointKey] = null;
 
                 this.cleanupJointMetadata(key);                
             }

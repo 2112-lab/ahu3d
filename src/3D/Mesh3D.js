@@ -46,44 +46,41 @@ export default class Mesh3D {
     console.log("render3D started:", ahuObject);
     let renderedAssembly = [];
 
-    // Clone and position meshes
-    for(const ductId in ahuObject.resources.ducts) {
+    // Clone and position meshes asynchronously
+    for (const ductId in ahuObject.resources.ducts) {
+        const duct = ahuObject.resources.ducts[ductId];
+        const ductInstance = this.createDuct(duct, ductId);
+        ahuObject["3d"].ducts.meshes[ductId] = ductInstance;
 
-      const duct = ahuObject.resources.ducts[ductId];
-      const ductInstance = this.createDuct(duct, ductId);
-      ahuObject["3d"].ducts.meshes[ductId] = ductInstance;
+        let componentMeshes = [];
+        console.log("render3D ductId:", ductId);
 
-      let componentMeshes = [];
-      console.log("render3D ductId:", ductId);
+        // Create all component meshes asynchronously
+        const componentPromises = ahuObject.associations.ducts[ductId].components.map(async (componentId) => {
+            console.log("render3D componentId:", componentId);
+            const componentMesh = await this.cloneAndTransformComponent(componentId, ahuObject, ductId);
+            ahuObject["3d"].components.meshes[componentId] = componentMesh;
+            return componentMesh;
+        });
 
-      for(const i in ahuObject.associations.ducts[ductId].components) {
-        const componentId = ahuObject.associations.ducts[ductId].components[i];
-        console.log("render3D componentId:", componentId);
-        const componentMesh = this.cloneAndTransformComponent(componentId, ahuObject, ductId);
-        ahuObject["3d"].components.meshes[componentId] = componentMesh;
-        componentMeshes.push(componentMesh);
-      }
+        // Wait for all component meshes to be created
+        componentMeshes = await Promise.all(componentPromises);
 
-      console.log("render3D rotateComponentsWithDuct");
+        console.log("render3D rotateComponentsWithDuct");
+        this.rotateComponentsWithDuct(ductInstance, componentMeshes, duct.rotation.y);
 
-      this.rotateComponentsWithDuct(ductInstance, componentMeshes, duct.rotation.y);
+        console.log("render3D addCubesFromData starting:", ahuObject);
+        this.renderProxies(ahuObject.resources.joints);
+        this.renderJointVertexHelpers(ahuObject.resources.joints);
 
-      console.log("render3D addCubesFromData starting:", ahuObject);
+        console.log("render3D renderJoints starting:", ahuObject["3d"]);
+        this.renderJoints(ahuObject["3d"]);
 
-      this.renderProxies(ahuObject.resources.joints);
-      this.renderJointVertexHelpers(ahuObject.resources.joints);
-
-      console.log("render3D renderJoints starting:", ahuObject["3d"]);
-
-      this.renderJoints(ahuObject["3d"]);
-
-      console.log("render3D renderJoints finished:", ahuObject);
-
-      this.renderEnds(ahuObject);
-      
+        console.log("render3D renderJoints finished:", ahuObject);
+        this.renderEnds(ahuObject);
     }
-  
-    return [];
+
+    return renderedAssembly;
   }
 
   renderEnds(ahuObject) {
@@ -157,7 +154,7 @@ export default class Mesh3D {
         mergedGeometry2
     ], false);
     
-    const material = new THREE.MeshStandardMaterial({ color: sharedData.primaryColor });
+    const material = new THREE.MeshStandardMaterial({ color: sharedData.primaryColor, side: THREE.DoubleSide });
     const mergedMesh = new THREE.Mesh(mergedGeometryTotal, material);
     mergedMesh.name = "ductEnd";
     sharedData.sceneHelper.addToScene(mergedMesh);
@@ -282,7 +279,7 @@ export default class Mesh3D {
     let length = 0;
     let position = {x: 0, y: 0, z:0};
 
-    const material1 = new THREE.MeshStandardMaterial({ color: sharedData.primaryColor });
+    const material1 = new THREE.MeshStandardMaterial({ color: sharedData.primaryColor, side: THREE.DoubleSide });
     
 
     function renderProxy(proxy) {
@@ -364,35 +361,24 @@ export default class Mesh3D {
     }
   }
 
-  cloneAndTransformComponent(componentId, ahuObject, ductId) {
+  async cloneAndTransformComponent(componentId, ahuObject, ductId) {
     console.log("cloneAndTransformComponent started:", componentId, ahuObject);
     console.log("cloneAndTransformComponent sharedData.sceneHelper.instanceSet:", sharedData.sceneHelper.instanceSet);
-    
-    
+
     const libraryKey = ahuObject.xetoDictionary.components[componentId].componentId.split("r:novo.graphics::")[1];
-
-    console.log("cloneAndTransformComponent step 1");
-
     const instanceKey = sharedData.componentLibrary[libraryKey].componentName;
 
     console.log("cloneAndTransformComponent libraryKey:", libraryKey);
     console.log("cloneAndTransformComponent instanceKey:", instanceKey);
 
+    // Ensure cloning is asynchronous if necessary
     const clonedComponent = sharedData.sceneHelper.instanceSet[instanceKey].clone();
 
     clonedComponent.position.copy(ahuObject.resources.components[componentId].position);
-    // clonedComponent.rotation.y = THREE.MathUtils.degToRad(ahuObject.resources.components[componentId].rotation.y);
-
-    // this.rotateAroundPivot(
-    //   clonedComponent, 
-    //   ahuObject.resources.ducts[ductId].position, 
-    //   THREE.MathUtils.degToRad(ahuObject.resources.ducts[ductId].rotation.y)
-    // );
-
     clonedComponent.scale.copy(ahuObject.resources.components[componentId].scale);
-
     clonedComponent.visible = true;
-    this.extendObject3D(clonedComponent); 
+    
+    this.extendObject3D(clonedComponent);
 
     console.log("cloneAndTransformComponent clonedComponent:", clonedComponent);
     sharedData.sceneHelper.addToScene(clonedComponent);
@@ -437,7 +423,7 @@ export default class Mesh3D {
     ]);
 
     // Create a material and mesh for the merged geometry
-    const ductMaterial = new THREE.MeshStandardMaterial({ color: 0xAEB9C2 });
+    const ductMaterial = new THREE.MeshStandardMaterial({ color: 0xAEB9C2, side: THREE.DoubleSide });
     const mergedMesh = new THREE.Mesh(mergedGeometry, ductMaterial);
 
     // Create the wireframe from the merged geometry

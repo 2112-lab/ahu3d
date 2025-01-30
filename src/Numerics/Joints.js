@@ -276,7 +276,7 @@ export default class Joints {
                 console.log("calculateAdjacentContext step 60:", intersection[key]);
                 
                 if(intersection[key] != null) {
-                    const currentSize = this.innerDuctDimensions[intersection[key].xetoDuct.graphicLocation.size];
+                    const currentSize = this.innerDuctDimensions[intersection[key].graphicLocation.size];
                     intersection[key].proxyLengths.proxy1 = currentSize;
                     intersection[key].proxyLengths.proxy2 = currentSize;
                 }
@@ -396,7 +396,7 @@ export default class Joints {
                 // down-left proxies
                 //////////////////
     
-                if(intersection.left != null && intersection.down != null) {
+                else if(intersection.left != null && intersection.down != null) {
                     ductSize1 = this.getSize( intersection.left );
                     ductSize2 = this.getSize( intersection.down );
     
@@ -411,7 +411,7 @@ export default class Joints {
                 // down-right proxies
                 //////////////////
     
-                if(intersection.down != null && intersection.right != null) {
+                else if(intersection.down != null && intersection.right != null) {
                     ductSize1 = this.getSize( intersection.down );
                     ductSize2 = this.getSize( intersection.right );
     
@@ -426,7 +426,7 @@ export default class Joints {
                 // up-right proxies
                 //////////////////
     
-                if(intersection.right != null && intersection.up != null) {
+                else if(intersection.right != null && intersection.up != null) {
                     ductSize1 = this.getSize( intersection.right );
                     ductSize2 = this.getSize( intersection.up);
     
@@ -441,7 +441,7 @@ export default class Joints {
                 // up-down proxies
                 //////////////////
     
-                if(intersection.left == null) {
+                else if(intersection.left == null) {
                     ductSize1 = this.getSize( intersection.up);
                     ductSize2 = this.getSize( intersection.down );
     
@@ -451,7 +451,7 @@ export default class Joints {
                     intersection.down.proxyLengths.proxyMedian = sizes[selectedSize];
                     intersection.up.proxyLengths.proxy2 = sizes[selectedSize];
                 }
-                if(intersection.right != null) {
+                else if(intersection.right != null) {
                     ductSize1 = this.getSize( intersection.up);
                     ductSize2 = this.getSize( intersection.down );
     
@@ -466,7 +466,7 @@ export default class Joints {
                 // left-right proxies
                 //////////////////
     
-                if(intersection.down == null) {
+                else if(intersection.down == null) {
                     ductSize1 = this.getSize( intersection.left );
                     ductSize2 = this.getSize( intersection.right );
     
@@ -1012,79 +1012,79 @@ export default class Joints {
                 }
                 if(distances.down.x > distances.down.z) {
                     downProxies.proxyMedian.position.x += distances.down.z;
-                    downProxies.proxyMedian.userData.isDiagonal = true;
-                    downProxies.proxyMedian.userData.diagonalWidth = distances.down.z;
-                    downProxies.proxyMedian.userData.arcOrigin = {
-                        x: downProxies.proxyMedian.position.x,
-                        z: downProxies.proxy2.position.z
-                    }
+                    // downProxies.proxyMedian.userData.isDiagonal = true;
+                    // downProxies.proxyMedian.userData.diagonalWidth = distances.down.z;
+                    // downProxies.proxyMedian.userData.arcOrigin = {
+                    //     x: downProxies.proxyMedian.position.x,
+                    //     z: downProxies.proxy2.position.z
+                    // }
                     
                 }
                 else if(distances.down.x <= distances.down.z) {
                     downProxies.proxyMedian.position.z -= distances.down.x;
-                    downProxies.proxyMedian.userData.isDiagonal = true;
-                    downProxies.proxyMedian.userData.diagonalWidth = distances.down.x;
-                    downProxies.proxyMedian.userData.arcOrigin = {
-                        x: downProxies.proxy2.position.x,
-                        z: downProxies.proxyMedian.position.z
-                    }
+                    // downProxies.proxyMedian.userData.isDiagonal = true;
+                    // downProxies.proxyMedian.userData.diagonalWidth = distances.down.x;
+                    // downProxies.proxyMedian.userData.arcOrigin = {
+                    //     x: downProxies.proxy2.position.x,
+                    //     z: downProxies.proxyMedian.position.z
+                    // }
                 }
 
                 if(distances.right.x > distances.right.z) {
                     rightProxies.proxyMedian.position.x += distances.right.z;
-                    rightProxies.proxyMedian.userData.isDiagonal = true;
-                    rightProxies.proxyMedian.userData.diagonalWidth = distances.right.z;
-                    rightProxies.proxyMedian.userData.arcOrigin = {
-                        x: rightProxies.proxy2.position.x,
-                        z: rightProxies.proxyMedian.position.z
-                    }
+                    // rightProxies.proxyMedian.userData.isDiagonal = true;
+                    // rightProxies.proxyMedian.userData.diagonalWidth = distances.right.z;
+                    // rightProxies.proxyMedian.userData.arcOrigin = {
+                    //     x: rightProxies.proxy2.position.x,
+                    //     z: rightProxies.proxyMedian.position.z
+                    // }
                 }
                 else if(distances.right.x <= distances.right.z) {
                     rightProxies.proxyMedian.position.z += distances.right.x;
-                    rightProxies.proxyMedian.userData.isDiagonal = true;
-                    rightProxies.proxyMedian.userData.diagonalWidth = distances.right.x;
-                    rightProxies.proxyMedian.userData.arcOrigin = {
-                        x: rightProxies.proxy2.position.x,
-                        z: rightProxies.proxyMedian.position.z
-                    }
+                    // rightProxies.proxyMedian.userData.isDiagonal = true;
+                    // rightProxies.proxyMedian.userData.diagonalWidth = distances.right.x;
+                    // rightProxies.proxyMedian.userData.arcOrigin = {
+                    //     x: rightProxies.proxy2.position.x,
+                    //     z: rightProxies.proxyMedian.position.z
+                    // }
                 }
 
                 if(distances.up.x > distances.up.z) {
                     upProxies.proxyMedian.position.x -= distances.up.z;
-                    upProxies.proxyMedian.userData.isDiagonal = true;
-                    upProxies.proxyMedian.userData.diagonalWidth = distances.up.z;
-                    upProxies.proxyMedian.userData.arcOrigin = {
-                        x: leftProxies.proxy2.position.x,
-                        z: upProxies.proxyMedian.position.z
-                    }
+                    // upProxies.proxyMedian.userData.isDiagonal = true;
+                    // upProxies.proxyMedian.userData.diagonalWidth = distances.up.z;
+                    // upProxies.proxyMedian.userData.arcOrigin = {
+                    //     x: leftProxies.proxy2.position.x,
+                    //     z: upProxies.proxyMedian.position.z
+                    // }
                 }
                 else if(distances.up.x <= distances.up.z) {
                     upProxies.proxyMedian.position.z += distances.up.x;
-                    upProxies.proxyMedian.userData.isDiagonal = true;
-                    upProxies.proxyMedian.userData.diagonalWidth = distances.up.x;
-                    upProxies.proxyMedian.userData.arcOrigin = {
-                        x: leftProxies.proxy2.position.x,
-                        z: upProxies.proxyMedian.position.z
-                    }
+                    // upProxies.proxyMedian.userData.isDiagonal = true;
+                    // upProxies.proxyMedian.userData.diagonalWidth = distances.up.x;
+                    // upProxies.proxyMedian.userData.arcOrigin = {
+                    //     x: leftProxies.proxy2.position.x,
+                    //     z: upProxies.proxyMedian.position.z
+                    // }
                 }
 
                 if(distances.left.x > distances.left.z) {
                     leftProxies.proxyMedian.position.x -= distances.left.z;
-                    leftProxies.proxyMedian.userData.isDiagonal = true;
-                    leftProxies.proxyMedian.userData.diagonalWidth = distances.left.z;
-                    leftProxies.proxyMedian.userData.arcOrigin = {
-                        x: leftProxies.proxy2.position.x,
-                        z: leftProxies.proxyMedian.position.z
-                    }
+                    // leftProxies.proxyMedian.userData.isDiagonal = true;
+                    // leftProxies.proxyMedian.userData.diagonalWidth = distances.left.z;
+                    // leftProxies.proxyMedian.userData.arcOrigin = {
+                    //     x: leftProxies.proxy2.position.x,
+                    //     z: leftProxies.proxyMedian.position.z
+                    // }
                 }
                 else if(distances.left.x <= distances.left.z) {
                     leftProxies.proxyMedian.position.z -= distances.left.x;
-                    leftProxies.proxyMedian.userData.isDiagonal = true;
-                    leftProxies.proxyMedian.userData.diagonalWidth = distances.left.x;
-                    leftProxies.proxyMedian.userData.arcOrigin = {
-                        x: leftProxies.proxy2.position.x,
-                        z: leftProxies.proxyMedian.position.z
-                    }
+                    // leftProxies.proxyMedian.userData.isDiagonal = true;
+                    // leftProxies.proxyMedian.userData.diagonalWidth = distances.left.x;
+                    // leftProxies.proxyMedian.userData.arcOrigin = {
+                    //     x: leftProxies.proxy2.position.x,
+                    //     z: leftProxies.proxyMedian.position.z
+                    // }
                 }
             }
         }

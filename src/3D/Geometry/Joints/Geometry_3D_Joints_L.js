@@ -743,7 +743,11 @@ export default class Geometry_3D_Joints_L {
         const mergeLineValue = 5;
         const backwallArcConfigs = sharedData.backwallArcConfigs;
 
+        console.log("createWallMesh backwallArcConfigs:", JSON.stringify(backwallArcConfigs, null, 2));
+
         const wallMaterial = new THREE.MeshStandardMaterial({ color: sharedData.primaryColor, side: THREE.DoubleSide });
+
+        console.log("createWallMesh step 1:", backwallArcConfigs[0]);
 
         const backwallGeometry = new THREE.RingGeometry(
             backwallArcConfigs[0].innerRadius + mergeLineValue, 
@@ -753,6 +757,12 @@ export default class Geometry_3D_Joints_L {
             backwallArcConfigs[0].thetaStart, 
             backwallArcConfigs[0].thetaLength
         );
+
+        console.log("createWallMesh step 2:", backwallArcConfigs[1]);
+
+        if(backwallArcConfigs[1] == undefined) {
+            backwallArcConfigs.push(backwallArcConfigs[0]);
+        }
 
         const backwallGeometry2 = new THREE.RingGeometry(
             backwallArcConfigs[1].innerRadius + mergeLineValue, 
