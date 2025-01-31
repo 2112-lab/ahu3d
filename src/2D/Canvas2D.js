@@ -168,7 +168,7 @@ export default class Canvas2D {
 
     console.log("create2DJoint jointCenter:", jointCenter);
 
-    if(sharedData.xzJointStyle == "orthogonal") {
+    if(true) {
 
       let isOutwards = sharedData.xzJointDirection == "outwards";
 
@@ -176,116 +176,364 @@ export default class Canvas2D {
           if(joint.up && joint.right) {
             point1 = joint.up.proxy2.position;
             point2 = joint.right.proxy1.position;
-            midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
-            this.drawBetweenPoints(layer, point1, point2, midPoint);
+            midPoint = joint.right.proxyMedian.position;
+            this.createJointCorner(layer, point1, point2, midPoint);
   
             point1 = joint.right.proxy2.position;
             point2 = joint.up.proxy1.position;
-            midPoint = this.createMidPoint(point1, point2, jointCenter);
-            this.drawBetweenPoints(layer, point1, point2, midPoint);
+            midPoint = joint.up.proxyMedian.position;
+            this.createJointCorner(layer, point1, point2, midPoint);
+          }
+          else if(joint.up && joint.left) {
+            point1 = joint.left.proxy1.position;
+            point2 = joint.up.proxy1.position;
+            midPoint = joint.up.proxyMedian.position;
+            this.createJointCorner(layer, point1, point2, midPoint);
+
+            point1 = joint.left.proxy2.position;
+            point2 = joint.up.proxy2.position;
+            midPoint = joint.left.proxyMedian.position;
+            this.createJointCorner(layer, point1, point2, midPoint);
+          }
+          else if(joint.down && joint.right) {
+            point1 = joint.right.proxy1.position;
+            point2 = joint.down.proxy1.position;
+            midPoint = joint.right.proxyMedian.position;
+            this.createJointCorner(layer, point1, point2, midPoint);
+
+            point1 = joint.right.proxy2.position;
+            point2 = joint.down.proxy2.position;
+            midPoint = joint.down.proxyMedian.position;
+            this.createJointCorner(layer, point1, point2, midPoint);
+          }
+          else if(joint.down && joint.left) {
+            point1 = joint.left.proxy2.position;
+            point2 = joint.down.proxy1.position;
+            midPoint = joint.left.proxyMedian.position;
+            this.createJointCorner(layer, point1, point2, midPoint);
+
+            point1 = joint.left.proxy1.position;
+            point2 = joint.down.proxy2.position;
+            midPoint = joint.down.proxyMedian.position;
+            this.createJointCorner(layer, point1, point2, midPoint);
           }
           else if(joint.up && joint.down) {
             point1 = joint.up.proxy1.position;
             point2 = joint.down.proxy1.position;
-            midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
-            this.drawBetweenPoints(layer, point1, point2, midPoint);
+            midPoint = joint.right.proxyMedian.position;
+            // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
+            this.createJointCorner(layer, point1, point2, midPoint);
   
             point1 = joint.up.proxy2.position;
             point2 = joint.down.proxy2.position;
-            midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
-            this.drawBetweenPoints(layer, point1, point2, midPoint);
+            midPoint = joint.right.proxyMedian.position;
+            // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
+            this.createJointCorner(layer, point1, point2, midPoint);
           }
           else if(joint.left && joint.right) {
             point1 = joint.left.proxy1.position;
             point2 = joint.right.proxy1.position;
-            midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
-            this.drawBetweenPoints(layer, point1, point2, midPoint);
+            midPoint = joint.right.proxyMedian.position;
+            // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
+            this.createJointCorner(layer, point1, point2, midPoint);
   
             point1 = joint.left.proxy2.position;
             point2 = joint.right.proxy2.position;
-            midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
-            this.drawBetweenPoints(layer, point1, point2, midPoint);
+            midPoint = joint.right.proxyMedian.position;
+            // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
+            this.createJointCorner(layer, point1, point2, midPoint);
           }
         }
         else if(jointKeys.length == 3) {
           if(joint.left && joint.up && joint.down) {
             point1 = joint.up.proxy2.position;
             point2 = joint.down.proxy2.position;
-            midPoint = this.createMidPoint(point1, point2, jointCenter, true);
-            this.drawBetweenPoints(layer, point1, point2, midPoint);
+            midPoint = joint.down.proxyMedian.position;
+            // midPoint = this.createMidPoint(point1, point2, jointCenter, true);
+            this.createJointCorner(layer, point1, point2, midPoint);
   
             point1 = joint.down.proxy1.position;
             point2 = joint.left.proxy2.position;
-            midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
-            this.drawBetweenPoints(layer, point1, point2, midPoint);
+            midPoint = joint.left.proxyMedian.position;
+            // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
+            this.createJointCorner(layer, point1, point2, midPoint);
   
             point1 = joint.left.proxy1.position;
             point2 = joint.up.proxy1.position;
-            midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
-            this.drawBetweenPoints(layer, point1, point2, midPoint);
+            midPoint = joint.up.proxyMedian.position;
+            // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
+            this.createJointCorner(layer, point1, point2, midPoint);
+          }
+          else if(joint.right && joint.up && joint.down) {
+            point1 = joint.up.proxy2.position;
+            point2 = joint.right.proxy1.position;
+            midPoint = joint.right.proxyMedian.position;
+            // midPoint = this.createMidPoint(point1, point2, jointCenter, true);
+            this.createJointCorner(layer, point1, point2, midPoint);
+  
+            point1 = joint.right.proxy2.position;
+            point2 = joint.down.proxy2.position;
+            midPoint = joint.down.proxyMedian.position;
+            // midPoint = this.createMidPoint(point1, point2, jointCenter, true);
+            this.createJointCorner(layer, point1, point2, midPoint);
+  
+            point1 = joint.down.proxy1.position;
+            point2 = joint.up.proxy1.position;
+            midPoint = joint.up.proxyMedian.position;
+            // midPoint = this.createMidPoint(point1, point2, jointCenter, true);
+            this.createJointCorner(layer, point1, point2, midPoint);
+          }
+          else if(joint.left && joint.right && joint.down) {
+            point1 = joint.right.proxy2.position;
+            point2 = joint.down.proxy2.position;
+            midPoint = joint.down.proxyMedian.position;
+            // midPoint = this.createMidPoint(point1, point2, jointCenter, true);
+            this.createJointCorner(layer, point1, point2, midPoint);
+  
+            point1 = joint.down.proxy1.position;
+            point2 = joint.left.proxy2.position;
+            midPoint = joint.left.proxyMedian.position;
+            // midPoint = this.createMidPoint(point1, point2, jointCenter, true);
+            this.createJointCorner(layer, point1, point2, midPoint);
+  
+            point1 = joint.left.proxy1.position;
+            point2 = joint.right.proxy1.position;
+            midPoint = joint.right.proxyMedian.position;
+            // midPoint = this.createMidPoint(point1, point2, jointCenter, true);
+            this.createJointCorner(layer, point1, point2, midPoint);
+          }
+          else if(joint.left && joint.right && joint.up) {
+            point1 = joint.up.proxy2.position;
+            point2 = joint.right.proxy1.position;
+            midPoint = joint.right.proxyMedian.position;
+            // midPoint = this.createMidPoint(point1, point2, jointCenter, true);
+            this.createJointCorner(layer, point1, point2, midPoint);
+  
+            point1 = joint.right.proxy2.position;
+            point2 = joint.left.proxy2.position;
+            midPoint = joint.left.proxyMedian.position;
+            // midPoint = this.createMidPoint(point1, point2, jointCenter, true);
+            this.createJointCorner(layer, point1, point2, midPoint);
+  
+            point1 = joint.left.proxy1.position;
+            point2 = joint.up.proxy1.position;
+            midPoint = joint.up.proxyMedian.position;
+            // midPoint = this.createMidPoint(point1, point2, jointCenter, true);
+            this.createJointCorner(layer, point1, point2, midPoint);
           }
         }
         else if(jointKeys.length == 4) {
           point1 = joint.up.proxy2.position;
           point2 = joint.right.proxy1.position;
-          midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
-          this.drawBetweenPoints(layer, point1, point2, midPoint);
+          midPoint = joint.right.proxyMedian.position;
+          // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
+          this.createJointCorner(layer, point1, point2, midPoint);
   
           point1 = joint.right.proxy2.position;
           point2 = joint.down.proxy2.position;
-          midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
-          this.drawBetweenPoints(layer, point1, point2, midPoint);
+          midPoint = joint.down.proxyMedian.position;
+          // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
+          this.createJointCorner(layer, point1, point2, midPoint);
   
           point1 = joint.down.proxy1.position;
           point2 = joint.left.proxy2.position;
-          midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
-          this.drawBetweenPoints(layer, point1, point2, midPoint);
+          midPoint = joint.left.proxyMedian.position;
+          // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
+          this.createJointCorner(layer, point1, point2, midPoint);
   
           point1 = joint.left.proxy1.position;
           point2 = joint.up.proxy1.position;
-          midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
-          this.drawBetweenPoints(layer, point1, point2, midPoint);
+          midPoint = joint.up.proxyMedian.position;
+          // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
+          this.createJointCorner(layer, point1, point2, midPoint);
         }      
     }
     
   }
 
-  drawBetweenPoints(layer, point1, point2, midPoint) {
+  createJointCorner(layer, point1, point2, midPoint) {
 
-    let xOffset = 0;
-    let zOffset = 0;
+    if(sharedData.xzJointStyle == "arc") {
+      this.createJointArc(layer, point1, point2, midPoint);
+    }
+    else {
+      const points = [
+        point1.x, point1.z * -1,
+        midPoint.x, midPoint.z * -1,
+        point2.x, point2.z * -1
+      ];
 
-    // Helper to round point coordinates
-    function roundPoint(point) {
-      return {
-          x: Math.round(point.x),
-          z: Math.round(point.z),
-      };
+      const jointLine = new Konva.Line({
+          points: points,
+          stroke: 'white',
+          lineCap: 'round',
+          lineJoin: 'round',
+          strokeWidth: 30,
+      });
+
+      layer.add(jointLine);
     }
 
-    // Round all points
-    point1 = roundPoint(point1);
-    point2 = roundPoint(point2);
-    midPoint = roundPoint(midPoint);
+    
+  }
 
-    const points = [
-      point1.x + xOffset, (point1.z + zOffset) * -1,
-      midPoint.x + xOffset, (midPoint.z + zOffset) * -1,
-      point2.x + xOffset, (point2.z + zOffset) * -1
+  createJointArc(layer, point1, point2, midPoint) {
+    console.log("createJointArc started");
+
+    // Convert z to match Konva's coordinate system
+    const p1 = { x: point1.x, y: point1.z };
+    const p2 = { x: point2.x, y: point2.z };
+    const mid = { x: midPoint.x, y: midPoint.z };
+
+    const cornerDistance = Math.min( Math.abs(p1.x - p2.x), Math.abs(p1.y - p2.y) );
+
+    let flipArc = false;
+
+    const wt = 30;
+    const halfWT = wt / 2;
+    const radius = cornerDistance + halfWT; // Arc radius
+
+    let rotation = 0;
+    let cx = mid.x;
+    let cy = mid.y;
+    let isSet = false;
+
+    let linePoints = [
+      p1.x, p1.y * -1,
+      mid.x, mid.y * -1,
     ];
 
-    const jointLine = new Konva.Line({
-        points: points,
+    if(sharedData.xzJointDirection == "outwards") {
+      if (p1.x < p2.x && p1.y > p2.y) {
+        rotation = -90;
+        cx = mid.x;
+        cy = mid.y - radius;
+        isSet = true;
+        if(!(mid.x != p2.x && mid.y != p2.y)) {
+          flipArc = true;
+          cx = mid.x - radius;
+          cy = mid.y;
+        }
+      }
+      else if (p1.x > p2.x && p1.y > p2.y) {
+        rotation = 0;
+        cx = mid.x - radius;
+        cy = mid.y;
+        isSet = true;
+        if(!(mid.x != p2.x && mid.y != p2.y)) {
+          flipArc = true;
+          cx = mid.x;
+          cy = mid.y + radius;
+        }
+      }
+      else if (p1.x > p2.x && p1.y < p2.y) {
+        rotation = 90;
+        cx = mid.x + radius;
+        cy = mid.y;
+        isSet = true;
+        if(!(mid.x != p1.x && mid.y != p1.y)) {
+          flipArc = true;
+          cx = mid.x;
+          cy = mid.y + radius;
+        }
+      }
+      else {
+        rotation = 180;
+        cx = mid.x;
+        cy = mid.y - radius;
+        isSet = true;
+        if(!(mid.x != p1.x && mid.y != p1.y)) {
+          flipArc = true;
+          cx = mid.x + radius;
+          cy = mid.y;
+        }
+      }
+    }
+    else if(sharedData.xzJointDirection == "inwards") {
+      if (p1.x < p2.x && p1.y > p2.y) {
+        rotation = 90;
+        cx = mid.x + radius;
+        cy = mid.y + halfWT;
+        isSet = true;
+        if(!(mid.x != p2.x && mid.y != p2.y)) {
+          flipArc = true;
+          cx = mid.x + halfWT;
+          cy = mid.y + radius;
+        }
+      }
+      else if (p1.x > p2.x && p1.y > p2.y) {
+        rotation = 180;
+        cx = mid.x + halfWT;
+        cy = mid.y - radius;
+        isSet = true;
+        if(!(mid.x != p2.x && mid.y != p2.y)) {
+          flipArc = true;
+          cx = mid.x + radius;
+          cy = mid.y - halfWT;
+        }
+      }
+      else if (p1.x > p2.x && p1.y < p2.y) {
+        rotation = -90;
+        cx = mid.x - halfWT;
+        cy = mid.y - radius;
+        isSet = true;
+        if(!(mid.x != p1.x && mid.y != p1.y)) {
+          flipArc = true;
+          cx = mid.x - radius;
+          cy = mid.y - halfWT;
+        }
+      }
+      else {
+        rotation = 0;
+        cx = mid.x - radius;
+        cy = mid.y + halfWT;
+        isSet = true;
+        if(!(mid.x != p1.x && mid.y != p1.y)) {
+          flipArc = true;
+          cx = mid.x - halfWT;
+          cy = mid.y + radius;
+        }
+      }
+    }
+
+    if((mid.x != p1.x && mid.y != p1.y)) {
+      linePoints = [
+        mid.x, mid.y * -1,
+        p2.x, p2.y * -1,
+      ]
+    }
+
+    if(isSet){
+      const jointArc = new Konva.Arc({
+        x: cx,
+        y: cy * -1,  // Flip y to match Konva's coordinate system
+        innerRadius: radius,
+        outerRadius: radius,
+        angle: 90,
+        rotation: rotation,
+        stroke: 'white',
+        strokeWidth: 30,
+      });
+      layer.add(jointArc);
+
+      const jointLine = new Konva.Line({
+        points: linePoints,
         stroke: 'white',
         lineCap: 'round',
         lineJoin: 'round',
         strokeWidth: 30,
-        perfectDrawEnabled: true,
-        filters: [Konva.Filters.Blur],
-        blurRadius: 15,
-    });
+      });
 
-    layer.add(jointLine);
+      layer.add(jointLine);
+    }
+
+    if(flipArc) {
+      this.renderPoint(layer, midPoint, "#ff0000");
+    }
+    else {
+      this.renderPoint(layer, midPoint, "#00ff00");
+    }    
+    
   }
 
   createMidPoint(point1, point2, jointCenter, isFlipped = false) {
@@ -318,12 +566,12 @@ export default class Canvas2D {
     return isFlipped ? flippedCorner : closestCorner;
   }
 
-  renderPoint(point) {
+  renderPoint(layer, point, color = "#00ff00") {
     const circle = new Konva.Circle({
       x: point.x,
       y: point.z * -1,
       radius: 50,
-      stroke: '#00ff00',
+      stroke: color,
       strokeWidth: 32,
     });
     layer.add(circle);

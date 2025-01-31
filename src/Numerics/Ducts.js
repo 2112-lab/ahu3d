@@ -76,7 +76,12 @@ export default class Ducts {
 
         const componentPadding = ahuObject.xetoDictionary.edges[ductKey].blockStyle.componentPadding;
 
-        console.log("initializeDuctSegment step 3");
+        console.log("initializeDuctSegment step 3:", componentPadding);
+
+        this.testArray = ahuObject.associations.ducts[ductKey].components;
+        if (!Array.isArray(this.testArray)) {
+            alert(`This data is not an array: ${this.testArray}`)
+        }
 
         let totalSpan = 0;
         for(const uniqueId of ahuObject.associations.ducts[ductKey].components) {
@@ -84,7 +89,7 @@ export default class Ducts {
             let componentKey = ahuObject.xetoDictionary.components[uniqueId].componentId.split("r:novo.graphics::").pop();
             console.log("initializeDuctSegment step 3.2:", componentKey);
             console.log("initializeDuctSegment step 3.2:", sharedData.componentLibrary);
-            ahuObject.resources.components[uniqueId].dimensions = sharedData.componentLibrary[componentKey].object.boundingBox.dimensions;
+            ahuObject.resources.components[uniqueId].dimensions = JSON.parse(JSON.stringify(sharedData.componentLibrary[componentKey].object.boundingBox.dimensions));
             console.log("initializeDuctSegment step 3.3");
 
             ahuObject.resources.components[uniqueId].scale = {
@@ -102,10 +107,19 @@ export default class Ducts {
             ahuObject.resources.components[uniqueId].position = {x: 0, y: 0, z: 0};
             ahuObject.resources.components[uniqueId].rotation = {x: 0, y: 0, z: 0};
 
-            totalSpan += componentPadding.startSpace + ahuObject.resources.components[uniqueId].dimensions.x + componentPadding.endSpace + 100;
+            console.log("initializeDuctSegment step 3.5:", ahuObject.resources.components[uniqueId].dimensions.x);
+
+            totalSpan += componentPadding.startSpace + ahuObject.resources.components[uniqueId].dimensions.x + componentPadding.endSpace;
         }
 
-        console.log("initializeDuctSegment step 4");
+        console.log("initializeDuctSegment step 4: ", ahuObject.associations.ducts[ductKey].components);
+
+        console.log("initializeDuctSegment totalSpan:", totalSpan);
+
+        // this.testArray = ahuObject.associations.ducts[ductKey].components;
+        // if (!Array.isArray(this.testArray)) {
+        //     alert(`This data is not an array: ${this.testArray}`)
+        // }
 
         const halfTotalSpan = totalSpan / 2;
         for(const uniqueId of ahuObject.associations.ducts[ductKey].components) {

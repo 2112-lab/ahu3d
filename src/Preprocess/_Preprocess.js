@@ -32,12 +32,12 @@ class Preprocess {
 
         console.log("preprocessXeto step 1");
 
-        this.ahuGroup = xeto.filter(child => child.spec.includes('AhuGroup'))[0];
+        // this.ahuGroup = xeto.filter(child => child.spec.includes('AhuGroup'))[0];
 
-        if(this.ahuGroup.blockStyle.joints.XZ.style == "arc" && this.ahuGroup.blockStyle.joints.XZ.direction == "inwards"){
-            console.log("preprocessXeto step 2");
-            return false;
-        }
+        // if(this.ahuGroup.blockStyle.joints.XZ.style == "arc" && this.ahuGroup.blockStyle.joints.XZ.direction == "inwards"){
+        //     console.log("preprocessXeto step 2");
+        //     return false;
+        // }
 
         if(!isValid || !isValid2) {
             return false;

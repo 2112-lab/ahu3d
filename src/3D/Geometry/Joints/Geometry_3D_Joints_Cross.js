@@ -1,3 +1,4 @@
+import { sharedData } from "../../../Ahu3D/globals.js";
 import { 
     calculateJointCenter, 
     createJointBackwall, 
@@ -13,7 +14,7 @@ export default class Geometry_3D_Joints_Cross {
 
         this.backwallArcConfigs = [];     
 
-        if(this.xzJointStyle == "arc") {     
+        if(sharedData.xzJointStyle == "arc") {     
 
             let upMidpoint = {
                 x: joint.up.proxy1.coordinates[4].x,
@@ -47,40 +48,48 @@ export default class Geometry_3D_Joints_Cross {
                 joint.left.proxy1.coordinates[4]
             ];
 
-            if(this.xzJointDirection == "inwards") {
+            if(sharedData.xzJointDirection == "inwards") {
                 upMidpoint = {
                     x: joint.up.proxy1.coordinates[4].x,
+                    y: joint.up.proxy1.coordinates[4].y,
                     z: joint.up.proxyMedian.coordinates[4].z
                 }
                 let upMidpoint2 = {
                     x: joint.up.proxy1.coordinates[4].x,
+                    y: joint.up.proxy1.coordinates[4].y,
                     z: joint.left.proxy1.coordinates[4].z
                 }
 
                 rightMidpoint = {
                     x: joint.up.proxy2.coordinates[4].x,
+                    y: joint.up.proxy2.coordinates[4].y,
                     z: joint.right.proxyMedian.coordinates[4].z
                 }
                 let rightMidpoint2 = {
                     x: joint.up.proxy2.coordinates[4].x,
+                    y: joint.up.proxy2.coordinates[4].y,
                     z: joint.right.proxy1.coordinates[4].z
                 }
                 
                 leftMidpoint = {
                     x: joint.down.proxy1.coordinates[4].x,
+                    y: joint.down.proxy1.coordinates[4].y,
                     z: joint.left.proxyMedian.coordinates[4].z
                 }
                 let leftMidpoint2 = {
                     x: joint.down.proxy1.coordinates[4].x,
+                    y: joint.down.proxy1.coordinates[4].y,
                     z: joint.left.proxy2.coordinates[4].z
                 }
 
                 downMidpoint = {
                     x: joint.down.proxyMedian.coordinates[4].x,
+                    y: joint.down.proxyMedian.coordinates[4].y,
                     z: joint.right.proxy2.coordinates[4].z
                 }
                 let downMidpoint2 = {
                     x: joint.down.proxy2.coordinates[4].x,
+                    y: joint.down.proxy2.coordinates[4].y,
                     z: joint.right.proxy2.coordinates[4].z
                 }
 
