@@ -53,21 +53,27 @@ export default class Mesh3D {
         ahuObject["3d"].ducts.meshes[ductId] = ductInstance;
 
         let componentMeshes = [];
-        console.log("render3D ductId:", ductId);
-
-        // Create all component meshes asynchronously
-        const componentPromises = ahuObject.associations.ducts[ductId].components.map(async (componentId) => {
-            console.log("render3D componentId:", componentId);
-            const componentMesh = await this.cloneAndTransformComponent(componentId, ahuObject, ductId);
-            ahuObject["3d"].components.meshes[componentId] = componentMesh;
-            return componentMesh;
-        });
-
-        // Wait for all component meshes to be created
-        componentMeshes = await Promise.all(componentPromises);
-
-        console.log("render3D rotateComponentsWithDuct");
+        for(const i in ahuObject.associations.ducts[ductId].components) {
+          const componentId = ahuObject.associations.ducts[ductId].components[i];
+          console.log("render3D componentId:", componentId);
+          const componentMesh = await this.cloneAndTransformComponent(componentId, ahuObject, ductId);
+          ahuObject["3d"].components.meshes[componentId] = componentMesh;
+          componentMeshes.push(componentMesh);
+        }
         this.rotateComponentsWithDuct(ductInstance, componentMeshes, duct.rotation.y);
+
+        // let componentMeshes = [];
+        // // Create all component meshes asynchronously
+        // const componentPromises = ahuObject.associations.ducts[ductId].components.map(async (componentId) => {
+        //     console.log("render3D componentId:", componentId);
+        //     const componentMesh = this.cloneAndTransformComponent(componentId, ahuObject, ductId);
+        //     ahuObject["3d"].components.meshes[componentId] = componentMesh;
+        //     return componentMesh;
+        // });
+
+        // // Wait for all component meshes to be created
+        // componentMeshes = await Promise.all(componentPromises);
+        // this.rotateComponentsWithDuct(ductInstance, componentMeshes, duct.rotation.y);
 
         console.log("render3D addCubesFromData starting:", ahuObject);
         this.renderProxies(ahuObject.resources.joints);

@@ -4,8 +4,6 @@ import {
     getDuctDirection, 
     seperateByDirections, 
     translateDuct, 
-    translateAssemblySegment, 
-    orientAssemblySegment, 
     orientDuct,
 } from "./Basic.js";
 import { sharedData } from "../Ahu3D/globals.js";
@@ -287,7 +285,6 @@ export default class Ducts {
 
         let jointGeometry = null;
         let proxyGeometry = null;
-        let largestGlobalSize = 1000;
 
         if(this.ductsDictionary[key].length >= 2 && this.ductsDictionary[key].length <= 4) {
             this.addJointRsrcAndAssoc(this.ductsDictionary, key);
@@ -481,14 +478,9 @@ export default class Ducts {
 
             console.log("placeIntersection 4* step 9");
                 
-            this.Joints.createJointProxies(intersectDucts, this.ahuObject, key, largestGlobalSize);
+            this.Joints.createJointProxies(intersectDucts, this.ahuObject, key);
 
             console.log("placeIntersection 4* step 10");
-
-            this.ahuObject.resources.joints[`Joint-${key}`].intersectDucts = intersectDucts;
-            this.ahuObject.resources.joints[`Joint-${key}`].largestGlobalSize = largestGlobalSize;
-            this.ahuObject.resources.joints[`Joint-${key}`].key = key;
-            this.ahuObject.resources.joints[`Joint-${key}`].pairDirection = null;
             
             console.log("placeIntersection 4* step 11");
 
@@ -836,12 +828,7 @@ export default class Ducts {
                 }
             }
 
-            this.Joints.createJointProxies(intersectDucts, this.ahuObject, key, largestGlobalSize);
-
-            this.ahuObject.resources.joints[`Joint-${key}`].intersectDucts = intersectDucts;
-            this.ahuObject.resources.joints[`Joint-${key}`].largestGlobalSize = largestGlobalSize;
-            this.ahuObject.resources.joints[`Joint-${key}`].key = key;
-            this.ahuObject.resources.joints[`Joint-${key}`].pairDirection = null;
+            this.Joints.createJointProxies(intersectDucts, this.ahuObject, key);
     
         }
         else if(this.ductsDictionary[key].length == 2) {
@@ -895,13 +882,10 @@ export default class Ducts {
 
             console.log("placeIntersection 2* step 6");
 
-            let pairDirection = null;
             if(intersectDucts.up != null && intersectDucts.down != null) {
-                pairDirection = "vertical";
                 xzJointPadding = 30;
             }
             if(intersectDucts.left != null && intersectDucts.right != null) {
-                pairDirection = "horizontal";
                 xzJointPadding = 30;
             }
 
@@ -977,14 +961,9 @@ export default class Ducts {
 
             this.ahuObject.resources.joints["Joints-1"]
 
-            this.Joints.createJointProxies(intersectDucts, this.ahuObject, key, largestGlobalSize);
+            this.Joints.createJointProxies(intersectDucts, this.ahuObject, key);
 
             console.log("placeIntersection 2* step 9");
-
-            this.ahuObject.resources.joints[`Joint-${key}`].intersectDucts = intersectDucts;
-            this.ahuObject.resources.joints[`Joint-${key}`].largestGlobalSize = largestGlobalSize;
-            this.ahuObject.resources.joints[`Joint-${key}`].key = key;
-            this.ahuObject.resources.joints[`Joint-${key}`].pairDirection = pairDirection;
 
             console.log("placeIntersection 2* step 10:", jointGeometry);
             

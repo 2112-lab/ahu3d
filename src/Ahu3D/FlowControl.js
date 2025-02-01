@@ -73,6 +73,8 @@ export default class FlowControl {
                 components: {},
                 joints: {},
                 ends: {},
+                arrows: {},
+                labels: {},
             },
             resources: {
                 ducts: {},
@@ -133,6 +135,8 @@ export default class FlowControl {
         
         let inserts = 1;
         let caps = 1;
+        let arrows = 1;
+        let labels = 1;
 
         for(const edge of this.ductEdges) {
 
@@ -161,20 +165,31 @@ export default class FlowControl {
                 );
 
                 this.ahuObject.associations.ducts[edge.id]["ends"] = [];
-
+                this.ahuObject.associations.ducts[edge.id]["arrows"] = [];
+                this.ahuObject.associations.ducts[edge.id]["labels"] = [];
                 
                 if (startIntersections.length == 0 || endIntersections.length == 0) {
                     if(edge.blockStyle.ductEnds == 'insert') {
-                        console.log("populateAssociations insert added:", inserts, edge.id);
                         this.ahuObject.associations.ends[`Insert-${inserts}`] = edge.id;
                         this.ahuObject.associations.ducts[edge.id]["ends"].push(`Insert-${inserts}`);
                         inserts++;
                     }
-                     if(edge.blockStyle.ductEnds == 'cap') {
-                        console.log("populateAssociations cap added:", caps, edge.id);
+                    if(edge.blockStyle.ductEnds == 'cap') {
                         this.ahuObject.associations.ends[`Cap-${caps}`] = edge.id;
                         this.ahuObject.associations.ducts[edge.id]["ends"].push(`Cap-${caps}`);
                         caps++;
+                    }
+                    if(edge.blockStyle.helpers.arrow.display) {
+                        this.ahuObject.associations.arrows[`Arrow-${arrows}`] = edge.id;
+                        this.ahuObject.associations.ducts[edge.id]["arrows"].push(`Arrow-${arrows}`);
+                        arrows++;
+                        this.ahuObject.auxiliary["3d"].arrows[`Arrow-${arrows}`] = startIntersections.length == 0 ? "start" : "end";                        
+                    }
+                    if(edge.blockStyle.helpers.text.display) {
+                        this.ahuObject.associations.labels[`Label-${labels}`] = edge.id;
+                        this.ahuObject.associations.ducts[edge.id]["labels"].push(`Label-${labels}`);
+                        labels++;
+                        this.ahuObject.auxiliary["3d"].labels[`Label-${labels}`] = startIntersections.length == 0 ? "start" : "end";  
                     }
                 }
                 
@@ -246,9 +261,19 @@ export default class FlowControl {
         
         console.log("FlowControl step 2:", this.ahuObject);
 
-         await this.Ducts.placeSegments(this.ahuObject);
+        await this.Ducts.placeSegments(this.ahuObject);
 
         console.log("FlowControl step 3:", this.ahuObject);
+
+        // this.placeHelpers();
+    }
+
+    placeHelpers() {
+        for(const edgeKey in this.ahuObject.xetoDictionary.edges) {
+            const ductXeto = this.ahuObject.xetoDictionary.edges[edgeKey];
+            console.log("placeHelpers ductXeto:", ductXeto);
+            if(ductXeto.blockStyle.helpers.text.display){}
+        }
     }
 
     populate2D() {
@@ -264,34 +289,45 @@ export default class FlowControl {
         console.log("populate3D started:", this.ahuObject);
         console.log("populate3D ductsDictionary:", this.ductsDictionary);
         let jointGeometry = null;
-        for(const key in this.ductsDictionary) {
-            const jointKey = `Joint-${key}`;
+        for(const jointKey of Object.keys(this.ahuObject.resources.joints)) {
             const joint = this.ahuObject.resources.joints[jointKey];
 
-            if(this.ductsDictionary[key].length == 2) {
-                if(joint.pairDirection) {
-                    jointGeometry = this.Geometry_3D_Joints_Colinear.createParallelJoint(joint, joint.pairDirection);
+            console.log("populate3D step 0:", jointKey, joint);
+
+            const jointKeys = Object.keys(joint);
+
+            console.log("populate3D step 0.1:", jointKeys);
+
+            if(jointKeys.length == 2) {
+
+                let pairDirection = null;
+                if(joint.up != null && joint.down != null) {
+                    pairDirection = "vertical";
+                }
+                if(joint.left != null && joint.right != null) {
+                    pairDirection = "horizontal";
+                }
+
+                if(pairDirection) {
+                    jointGeometry = this.Geometry_3D_Joints_Colinear.createParallelJoint(joint, pairDirection);
                 }
                 else {
                     calculateJointCenter(jointKey, this.ahuObject);
-                    jointGeometry = this.Geometry_3D_Joints_L.createLJoint(joint, joint.largestGlobalSize);
+                    jointGeometry = this.Geometry_3D_Joints_L.createLJoint(joint);
                 }
             }
-            if(this.ductsDictionary[key].length == 3) {
+            if(jointKeys.length == 3) {
                 calculateJointCenter(jointKey, this.ahuObject);
-                jointGeometry = this.Geometry_3D_Joints_T.createTJoint(joint, joint.largestGlobalSize);
+                jointGeometry = this.Geometry_3D_Joints_T.createTJoint(joint);
             }
-            if(this.ductsDictionary[key].length == 4) {
+            if(jointKeys.length == 4) {
                 calculateJointCenter(jointKey, this.ahuObject);
-                jointGeometry = this.Geometry_3D_Joints_Cross.createCrossJoint(joint, joint.largestGlobalSize);
+                jointGeometry = this.Geometry_3D_Joints_Cross.createCrossJoint(joint);
             }         
 
-            if(this.ductsDictionary[key].length >= 2) {
-                console.log("populate3D key:", key);
+            if(jointKeys.length >= 2) {
                 this.ahuObject["3d"].joints.geometry[jointKey] = jointGeometry;
-                this.ahuObject["3d"].joints.meshes[jointKey] = null;
-
-                this.cleanupJointMetadata(key);                
+                this.ahuObject["3d"].joints.meshes[jointKey] = null;               
             }
             
         }
@@ -303,8 +339,6 @@ export default class FlowControl {
     }
 
     cleanupJointMetadata(key) {
-        delete this.ahuObject.resources.joints[`Joint-${key}`].intersectDucts;
-        delete this.ahuObject.resources.joints[`Joint-${key}`].largestGlobalSize;
         delete this.ahuObject.resources.joints[`Joint-${key}`].key;
         delete this.ahuObject.resources.joints[`Joint-${key}`].pairDirection;
     }

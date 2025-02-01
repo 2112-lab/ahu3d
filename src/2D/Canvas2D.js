@@ -219,27 +219,27 @@ export default class Canvas2D {
           }
           else if(joint.up && joint.down) {
             point1 = joint.up.proxy1.position;
-            point2 = joint.down.proxy1.position;
-            midPoint = joint.right.proxyMedian.position;
+            point2 = joint.up.proxy1.position;
+            midPoint = joint.down.proxy1.position;
             // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
             this.createJointCorner(layer, point1, point2, midPoint);
   
             point1 = joint.up.proxy2.position;
-            point2 = joint.down.proxy2.position;
-            midPoint = joint.right.proxyMedian.position;
+            point2 = joint.up.proxy2.position;
+            midPoint = joint.down.proxy2.position;
             // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
             this.createJointCorner(layer, point1, point2, midPoint);
           }
           else if(joint.left && joint.right) {
             point1 = joint.left.proxy1.position;
             point2 = joint.right.proxy1.position;
-            midPoint = joint.right.proxyMedian.position;
+            midPoint = joint.right.proxy1.position;
             // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
             this.createJointCorner(layer, point1, point2, midPoint);
   
             point1 = joint.left.proxy2.position;
             point2 = joint.right.proxy2.position;
-            midPoint = joint.right.proxyMedian.position;
+            midPoint = joint.right.proxy2.position;
             // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
             this.createJointCorner(layer, point1, point2, midPoint);
           }
@@ -527,12 +527,12 @@ export default class Canvas2D {
       layer.add(jointLine);
     }
 
-    if(flipArc) {
-      this.renderPoint(layer, midPoint, "#ff0000");
-    }
-    else {
-      this.renderPoint(layer, midPoint, "#00ff00");
-    }    
+    // if(flipArc) {
+    //   this.renderPoint(layer, midPoint, "#ff0000");
+    // }
+    // else {
+    //   this.renderPoint(layer, midPoint, "#00ff00");
+    // }    
     
   }
 

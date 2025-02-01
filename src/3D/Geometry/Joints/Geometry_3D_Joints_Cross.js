@@ -1,6 +1,5 @@
 import { sharedData } from "../../../Ahu3D/globals.js";
 import { 
-    calculateJointCenter, 
     createJointBackwall, 
     connectProxiesDiagonallyUphill, 
     connectProxiesDiagonallyDownhill,

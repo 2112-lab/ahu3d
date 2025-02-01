@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { 
-    calculateJointCenter, 
     createJointBackwall, 
     connectProxiesDiagonallyUphill, 
     connectProxiesDiagonallyDownhill,
@@ -10,7 +9,7 @@ import {
 import { sharedData } from "../../../Ahu3D/globals.js";
 
 export default class Geometry_3D_Joints_L {
-    createLJoint(joint, largestGlobalSize) {
+    createLJoint(joint) {
         const geometries = [];
         let diagonalWidth = 0;
 
@@ -21,8 +20,6 @@ export default class Geometry_3D_Joints_L {
         sharedData.isLJoint = true;
 
         console.log("createLJoint2 step 1");
-
-        // calculateJointCenter(joint, "L-Joint"); 
 
         console.log("createLJoint2 step 2:", sharedData.xzJointDirection);
 
@@ -539,12 +536,12 @@ export default class Geometry_3D_Joints_L {
         if(sharedData.xzJointDirection == "inwards" && sharedData.xzJointStyle == "arc") {
             console.log("createArchedBackwall");
 
-            this.createWallMesh(joint, largestGlobalSize); 
-            this.patchLJointBackwall(joint, largestGlobalSize, diagonalWidth);
+            this.createWallMesh(joint); 
+            this.patchLJointBackwall(joint, diagonalWidth);
         }
         else {
             geometries.push(
-                ...this.createLJointBackwall(joint, largestGlobalSize)
+                ...this.createLJointBackwall(joint)
             );
         }
 
@@ -567,7 +564,7 @@ export default class Geometry_3D_Joints_L {
         return newMergedGeometry;
     }
 
-    createLJointBackwall(joint, largestGlobalSize) {
+    createLJointBackwall(joint) {
         let backwall = [];
         if(joint.up != null && joint.right != null) {    
             backwall = [
@@ -581,6 +578,7 @@ export default class Geometry_3D_Joints_L {
             if(sharedData.xzJointStyle == "arc" && sharedData.xzJointDirection == "inwards") {
                 let rightMidpoint = {
                     x: joint.up.proxy2.coordinates[4].x,
+                    y: joint.up.proxy2.coordinates[4].y,
                     z: joint.right.proxy1.coordinates[4].z
                 }
                 backwall.splice(4, 0, rightMidpoint);
@@ -653,7 +651,7 @@ export default class Geometry_3D_Joints_L {
 
         let geometry = [];
         if(backwall.length >= 3) {
-            geometry.push(createJointBackwall(backwall, largestGlobalSize));
+            // geometry.push(createJointBackwall(backwall));
         }
 
         console.log("createLJointBackwall:", geometry);
@@ -662,7 +660,7 @@ export default class Geometry_3D_Joints_L {
 
     }
 
-    patchLJointBackwall(joint, largestGlobalSize) {
+    patchLJointBackwall(joint) {
         let backwall = [];
         if(joint.up != null && joint.right != null) {    
             backwall = [
@@ -672,7 +670,7 @@ export default class Geometry_3D_Joints_L {
                 joint.right.proxy1.coordinates[6],
                 joint.right.proxy1.coordinates[4],
             ];
-            createJointBackwall(backwall, largestGlobalSize);
+            createJointBackwall(backwall);
             backwall = [
                 joint.up.proxyMedian.coordinates[6],
                 joint.up.proxy2.coordinates[6],
@@ -680,7 +678,7 @@ export default class Geometry_3D_Joints_L {
                 joint.up.proxy1.coordinates[4],
                 joint.up.proxyMedian.coordinates[5],
             ];
-            createJointBackwall(backwall, largestGlobalSize);
+            createJointBackwall(backwall);
         }
         else if(joint.up != null && joint.left != null) {  
             backwall = [
@@ -690,7 +688,7 @@ export default class Geometry_3D_Joints_L {
                 joint.left.proxy2.coordinates[5],
                 joint.left.proxyMedian2.coordinates[6],
             ];
-            createJointBackwall(backwall, largestGlobalSize);
+            createJointBackwall(backwall);
             backwall = [
                 joint.left.proxyMedian.coordinates[5],
                 joint.left.proxyMedian.coordinates[6],
@@ -698,7 +696,7 @@ export default class Geometry_3D_Joints_L {
                 joint.up.proxy1.coordinates[4],
                 joint.up.proxy1.coordinates[5],
             ];
-            createJointBackwall(backwall, largestGlobalSize);  
+            createJointBackwall(backwall);  
         }
         else if(joint.down != null && joint.right != null) {  
             backwall = [
@@ -708,7 +706,7 @@ export default class Geometry_3D_Joints_L {
                 joint.down.proxy2.coordinates[6],
                 joint.down.proxy2.coordinates[7],
             ];
-            createJointBackwall(backwall, largestGlobalSize);
+            createJointBackwall(backwall);
             backwall = [
                 joint.right.proxyMedian2.coordinates[4],
                 joint.right.proxyMedian2.coordinates[5],
@@ -716,7 +714,7 @@ export default class Geometry_3D_Joints_L {
                 joint.right.proxy2.coordinates[6],
                 joint.right.proxy1.coordinates[7],
             ];
-            createJointBackwall(backwall, largestGlobalSize);   
+            createJointBackwall(backwall);   
         }
         else if(joint.down != null && joint.left != null) {   
             backwall = [
@@ -726,7 +724,7 @@ export default class Geometry_3D_Joints_L {
                 joint.left.proxy2.coordinates[5],
                 joint.left.proxy2.coordinates[6],
             ];
-            createJointBackwall(backwall, largestGlobalSize);
+            createJointBackwall(backwall);
             backwall = [
                 joint.down.proxyMedian.coordinates[4],
                 joint.down.proxy1.coordinates[4],
@@ -734,12 +732,12 @@ export default class Geometry_3D_Joints_L {
                 joint.down.proxy2.coordinates[6],
                 joint.down.proxyMedian.coordinates[7],
             ];
-            createJointBackwall(backwall, largestGlobalSize);  
+            createJointBackwall(backwall);  
         }
 
     }
 
-    createWallMesh(joint, largestGlobalSize) {
+    createWallMesh(joint) {
         const mergeLineValue = 5;
         const backwallArcConfigs = sharedData.backwallArcConfigs;
 

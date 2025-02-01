@@ -13,8 +13,6 @@ export function calculateJointCenter(jointKey, ahuObject) {
   
     for(const ductKey of ahuObject.associations.joints[jointKey].ducts) {
         const duct = ahuObject.resources.ducts[ductKey];
-        console.log("calculateJointCenter utils ductKey:", ductKey);
-        console.log("calculateJointCenter utils duct:", duct);
         if(ahuObject.xetoDictionary.edges[ductKey].isVertical) {
             jointCenter.x = duct.position.x;
         }
@@ -31,9 +29,7 @@ export function calculateJointCenter(jointKey, ahuObject) {
     // cube.name = "joint";
     // sharedData.sceneHelper.addToScene(cube);        
 
-    sharedData.jointCenter = jointCenter   
-
-    return        
+    sharedData.jointCenter = jointCenter         
 }
 
 export function createJointBackwall(points, largestGlobalSize = 1000) {
@@ -61,7 +57,14 @@ export function createJointBackwall(points, largestGlobalSize = 1000) {
     const bufferGeometry = new THREE.BufferGeometry();
     bufferGeometry.setAttribute('position', extrudeGeometry.getAttribute('position'));
     bufferGeometry.setAttribute('normal', extrudeGeometry.getAttribute('normal'));
-    bufferGeometry.setIndex(extrudeGeometry.index || new THREE.BufferAttribute(new Uint16Array([...Array(bufferGeometry.attributes.position.count).keys()]), 1));
+    bufferGeometry.setIndex(
+        extrudeGeometry.index || 
+        new THREE.BufferAttribute(
+            new Uint16Array([
+                ...Array(bufferGeometry.attributes.position.count).keys()
+            ]), 1
+        )
+    );
 
     // Apply transformations to the geometry
     const transformMatrix = new THREE.Matrix4();

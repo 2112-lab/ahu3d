@@ -1,5 +1,4 @@
 import { 
-    calculateJointCenter, 
     createJointBackwall, 
     connectProxiesDiagonallyUphill, 
     connectProxiesDiagonallyDownhill,
@@ -9,13 +8,11 @@ import {
 import { sharedData } from "../../../Ahu3D/globals.js";
 
 export default class Geometry_3D_Joints_T {
-    createTJoint(joint, largestGlobalSize) {
+    createTJoint(joint) {
         console.log("createTJoint started:", joint);
         const geometries = [];
 
         sharedData.backwallArcConfigs = [];
-
-        // calculateJointCenter(joint, "T-Joint");
 
         if(sharedData.xzJointDirection == "outwards") {
             if(joint.right == null) {
@@ -373,7 +370,7 @@ export default class Geometry_3D_Joints_T {
             }
         }
 
-        geometries.push(...this.createTJointBackwall(joint, largestGlobalSize));
+        geometries.push(...this.createTJointBackwall(joint));
 
         geometries.push(
             ...createJointClosure(joint.up, "horizontal")
@@ -394,7 +391,7 @@ export default class Geometry_3D_Joints_T {
         return newMergedGeometry;
     }
 
-    createTJointBackwall(joint, largestGlobalSize) {
+    createTJointBackwall(joint) {
         let backwall = [];
 
         let topLeftMidpoint = {};
@@ -431,14 +428,17 @@ export default class Geometry_3D_Joints_T {
         else if(joint.left == null) {
             topRightMidpoint = {
                 x: joint.up.proxy2.coordinates[4].x,
+                y: joint.up.proxy2.coordinates[4].y,
                 z: joint.right.proxy1.coordinates[4].z
             }
             bottomRightMidpoint = {
                 x: joint.down.proxy2.coordinates[4].x,
+                y: joint.down.proxy2.coordinates[4].y,
                 z: joint.right.proxy2.coordinates[4].z
             }
             topLeftMidpoint = {
                 x: joint.up.proxy1.coordinates[4].x,
+                y: joint.up.proxy1.coordinates[4].y,
                 z: joint.up.proxyMedian.coordinates[4].z
             }
             backwall = [
@@ -513,7 +513,7 @@ export default class Geometry_3D_Joints_T {
         let geometry = [];
 
         if(backwall.length >= 3) {
-            geometry.push(createJointBackwall(backwall, largestGlobalSize));
+            geometry.push(createJointBackwall(backwall));
         }
 
         return geometry

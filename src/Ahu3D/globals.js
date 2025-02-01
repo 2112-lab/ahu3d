@@ -19,4 +19,5 @@ export const sharedData = {
         large: 1500
     },
     componentLibrary: null,
+    largestGlobalSize: 1000,
 };

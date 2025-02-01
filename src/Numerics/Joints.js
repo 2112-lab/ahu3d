@@ -22,14 +22,14 @@ export default class Joints {
     }
 
 
-    createJointProxies(intersection, ahuObject, gridKey, largestGlobalSize) {
+    createJointProxies(intersection, ahuObject, gridKey) {
         console.log("createJointProxies started:", intersection, ahuObject);
 
         this.ahuObject = ahuObject;
           
         const wallThickness = sharedData.moduleConfigs.parametricOptions.wallThickness;
   
-        largestGlobalSize = sharedData.innerDuctDimensions["small"];
+        let largestGlobalSize = sharedData.innerDuctDimensions["small"];
         for(const key in intersection) {
             let duct = intersection[key];
             if(duct != null) {
@@ -38,9 +38,7 @@ export default class Joints {
                     largestGlobalSize = size;
                 }
             }
-        }
-
-        console.log("createJointProxies largestGlobalSize:", largestGlobalSize);         
+        }       
 
         let y_offset = wallThickness * -1;
 

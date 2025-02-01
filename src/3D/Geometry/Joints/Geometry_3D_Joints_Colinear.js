@@ -1,5 +1,4 @@
 import { 
-    calculateJointCenter, 
     createJointBackwall, 
     connectProxiesDiagonallyUphill, 
     connectProxiesDiagonallyDownhill,

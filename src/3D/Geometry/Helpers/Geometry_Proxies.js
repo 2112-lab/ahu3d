@@ -14,9 +14,9 @@ export function moveOriginalProxyVertices(proxyGeometry) {
     positionAttribute.needsUpdate = true;
 }
 
-export function moveProxyVertices(proxyGeometry, ductDepth, proxyLength, maxLength) {
+export function moveProxyVertices(proxyGeometry, ductDepth, proxyLength, largestGlobalSize) {
 
-    const globalLength = ((maxLength - ductDepth) / 2);
+    const globalLength = ((largestGlobalSize - ductDepth) / 2);
     const adjacentLength = ((proxyLength - ductDepth) / 2);
 
     // Access the position attribute
