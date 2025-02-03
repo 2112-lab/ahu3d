@@ -116,7 +116,7 @@ export default class Geometry_3D_Joints_Cross {
                 ];
             }
 
-            geometries.push(createJointBackwall(backwall, largestGlobalSize));
+            geometries.push(createJointBackwall(backwall));
         }
         else {
             let backwall = [
@@ -134,7 +134,7 @@ export default class Geometry_3D_Joints_Cross {
                 joint.left.proxy1.coordinates[4]
             ];
 
-            geometries.push(createJointBackwall(backwall, largestGlobalSize));
+            geometries.push(createJointBackwall(backwall));
         }  
 
         geometries.push(

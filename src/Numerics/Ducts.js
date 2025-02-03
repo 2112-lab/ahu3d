@@ -23,7 +23,7 @@ export default class Ducts {
         ahuObject
     ) {
         this.innerDuctDimensions = sharedData.innerDuctDimensions;
-        this.ductsDictionary = ductsDictionary;
+        this.ductsDictionary = JSON.parse(JSON.stringify(ductsDictionary));
         this.primaryColor = sharedData.primaryColor;
         this.Mesh3D = Mesh3D;
         this.componentLibrary = componentLibrary;
@@ -226,12 +226,20 @@ export default class Ducts {
         // orientDuct(primarySegmentXeto, primarySegmentOrientation);
         primarySegmentXeto.isPositioned = true;
 
-        this.getNextSegment(primarySegmentXeto, primaryKey);     
+        this.getNextSegment(primarySegmentXeto, primaryKey);
+
+        // this.Joints.createJointProxies(intersectDucts, this.ahuObject, key);
+
+        this.transformCoordinates();
 
         // this.transformEnds();
         this.reTransformComponents();
 
         console.log("placeSegments this.ahuObject:", this.ahuObject);
+    }
+
+    transformCoordinates() {
+
     }
 
     /**
@@ -245,17 +253,18 @@ export default class Ducts {
     getNextSegment(currentSegmentXeto, currentKey) {
         console.log("getNextSegment currentKey:", currentKey);
 
-        const graphicLocation = currentSegmentXeto.graphicLocation;
+        const graphicLocation = JSON.parse(JSON.stringify(currentSegmentXeto.graphicLocation));
         let nextKey = currentKey == graphicLocation.start ? graphicLocation.end : graphicLocation.start;
-        console.log("getNextSegment nextKey:", nextKey);
 
         if(this.ductsDictionary[nextKey].length > 1) {
             for(const adjacentSegmentXeto of this.ductsDictionary[nextKey]) {
+                console.log("getNextSegment nextKey adjacentSegmentXeto:", adjacentSegmentXeto);
                 if(adjacentSegmentXeto != currentSegmentXeto) {
                     if(adjacentSegmentXeto.isPositioned != true) {
+                        console.log("getNextSegment nextKey isPositioned == false:", adjacentSegmentXeto.isPositioned);
                         this.placeIntersection(nextKey);
+                        this.getNextSegment(adjacentSegmentXeto, nextKey);
                     }
-                    this.getNextSegment(adjacentSegmentXeto, nextKey);
                 }
             }
         }
@@ -281,10 +290,9 @@ export default class Ducts {
     }
 
     placeIntersection(key) {
-        console.log("placeIntersection started:", this.ahuObject);
+        console.log("placeIntersection ** started:", this.ahuObject);
 
-        let jointGeometry = null;
-        let proxyGeometry = null;
+        console.log("placeIntersection ** this.ductsDictionary[key]:", this.ductsDictionary[key]);
 
         if(this.ductsDictionary[key].length >= 2 && this.ductsDictionary[key].length <= 4) {
             this.addJointRsrcAndAssoc(this.ductsDictionary, key);
@@ -312,6 +320,7 @@ export default class Ducts {
                 }
             }
             fixedDuctXeto.relativePosition = getDuctDirection(fixedDuctXeto, key, this.ahuObject);
+            console.log("placeIntersection 4* currentDuctXetos:", currentDuctXetos);
             console.log("placeIntersection 4* fixedDuctXeto:", fixedDuctXeto);
 
             let intersectDucts = {
@@ -323,13 +332,9 @@ export default class Ducts {
 
             for(const currentDuctXeto of currentDuctXetos) {
                 currentDuctXeto.relativePosition = getDuctDirection(currentDuctXeto, key, this.ahuObject);
-                console.log("placeIntersection 4* currentDuctXeto:", currentDuctXeto);
             }
 
-            console.log("placeIntersection 4* intersectDucts:", intersectDucts);
-
             seperateByDirections(intersectDucts, fixedDuctXeto, currentDuctXetos);
-            console.log("placeIntersection 4* intersectDucts:", intersectDucts);
 
             // if(intersectDucts.up.isPositioned != true) {
             //     let currentDuctOrientation = intersectDucts.up.orientation;
@@ -341,7 +346,6 @@ export default class Ducts {
             // }
 
             for(const currentDuctXeto of currentDuctXetos) {
-                console.log("placeIntersection 4* currentDuctXeto:", currentDuctXeto);
                 let lengthToAdjacent = 0;
                 lengthToAdjacent = this.ahuObject.resources.ducts[fixedDuctXeto.id].position.x - this.ahuObject.resources.ducts[currentDuctXeto.id].position.x;
                 translateDuct(this.ahuObject.resources.ducts[currentDuctXeto.id], 'x', lengthToAdjacent);
@@ -355,20 +359,13 @@ export default class Ducts {
             const rightSize = intersectDucts.right.graphicLocation.size;
             let maxHalfWidth = this.innerDuctDimensions[upSize] > this.innerDuctDimensions[downSize] ? this.innerDuctDimensions[upSize] / 2 : this.innerDuctDimensions[downSize] / 2;
             let maxHalfHeight = this.innerDuctDimensions[rightSize] > this.innerDuctDimensions[leftSize] ? this.innerDuctDimensions[rightSize] / 2 : this.innerDuctDimensions[leftSize] / 2;
-
-            console.log("placeIntersection 4* intersectDucts 123:", intersectDucts);
             
             if(intersectDucts.left == fixedDuctXeto) {
-                console.log("placeIntersection 4* step 1");
-                length = ((this.ahuObject.resources.ducts[intersectDucts.left.id].dimensions.x) / 2);
-                console.log("placeIntersection 4* step 2");
-                length += maxHalfWidth + 15;
-                console.log("placeIntersection 4* step 3");
-                length += xzJointPadding;
-                console.log("placeIntersection 4* step 4");
-                translateDuct(this.ahuObject.resources.ducts[intersectDucts.left.id], "x", (length * 1));
-
                 console.log("placeIntersection 4* step 5");
+                length = ((this.ahuObject.resources.ducts[intersectDucts.left.id].dimensions.x) / 2);
+                length += maxHalfWidth + 15;
+                length += xzJointPadding;
+                // translateDuct(this.ahuObject.resources.ducts[intersectDucts.left.id], "x", (length * 1));
 
                 length = ((this.ahuObject.resources.ducts[intersectDucts.up.id].dimensions.x) / 2);
                 length += maxHalfHeight + 15;
@@ -379,6 +376,11 @@ export default class Ducts {
                 length += maxHalfWidth + 15;
                 length += xzJointPadding;
                 translateDuct(this.ahuObject.resources.ducts[intersectDucts.down.id], "x", (length * 1));
+
+                length = ((this.ahuObject.resources.ducts[intersectDucts.left.id].dimensions.x) / 2);
+                length += maxHalfWidth + 15;
+                length += xzJointPadding;
+                translateDuct(this.ahuObject.resources.ducts[intersectDucts.up.id], "x", (length * 1))
 
                 length = ((this.ahuObject.resources.ducts[intersectDucts.down.id].dimensions.x) / 2);
                 length += maxHalfHeight + 15;
@@ -475,14 +477,8 @@ export default class Ducts {
                 length += xzJointPadding;
                 translateDuct(this.ahuObject.resources.ducts[intersectDucts.right.id], "x", (length * 1));
             }
-
-            console.log("placeIntersection 4* step 9");
                 
             this.Joints.createJointProxies(intersectDucts, this.ahuObject, key);
-
-            console.log("placeIntersection 4* step 10");
-            
-            console.log("placeIntersection 4* step 11");
 
         }
         else if (this.ductsDictionary[key].length == 3) {
@@ -957,31 +953,20 @@ export default class Ducts {
                 }
             }
 
-            console.log("placeIntersection 2* step 8");
-
-            this.ahuObject.resources.joints["Joints-1"]
-
             this.Joints.createJointProxies(intersectDucts, this.ahuObject, key);
-
-            console.log("placeIntersection 2* step 9");
-
-            console.log("placeIntersection 2* step 10:", jointGeometry);
             
         }
 
-        console.log("placeIntersection 2* step 11");
-
         for(const traversedSegmentXeto of this.ductsDictionary[key]) {
+            console.log("placeIntersection traversedSegmentXeto", JSON.stringify(traversedSegmentXeto.isPositioned));
             if(traversedSegmentXeto.isPositioned != true) {
                 console.log("placeIntersection traversedSegmentXeto.id", traversedSegmentXeto.id);
             }
             traversedSegmentXeto.isPositioned = true;
         }
 
-        this.ahuObject["3d"].joints.geometry[`Joint-${key}`] = jointGeometry;
+        this.ahuObject["3d"].joints.geometry[`Joint-${key}`] = null;
         this.ahuObject["3d"].joints.meshes[`Joint-${key}`] = null;
-
-        console.log("placeIntersection 2* step 12:", this.ahuObject);
         
     }
 

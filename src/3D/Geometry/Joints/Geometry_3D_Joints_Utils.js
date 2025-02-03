@@ -32,7 +32,7 @@ export function calculateJointCenter(jointKey, ahuObject) {
     sharedData.jointCenter = jointCenter         
 }
 
-export function createJointBackwall(points, largestGlobalSize = 1000) {
+export function createJointBackwall(points) {
     console.log("createJointBackwall started:", points);
     if (points.length < 3) {
         throw new Error("A shape requires at least 3 points.");

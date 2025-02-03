@@ -244,8 +244,11 @@ export default class Mesh3D {
       for (const jointGeometryKey in jointGeometries) {
           const jointGeometry = jointGeometries[jointGeometryKey];
 
-          // Clone to prevent modifying the original geometry
-          geometriesArray.push(jointGeometry.clone());
+          if(jointGeometry) {
+            // Clone to prevent modifying the original geometry
+            geometriesArray.push(jointGeometry.clone());
+          }
+          
       }
 
       if (geometriesArray.length > 0) {
@@ -401,6 +404,11 @@ export default class Mesh3D {
         componentMesh.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);  // Rotate around pivot
         componentMesh.position.add(pivot);  // Move back to world position
         componentMesh.rotateOnAxis(new THREE.Vector3(0, 1, 0), angle);  // Rotate the component itself
+
+        // Flip locally along the x-axis if rotation is 180 degrees
+        if (rotation == 180) {
+          componentMesh.scale.z *= -1;
+        }
     });
 
     ductMesh.rotateY(angle);

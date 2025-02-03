@@ -144,8 +144,6 @@ export default class Joints {
 
                 this.ahuObject.resources.joints[`Joint-${gridKey}`][key] = {};
 
-                this.ahuObject.resources.joints[`Joint-${gridKey}`][key] = {};
-
                 this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxy1 = JSON.parse(JSON.stringify(proxy1));
                 this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxy2 = JSON.parse(JSON.stringify(proxy2));
                 this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxyOriginal1 = JSON.parse(JSON.stringify(proxyOriginal1));
