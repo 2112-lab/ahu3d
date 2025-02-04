@@ -168,186 +168,185 @@ export default class Canvas2D {
 
     console.log("create2DJoint jointCenter:", jointCenter);
 
-    if(true) {
-
-      let isOutwards = sharedData.xzJointDirection == "outwards";
-
-        if(jointKeys.length == 2) {
-          if(joint.up && joint.right) {
-            point1 = joint.up.proxy2.position;
-            point2 = joint.right.proxy1.position;
-            midPoint = joint.right.proxyMedian.position;
-            this.createJointCorner(layer, point1, point2, midPoint);
-  
-            point1 = joint.right.proxy2.position;
-            point2 = joint.up.proxy1.position;
-            midPoint = joint.up.proxyMedian.position;
-            this.createJointCorner(layer, point1, point2, midPoint);
-          }
-          else if(joint.up && joint.left) {
-            point1 = joint.left.proxy1.position;
-            point2 = joint.up.proxy1.position;
-            midPoint = joint.up.proxyMedian.position;
-            this.createJointCorner(layer, point1, point2, midPoint);
-
-            point1 = joint.left.proxy2.position;
-            point2 = joint.up.proxy2.position;
-            midPoint = joint.left.proxyMedian.position;
-            this.createJointCorner(layer, point1, point2, midPoint);
-          }
-          else if(joint.down && joint.right) {
-            point1 = joint.right.proxy1.position;
-            point2 = joint.down.proxy1.position;
-            midPoint = joint.right.proxyMedian.position;
-            this.createJointCorner(layer, point1, point2, midPoint);
-
-            point1 = joint.right.proxy2.position;
-            point2 = joint.down.proxy2.position;
-            midPoint = joint.down.proxyMedian.position;
-            this.createJointCorner(layer, point1, point2, midPoint);
-          }
-          else if(joint.down && joint.left) {
-            point1 = joint.left.proxy2.position;
-            point2 = joint.down.proxy1.position;
-            midPoint = joint.left.proxyMedian.position;
-            this.createJointCorner(layer, point1, point2, midPoint);
-
-            point1 = joint.left.proxy1.position;
-            point2 = joint.down.proxy2.position;
-            midPoint = joint.down.proxyMedian.position;
-            this.createJointCorner(layer, point1, point2, midPoint);
-          }
-          else if(joint.up && joint.down) {
-            point1 = joint.up.proxy1.position;
-            point2 = joint.up.proxy1.position;
-            midPoint = joint.down.proxy1.position;
-            // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
-            this.createJointCorner(layer, point1, point2, midPoint);
-  
-            point1 = joint.up.proxy2.position;
-            point2 = joint.up.proxy2.position;
-            midPoint = joint.down.proxy2.position;
-            // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
-            this.createJointCorner(layer, point1, point2, midPoint);
-          }
-          else if(joint.left && joint.right) {
-            point1 = joint.left.proxy1.position;
-            point2 = joint.right.proxy1.position;
-            midPoint = joint.right.proxy1.position;
-            // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
-            this.createJointCorner(layer, point1, point2, midPoint);
-  
-            point1 = joint.left.proxy2.position;
-            point2 = joint.right.proxy2.position;
-            midPoint = joint.right.proxy2.position;
-            // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
-            this.createJointCorner(layer, point1, point2, midPoint);
-          }
-        }
-        else if(jointKeys.length == 3) {
-          if(joint.left && joint.up && joint.down) {
-            point1 = joint.up.proxy2.position;
-            point2 = joint.down.proxy2.position;
-            midPoint = joint.down.proxyMedian.position;
-            // midPoint = this.createMidPoint(point1, point2, jointCenter, true);
-            this.createJointCorner(layer, point1, point2, midPoint);
-  
-            point1 = joint.down.proxy1.position;
-            point2 = joint.left.proxy2.position;
-            midPoint = joint.left.proxyMedian.position;
-            // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
-            this.createJointCorner(layer, point1, point2, midPoint);
-  
-            point1 = joint.left.proxy1.position;
-            point2 = joint.up.proxy1.position;
-            midPoint = joint.up.proxyMedian.position;
-            // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
-            this.createJointCorner(layer, point1, point2, midPoint);
-          }
-          else if(joint.right && joint.up && joint.down) {
-            point1 = joint.up.proxy2.position;
-            point2 = joint.right.proxy1.position;
-            midPoint = joint.right.proxyMedian.position;
-            // midPoint = this.createMidPoint(point1, point2, jointCenter, true);
-            this.createJointCorner(layer, point1, point2, midPoint);
-  
-            point1 = joint.right.proxy2.position;
-            point2 = joint.down.proxy2.position;
-            midPoint = joint.down.proxyMedian.position;
-            // midPoint = this.createMidPoint(point1, point2, jointCenter, true);
-            this.createJointCorner(layer, point1, point2, midPoint);
-  
-            point1 = joint.down.proxy1.position;
-            point2 = joint.up.proxy1.position;
-            midPoint = joint.up.proxyMedian.position;
-            // midPoint = this.createMidPoint(point1, point2, jointCenter, true);
-            this.createJointCorner(layer, point1, point2, midPoint);
-          }
-          else if(joint.left && joint.right && joint.down) {
-            point1 = joint.right.proxy2.position;
-            point2 = joint.down.proxy2.position;
-            midPoint = joint.down.proxyMedian.position;
-            // midPoint = this.createMidPoint(point1, point2, jointCenter, true);
-            this.createJointCorner(layer, point1, point2, midPoint);
-  
-            point1 = joint.down.proxy1.position;
-            point2 = joint.left.proxy2.position;
-            midPoint = joint.left.proxyMedian.position;
-            // midPoint = this.createMidPoint(point1, point2, jointCenter, true);
-            this.createJointCorner(layer, point1, point2, midPoint);
-  
-            point1 = joint.left.proxy1.position;
-            point2 = joint.right.proxy1.position;
-            midPoint = joint.right.proxyMedian.position;
-            // midPoint = this.createMidPoint(point1, point2, jointCenter, true);
-            this.createJointCorner(layer, point1, point2, midPoint);
-          }
-          else if(joint.left && joint.right && joint.up) {
-            point1 = joint.up.proxy2.position;
-            point2 = joint.right.proxy1.position;
-            midPoint = joint.right.proxyMedian.position;
-            // midPoint = this.createMidPoint(point1, point2, jointCenter, true);
-            this.createJointCorner(layer, point1, point2, midPoint);
-  
-            point1 = joint.right.proxy2.position;
-            point2 = joint.left.proxy2.position;
-            midPoint = joint.left.proxyMedian.position;
-            // midPoint = this.createMidPoint(point1, point2, jointCenter, true);
-            this.createJointCorner(layer, point1, point2, midPoint);
-  
-            point1 = joint.left.proxy1.position;
-            point2 = joint.up.proxy1.position;
-            midPoint = joint.up.proxyMedian.position;
-            // midPoint = this.createMidPoint(point1, point2, jointCenter, true);
-            this.createJointCorner(layer, point1, point2, midPoint);
-          }
-        }
-        else if(jointKeys.length == 4) {
+      if(jointKeys.length == 2) {
+        if(joint.up && joint.right) {
           point1 = joint.up.proxy2.position;
           point2 = joint.right.proxy1.position;
           midPoint = joint.right.proxyMedian.position;
-          // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
           this.createJointCorner(layer, point1, point2, midPoint);
-  
+
           point1 = joint.right.proxy2.position;
-          point2 = joint.down.proxy2.position;
-          midPoint = joint.down.proxyMedian.position;
-          // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
+          point2 = joint.up.proxy1.position;
+          midPoint = joint.up.proxyMedian.position;
           this.createJointCorner(layer, point1, point2, midPoint);
-  
-          point1 = joint.down.proxy1.position;
-          point2 = joint.left.proxy2.position;
-          midPoint = joint.left.proxyMedian.position;
-          // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
-          this.createJointCorner(layer, point1, point2, midPoint);
-  
+        }
+        else if(joint.up && joint.left) {
           point1 = joint.left.proxy1.position;
           point2 = joint.up.proxy1.position;
           midPoint = joint.up.proxyMedian.position;
+          this.createJointCorner(layer, point1, point2, midPoint);
+
+          point1 = joint.left.proxy2.position;
+          point2 = joint.up.proxy2.position;
+          midPoint = joint.left.proxyMedian.position;
+          this.createJointCorner(layer, point1, point2, midPoint);
+        }
+        else if(joint.down && joint.right) {
+          point1 = joint.right.proxy1.position;
+          point2 = joint.down.proxy1.position;
+          midPoint = joint.right.proxyMedian.position;
+          this.createJointCorner(layer, point1, point2, midPoint);
+
+          point1 = joint.right.proxy2.position;
+          point2 = joint.down.proxy2.position;
+          midPoint = joint.down.proxyMedian.position;
+          this.createJointCorner(layer, point1, point2, midPoint);
+        }
+        else if(joint.down && joint.left) {
+          point1 = joint.left.proxy2.position;
+          point2 = joint.down.proxy1.position;
+          midPoint = joint.left.proxyMedian.position;
+          this.createJointCorner(layer, point1, point2, midPoint);
+
+          point1 = joint.left.proxy1.position;
+          point2 = joint.down.proxy2.position;
+          midPoint = joint.down.proxyMedian.position;
+          this.createJointCorner(layer, point1, point2, midPoint);
+        }
+        else if(joint.up && joint.down) {
+          point1 = joint.up.proxy1.position;
+          point2 = joint.up.proxy1.position;
+          midPoint = joint.down.proxy1.position;
           // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
           this.createJointCorner(layer, point1, point2, midPoint);
-        }      
-    }
+
+          point1 = joint.up.proxy2.position;
+          point2 = joint.up.proxy2.position;
+          midPoint = joint.down.proxy2.position;
+          // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
+          this.createJointCorner(layer, point1, point2, midPoint);
+        }
+        else if(joint.left && joint.right) {
+          point1 = joint.left.proxy1.position;
+          point2 = joint.right.proxy1.position;
+          midPoint = joint.right.proxy1.position;
+          // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
+          this.createJointCorner(layer, point1, point2, midPoint);
+
+          point1 = joint.left.proxy2.position;
+          point2 = joint.right.proxy2.position;
+          midPoint = joint.right.proxy2.position;
+          // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
+          this.createJointCorner(layer, point1, point2, midPoint);
+        }
+      }
+      else if(jointKeys.length == 3) {
+        if(!joint.right) {
+          point1 = joint.up.proxy2.position;
+          point2 = joint.down.proxy2.position;
+          midPoint = joint.down.proxyMedian.position;
+          if(point1.x == point2.x) {
+            midPoint = point2;
+          }
+
+          this.createJointCorner(layer, point1, point2, midPoint);
+
+          point1 = joint.down.proxy1.position;
+          point2 = joint.left.proxy2.position;
+          midPoint = joint.left.proxyMedian.position;
+          this.createJointCorner(layer, point1, point2, midPoint);
+
+          point1 = joint.left.proxy1.position;
+          point2 = joint.up.proxy1.position;
+          midPoint = joint.up.proxyMedian.position;
+          this.createJointCorner(layer, point1, point2, midPoint);
+        }
+        else if(!joint.left) {
+          point1 = joint.up.proxy2.position;
+          point2 = joint.right.proxy1.position;
+          midPoint = joint.right.proxyMedian.position;
+          this.createJointCorner(layer, point1, point2, midPoint);
+
+          point1 = joint.right.proxy2.position;
+          point2 = joint.down.proxy2.position;
+          midPoint = joint.down.proxyMedian.position;
+          this.createJointCorner(layer, point1, point2, midPoint);
+
+          point1 = joint.down.proxy1.position;
+          point2 = joint.up.proxy1.position;
+          midPoint = joint.up.proxyMedian.position;
+          if(point1.x == point2.x) {
+            midPoint = point2;
+          }
+
+          this.createJointCorner(layer, point1, point2, midPoint);
+        }
+        else if(!joint.up) {
+          point1 = joint.right.proxy2.position;
+          point2 = joint.down.proxy2.position;
+          midPoint = joint.down.proxyMedian.position;
+          this.createJointCorner(layer, point1, point2, midPoint);
+
+          point1 = joint.down.proxy1.position;
+          point2 = joint.left.proxy2.position;
+          midPoint = joint.left.proxyMedian.position;
+          this.createJointCorner(layer, point1, point2, midPoint);
+
+          point1 = joint.left.proxy1.position;
+          point2 = joint.right.proxy1.position;
+          midPoint = joint.right.proxyMedian.position;
+          if(point1.z == point2.z) {
+            midPoint = point2;
+          }
+
+          this.createJointCorner(layer, point1, point2, midPoint);
+        }
+        else if(!joint.down) {
+          point1 = joint.up.proxy2.position;
+          point2 = joint.right.proxy1.position;
+          midPoint = joint.right.proxyMedian.position;
+          this.createJointCorner(layer, point1, point2, midPoint);
+
+          point1 = joint.right.proxy2.position;
+          point2 = joint.left.proxy2.position;
+          midPoint = joint.left.proxyMedian.position;
+          if(point1.z == point2.z) {
+            midPoint = point2;
+          }
+
+          this.createJointCorner(layer, point1, point2, midPoint);
+
+          point1 = joint.left.proxy1.position;
+          point2 = joint.up.proxy1.position;
+          midPoint = joint.up.proxyMedian.position;
+          this.createJointCorner(layer, point1, point2, midPoint);
+        }
+      }
+      else if(jointKeys.length == 4) {
+        point1 = joint.up.proxy2.position;
+        point2 = joint.right.proxy1.position;
+        midPoint = joint.right.proxyMedian.position;
+        // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
+        this.createJointCorner(layer, point1, point2, midPoint);
+
+        point1 = joint.right.proxy2.position;
+        point2 = joint.down.proxy2.position;
+        midPoint = joint.down.proxyMedian.position;
+        // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
+        this.createJointCorner(layer, point1, point2, midPoint);
+
+        point1 = joint.down.proxy1.position;
+        point2 = joint.left.proxy2.position;
+        midPoint = joint.left.proxyMedian.position;
+        // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
+        this.createJointCorner(layer, point1, point2, midPoint);
+
+        point1 = joint.left.proxy1.position;
+        point2 = joint.up.proxy1.position;
+        midPoint = joint.up.proxyMedian.position;
+        // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
+        this.createJointCorner(layer, point1, point2, midPoint);
+      }      
     
   }
 

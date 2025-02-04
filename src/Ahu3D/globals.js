@@ -20,4 +20,6 @@ export const sharedData = {
     },
     componentLibrary: null,
     largestGlobalSize: 1000,
+    originDefault: {x: 0, y: 0, z: 0},
+    arrowDimensions: {x: 750, y: 200, z: 200},
 };

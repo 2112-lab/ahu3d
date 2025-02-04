@@ -401,10 +401,12 @@ export default class Geometry_3D_Joints_T {
         if(joint.right == null) {
             topLeftMidpoint = {
                 x: joint.up.proxy1.coordinates[4].x,
+                y: joint.up.proxy1.coordinates[4].y,
                 z: joint.left.proxy1.coordinates[4].z
             }
             bottomLeftMidpoint = {
                 x: joint.down.proxy1.coordinates[4].x,
+                y: joint.down.proxy1.coordinates[4].y,
                 z: joint.left.proxy2.coordinates[4].z
             }
             backwall = [
@@ -462,10 +464,12 @@ export default class Geometry_3D_Joints_T {
         else if(joint.down == null) {
             topLeftMidpoint = {
                 x: joint.up.proxy1.coordinates[4].x,
+                y: joint.up.proxy1.coordinates[4].y,
                 z: joint.left.proxy1.coordinates[4].z
             }
             topRightMidpoint = {
                 x: joint.up.proxy2.coordinates[4].x,
+                y: joint.up.proxy2.coordinates[4].y,
                 z: joint.right.proxy1.coordinates[4].z
             }
             backwall = [
@@ -487,10 +491,12 @@ export default class Geometry_3D_Joints_T {
         else if(joint.up == null) {
             bottomRightMidpoint = {
                 x: joint.down.proxy2.coordinates[4].x,
+                y: joint.down.proxy2.coordinates[4].y,
                 z: joint.right.proxy2.coordinates[4].z
             }
             bottomLeftMidpoint = {
-                x: joint.down.proxy1.coordinates[4].x,
+                x: joint.down.proxy2.coordinates[4].x,
+                y: joint.down.proxy2.coordinates[4].y,
                 z: joint.left.proxy2.coordinates[4].z
             }
             backwall = [

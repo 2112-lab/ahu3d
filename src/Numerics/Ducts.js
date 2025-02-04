@@ -223,16 +223,10 @@ export default class Ducts {
             ahuObject.resources.ducts[primarySegmentXeto.id].rotation.y = 180;
         }
 
-        // orientDuct(primarySegmentXeto, primarySegmentOrientation);
         primarySegmentXeto.isPositioned = true;
 
         this.getNextSegment(primarySegmentXeto, primaryKey);
 
-        // this.Joints.createJointProxies(intersectDucts, this.ahuObject, key);
-
-        this.transformCoordinates();
-
-        // this.transformEnds();
         this.reTransformComponents();
 
         console.log("placeSegments this.ahuObject:", this.ahuObject);
@@ -970,14 +964,6 @@ export default class Ducts {
         
     }
 
-    transformEnds() {
-        const endKeys = Object.keys(this.ahuObject.associations.ends);
-        for(const endKey of endKeys) {
-            const ductKey = this.ahuObject.associations.ends[endKey];
-            this.ahuObject.resources.ends[endKey].position = this.ahuObject.resources.ducts[ductKey].position;
-            this.ahuObject.resources.ends[endKey].rotation = this.ahuObject.resources.ducts[ductKey].rotation;
-        }
-    }
     reTransformComponents() {
         console.log("reTransformComponents component:", this.ahuObject);
         for(const componentId in this.ahuObject.resources.components) {

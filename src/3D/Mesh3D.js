@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import Canvas2D from "../2D/Canvas2D.js";
 import { sharedData } from "../Ahu3D/globals.js";
+import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
+import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 import { createTextMesh } from "./Geometry/Helpers/Geometry_Text.js"
@@ -82,11 +84,93 @@ export default class Mesh3D {
         console.log("render3D renderJoints starting:", ahuObject["3d"]);
         this.renderJoints(ahuObject["3d"]);
 
-        console.log("render3D renderJoints finished:", ahuObject);
-        this.renderEnds(ahuObject);
+        
     }
 
+    console.log("render3D renderJoints finished:", ahuObject);
+    this.renderEnds(ahuObject);
+
+    // this.renderHelpers(ahuObject);
+
     return renderedAssembly;
+  }
+
+  renderHelpers(ahuObject) {
+    console.log("renderHelpers started:", ahuObject);
+    for(const arrowId in ahuObject.auxiliary["3d"].arrows) {
+      const arrowResource = ahuObject.auxiliary["3d"].arrows[arrowId];
+
+      const ductKey = ahuObject.associations.arrows[arrowId];
+      const duct = ahuObject.resources.ducts[ductKey];
+
+      const blockStyle = ahuObject.xetoDictionary.edges[ductKey].blockStyle;
+
+      console.log("renderHelpers arrowResource:", arrowResource, arrowId);
+
+      let arrowMesh = sharedData.sceneHelper.instanceSet.arrow.clone();
+      arrowMesh.position.copy(arrowResource.position);
+      arrowMesh.rotation.y = THREE.MathUtils.degToRad( duct.rotation.y);
+      // arrowMesh.rotation.y += THREE.MathUtils.degToRad( arrowResource.rotation.y);
+      arrowMesh.visible = true;
+      console.log("renderHelpers arrowMesh:", arrowMesh);
+      sharedData.sceneHelper.addToScene(arrowMesh);
+    }
+
+    for(const labelId in ahuObject.auxiliary["3d"].labels) {
+      const labelResource = ahuObject.auxiliary["3d"].labels[labelId];
+
+      const ductKey = ahuObject.associations.labels[labelId];
+      const duct = ahuObject.resources.ducts[ductKey];
+
+      const blockStyle = ahuObject.xetoDictionary.edges[ductKey].blockStyle;
+
+      this.createTextMesh(blockStyle, labelResource.position);
+    }
+  }
+
+  createTextMesh(blockStyle, position) {
+    console.log("createTextMesh started:", blockStyle, position);
+    const textValue = blockStyle.helpers.text.value || "Default";
+
+    const loader = new FontLoader();
+    loader.load('https://ahu3d-assets.s3.amazonaws.com/helvetiker_regular.typeface.json', (font) => {
+        const textGeo = new TextGeometry(textValue, {
+            font: font,
+            size: 100,
+            depth: 0.05,
+            curveSegments: 12,
+            bevelEnabled: true,
+            bevelThickness: 10,
+            bevelSize: 0.02,
+            bevelSegments: 5
+        });
+
+        // Set up the material for the main mesh.
+        const textMaterial = new THREE.MeshStandardMaterial({ 
+            transparent: true, 
+            opacity: 1,
+            depthWrite: true,
+        });
+
+        const textMesh = new THREE.Mesh(textGeo, textMaterial);
+        textMesh.name = "textMesh";
+
+        const material = blockStyle.helpers.text.material || { color: "#AAAAAA", opacity: 1 };
+        const color = material.color || '#AAAAAA';
+        const opacity = material.opacity || 1;
+
+        textMesh.material.color = new THREE.Color(color);
+        textMesh.material.opacity = opacity;
+    
+        textMesh.rotation.x = THREE.MathUtils.degToRad(90);
+
+        textMesh.position.copy(position);
+
+        textMesh.visible = true;
+
+        sharedData.sceneHelper.addToScene(textMesh);
+        
+    });
   }
 
   renderEnds(ahuObject) {

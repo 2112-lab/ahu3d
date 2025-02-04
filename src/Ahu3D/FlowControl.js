@@ -129,7 +129,7 @@ export default class FlowControl {
     }
 
     defineAssociationsDict() {
-        console.log("populateAssociations started:", this.ahuObject);
+        console.log("defineAssociationsDict started:", this.ahuObject);
 
         const endTypes = sharedData.endTypes;  
         
@@ -147,28 +147,26 @@ export default class FlowControl {
                 this.ahuObject.associations.components[componentId] = edge.id;
             }
 
-            if (endTypes.includes(edge.blockStyle.ductEnds)){
-                const edgeLoc = edge.graphicLocation;
+            const edgeLoc = edge.graphicLocation;
+            const startIntersections = this.ductEdges.filter(child => 
+                edgeLoc.start === child.graphicLocation.start &&
+                edge != child ||
+                edgeLoc.start === child.graphicLocation.end &&
+                edge != child
+            );
+            const endIntersections = this.ductEdges.filter(child => 
+                edgeLoc.end === child.graphicLocation.start &&
+                edge != child ||
+                edgeLoc.end === child.graphicLocation.end &&
+                edge != child
+            );
 
-                const startIntersections = this.ductEdges.filter(child => 
-                    edgeLoc.start === child.graphicLocation.start &&
-                    edge != child ||
-                    edgeLoc.start === child.graphicLocation.end &&
-                    edge != child
-                );
-
-                const endIntersections = this.ductEdges.filter(child => 
-                    edgeLoc.end === child.graphicLocation.start &&
-                    edge != child ||
-                    edgeLoc.end === child.graphicLocation.end &&
-                    edge != child
-                );
-
-                this.ahuObject.associations.ducts[edge.id]["ends"] = [];
-                this.ahuObject.associations.ducts[edge.id]["arrows"] = [];
-                this.ahuObject.associations.ducts[edge.id]["labels"] = [];
-                
-                if (startIntersections.length == 0 || endIntersections.length == 0) {
+            this.ahuObject.associations.ducts[edge.id]["ends"] = [];
+            this.ahuObject.associations.ducts[edge.id]["arrows"] = [];
+            this.ahuObject.associations.ducts[edge.id]["labels"] = [];
+            
+            if (startIntersections.length == 0 || endIntersections.length == 0) {
+                if (endTypes.includes(edge.blockStyle.ductEnds)){
                     if(edge.blockStyle.ductEnds == 'insert') {
                         this.ahuObject.associations.ends[`Insert-${inserts}`] = edge.id;
                         this.ahuObject.associations.ducts[edge.id]["ends"].push(`Insert-${inserts}`);
@@ -179,21 +177,30 @@ export default class FlowControl {
                         this.ahuObject.associations.ducts[edge.id]["ends"].push(`Cap-${caps}`);
                         caps++;
                     }
-                    if(edge.blockStyle.helpers.arrow.display) {
-                        this.ahuObject.associations.arrows[`Arrow-${arrows}`] = edge.id;
-                        this.ahuObject.associations.ducts[edge.id]["arrows"].push(`Arrow-${arrows}`);
-                        arrows++;
-                        this.ahuObject.auxiliary["3d"].arrows[`Arrow-${arrows}`] = startIntersections.length == 0 ? "start" : "end";                        
-                    }
-                    if(edge.blockStyle.helpers.text.display) {
-                        this.ahuObject.associations.labels[`Label-${labels}`] = edge.id;
-                        this.ahuObject.associations.ducts[edge.id]["labels"].push(`Label-${labels}`);
-                        labels++;
-                        this.ahuObject.auxiliary["3d"].labels[`Label-${labels}`] = startIntersections.length == 0 ? "start" : "end";  
-                    }
                 }
-                
+                console.log("defineAssociationsDict arrow:", edge.blockStyle.helpers.arrow.display);
+                if(edge.blockStyle.helpers.arrow.display) {
+                    this.ahuObject.associations.arrows[`Arrow-${arrows}`] = edge.id;
+                    this.ahuObject.associations.ducts[edge.id]["arrows"].push(`Arrow-${arrows}`);
+                    this.ahuObject.auxiliary["3d"].arrows[`Arrow-${arrows}`] = {
+                        position: {x: 0, y: 0, z: 0},
+                        rotation: {x: 0, y: 0, z: 0},
+                        side: startIntersections.length == 0 ? "start" : "end",
+                    };   
+                    arrows++;                     
+                }
+                if(edge.blockStyle.helpers.text.display) {
+                    this.ahuObject.associations.labels[`Label-${labels}`] = edge.id;
+                    this.ahuObject.associations.ducts[edge.id]["labels"].push(`Label-${labels}`);
+                    this.ahuObject.auxiliary["3d"].labels[`Label-${labels}`] = {
+                        position: {x: 0, y: 0, z: 0},
+                        rotation: {x: 0, y: 0, z: 0},
+                        side: startIntersections.length == 0 ? "start" : "end",
+                    };  
+                    labels++;
+                }
             }
+                
         }
     }
 
@@ -264,16 +271,6 @@ export default class FlowControl {
         await this.Ducts.placeSegments(this.ahuObject);
 
         console.log("FlowControl step 3:", this.ahuObject);
-
-        // this.placeHelpers();
-    }
-
-    placeHelpers() {
-        for(const edgeKey in this.ahuObject.xetoDictionary.edges) {
-            const ductXeto = this.ahuObject.xetoDictionary.edges[edgeKey];
-            console.log("placeHelpers ductXeto:", ductXeto);
-            if(ductXeto.blockStyle.helpers.text.display){}
-        }
     }
 
     populate2D() {
@@ -336,6 +333,108 @@ export default class FlowControl {
         this.Ends = new Ends();
 
         this.Ends.createEnds(this.ahuObject);
+
+        this.transformHelpers();
+    }
+
+    transformHelpers(){
+        console.log("transformHelpers started:", this.ahuObject);
+        for (const ductKey in this.ahuObject.resources.ducts) {
+            const duct = this.ahuObject.resources.ducts[ductKey];
+
+            let segmentOrientation = this.ahuObject.xetoDictionary.edges[ductKey].orientation;
+            let ductHalfLength = JSON.parse(JSON.stringify(duct.dimensions.x)) / 2;
+            let halfWt = sharedData.moduleConfigs.parametricOptions.wallThickness / 2; 
+
+            let arrowLength = sharedData.arrowDimensions.x;
+
+            if(this.ahuObject.associations.ducts[ductKey].arrows.length) {
+                const arrowKey = this.ahuObject.associations.ducts[ductKey].arrows[0];
+                const arrow = this.ahuObject.auxiliary["3d"].arrows[arrowKey];
+
+                arrow.position = JSON.parse(JSON.stringify(duct.position));
+
+                console.log("transformHelpers segmentOrientation:", segmentOrientation);
+                console.log("transformHelpers ductHalfLength:", ductHalfLength);
+                console.log("transformHelpers duct:", duct);
+                console.log("transformHelpers arrow.position:", arrow.position);
+
+                if (arrow.side = "start") {
+                    
+                    if (segmentOrientation == 'west') {
+                        arrow.rotation.y = 90;
+                        arrow.position.x += (ductHalfLength * 1) + halfWt;
+                    } 
+                    else if (segmentOrientation == 'east') {
+                        arrow.rotation.y = 270;
+                        arrow.position.x += (ductHalfLength * -1) - halfWt;
+                    } 
+                    else if (segmentOrientation == 'north') {
+                        arrow.rotation.y = 180;
+                        arrow.position.z += (ductHalfLength * -1) - halfWt;
+                    } 
+                    else if (segmentOrientation == 'south') {
+                        arrow.rotation.y = 0;
+                        arrow.position.z += (ductHalfLength * 2) + halfWt + (arrowLength / 2);
+                    }
+                }
+                if (arrow.side = "end") {
+                    if (segmentOrientation == 'west') {
+                        arrow.rotation.y = 270;
+                        arrow.position.x += (ductHalfLength * -1) - halfWt;
+                    } 
+                    else if (segmentOrientation == 'east') {
+                        arrow.rotation.y = 90;
+                        arrow.position.x += (ductHalfLength * 1) + halfWt;
+                    } 
+                    else if (segmentOrientation == 'north') {
+                        arrow.rotation.y = 0;
+                        arrow.position.z += (ductHalfLength * 1) + halfWt;
+                    } 
+                    else if (segmentOrientation == 'south') {
+                        arrow.rotation.y = 180;
+                        arrow.position.z += (ductHalfLength * -1) - halfWt;
+                    }
+                }
+            }
+
+            if(this.ahuObject.associations.ducts[ductKey].labels.length) {
+                const labelKey = this.ahuObject.associations.ducts[ductKey].labels[0];
+                const label = this.ahuObject.auxiliary["3d"].labels[labelKey];
+
+                label.position = JSON.parse(JSON.stringify(duct.position));
+
+                if (label.side = "start") {
+                    
+                    if (segmentOrientation == 'west') {
+                        label.position.x += (ductHalfLength * 1) + halfWt;
+                    } 
+                    else if (segmentOrientation == 'east') {
+                        label.position.x += (ductHalfLength * -1) - halfWt;
+                    } 
+                    else if (segmentOrientation == 'north') {
+                        label.position.z += (ductHalfLength * -1) - halfWt;
+                    } 
+                    else if (segmentOrientation == 'south') {
+                        label.position.z += (ductHalfLength * 1) + halfWt;
+                    }
+                }
+                if (label.side = "end") {
+                    if (segmentOrientation == 'west') {
+                        label.position.x += (ductHalfLength * -1) - halfWt;
+                    } 
+                    else if (segmentOrientation == 'east') {
+                        label.position.x += (ductHalfLength * 1) + halfWt;
+                    } 
+                    else if (segmentOrientation == 'north') {
+                        label.position.z += (ductHalfLength * 1) + halfWt;
+                    } 
+                    else if (segmentOrientation == 'south') {
+                        label.position.z += (ductHalfLength * -1) - halfWt;
+                    }
+                }
+            }
+        }
     }
 
     cleanupJointMetadata(key) {
