@@ -36,12 +36,16 @@ import Mesh3D from "../3D/Mesh3D.js"
 import FlowControl from "./FlowControl.js"
 import { sharedData } from './globals.js';
 
+import wildcardSvg from '../assets/2D-Wildcard.svg';
+
 class Ahu3DAPI {
     constructor(ahu3DInstance) {
         this.ahu3D = ahu3DInstance;     
         this.libraryLoadInitiated = false;
         this.Mesh3D = new Mesh3D(this.sceneHelper);
         this.FlowControl = new FlowControl();
+
+        console.log("Ahu3DAPI wildcardSvg:", wildcardSvg);
     }
 
     /**
@@ -54,39 +58,58 @@ class Ahu3DAPI {
      * @returns {Object} The loaded files object.
      */
     async loadLibrary(assetConfigs) {
-
         this.libraryLoadInitiated = true;
-
+    
         const files = {};
         const jsonFiles = assetConfigs.componentList;
         const assetsPath = assetConfigs.assetsPath;
+    
+        const requests = jsonFiles.map(async (fileName) => {
+            const jsonPath = `${assetsPath}${fileName}/${fileName}.json`;
+    
+            try {
+                // Load JSON
+                const jsonResponse = await axios.get(jsonPath);
+                files[fileName] = jsonResponse.data;
 
-        const requests = jsonFiles.map(fileName => {
-            const requestPath = `${assetsPath}${fileName}/${fileName}.json`;
-            return axios.get(requestPath) // Return the promise here
-                .then(response => {
-                    // console.log(`Loaded ${fileName}.json successfully`);
-                    files[fileName] = response.data;
-                })
-                .catch(error => {
-                    console.error(`Failed to load ${fileName}.json:`, error);
-                });
+                const svgKey = files[fileName].files.svg;
+                const svgPath = `${assetsPath}${fileName}/${svgKey}`;
+
+                // files[fileName].svg = wildcardSvg;
+
+                if(svgKey != null) {
+                    // Load SVG as text
+                    const svgResponse = await fetch(svgPath);
+                    if (svgResponse.ok) {
+                        files[fileName].svg = await svgResponse.text();
+                    } 
+                    else {
+                        console.error(`Failed to load ${fileName}.svg`);
+                        files[fileName].svg = wildcardSvg;
+                    }
+                }
+                else {
+                    files[fileName].svg = wildcardSvg;
+                }
+    
+                
+            } catch (error) {
+                console.error(`Failed to load ${fileName} assets:`, error);
+            }
         });
-
+    
         await Promise.all(requests); // Wait for all promises to resolve
-
+    
         this.library = files;
-
         sharedData.componentLibrary = files;
-        // this.validator = new Validate(this.library);  
-
+    
         this.Assets3D = new Assets3D(this.sceneHelper, this.library, assetConfigs);
         await this.Assets3D.loadInstanceSet();
-
+    
         this.preprocess = new Preprocess(this.library);
-
+    
         return this.library;
-    }
+    }    
 
     async runAhu3D(xeto, outputMode){
 

@@ -348,7 +348,7 @@ export default class FlowControl {
 
             let arrowLength = sharedData.arrowDimensions.x;
 
-            if(this.ahuObject.associations.ducts[ductKey].arrows.length) {
+            if(this.ahuObject.associations.ducts[ductKey].arrows.length > 0) {
                 const arrowKey = this.ahuObject.associations.ducts[ductKey].arrows[0];
                 const arrow = this.ahuObject.auxiliary["3d"].arrows[arrowKey];
 
@@ -359,80 +359,70 @@ export default class FlowControl {
                 console.log("transformHelpers duct:", duct);
                 console.log("transformHelpers arrow.position:", arrow.position);
 
-                if (arrow.side = "start") {
-                    
-                    if (segmentOrientation == 'west') {
-                        arrow.rotation.y = 90;
-                        arrow.position.x += (ductHalfLength * 1) + halfWt;
-                    } 
-                    else if (segmentOrientation == 'east') {
-                        arrow.rotation.y = 270;
-                        arrow.position.x += (ductHalfLength * -1) - halfWt;
-                    } 
-                    else if (segmentOrientation == 'north') {
-                        arrow.rotation.y = 180;
-                        arrow.position.z += (ductHalfLength * -1) - halfWt;
-                    } 
-                    else if (segmentOrientation == 'south') {
-                        arrow.rotation.y = 0;
-                        arrow.position.z += (ductHalfLength * 2) + halfWt + (arrowLength / 2);
-                    }
-                }
-                if (arrow.side = "end") {
-                    if (segmentOrientation == 'west') {
-                        arrow.rotation.y = 270;
-                        arrow.position.x += (ductHalfLength * -1) - halfWt;
-                    } 
-                    else if (segmentOrientation == 'east') {
-                        arrow.rotation.y = 90;
-                        arrow.position.x += (ductHalfLength * 1) + halfWt;
-                    } 
-                    else if (segmentOrientation == 'north') {
-                        arrow.rotation.y = 0;
-                        arrow.position.z += (ductHalfLength * 1) + halfWt;
-                    } 
-                    else if (segmentOrientation == 'south') {
-                        arrow.rotation.y = 180;
-                        arrow.position.z += (ductHalfLength * -1) - halfWt;
-                    }
-                }
+                console.log("transformHelpers arrow:", arrow);
+
+                this.positionHelper(arrow, segmentOrientation, ductHalfLength, halfWt, arrowLength);
             }
 
-            if(this.ahuObject.associations.ducts[ductKey].labels.length) {
+            if(this.ahuObject.associations.ducts[ductKey].labels.length > 0) {
                 const labelKey = this.ahuObject.associations.ducts[ductKey].labels[0];
                 const label = this.ahuObject.auxiliary["3d"].labels[labelKey];
 
                 label.position = JSON.parse(JSON.stringify(duct.position));
 
-                if (label.side = "start") {
-                    
-                    if (segmentOrientation == 'west') {
-                        label.position.x += (ductHalfLength * 1) + halfWt;
-                    } 
-                    else if (segmentOrientation == 'east') {
-                        label.position.x += (ductHalfLength * -1) - halfWt;
-                    } 
-                    else if (segmentOrientation == 'north') {
-                        label.position.z += (ductHalfLength * -1) - halfWt;
-                    } 
-                    else if (segmentOrientation == 'south') {
-                        label.position.z += (ductHalfLength * 1) + halfWt;
-                    }
+                console.log("transformHelpers label:", label);
+
+                this.positionHelper(label, segmentOrientation, ductHalfLength, halfWt, arrowLength);
+
+                if(segmentOrientation == "north" || segmentOrientation == "south" ) {
+                    label.position.x += 150;
+                    label.position.z += 150;
                 }
-                if (label.side = "end") {
-                    if (segmentOrientation == 'west') {
-                        label.position.x += (ductHalfLength * -1) - halfWt;
-                    } 
-                    else if (segmentOrientation == 'east') {
-                        label.position.x += (ductHalfLength * 1) + halfWt;
-                    } 
-                    else if (segmentOrientation == 'north') {
-                        label.position.z += (ductHalfLength * 1) + halfWt;
-                    } 
-                    else if (segmentOrientation == 'south') {
-                        label.position.z += (ductHalfLength * -1) - halfWt;
-                    }
+                else {
+                    label.position.x -= 150;
+                    label.position.z += 150;
                 }
+                
+            }
+        }
+    }
+
+    positionHelper(helper, segmentOrientation, ductHalfLength, halfWt, arrowLength) {
+        ductHalfLength += 150;
+        if (helper.side == "start") {
+            if (segmentOrientation == 'west') {
+                helper.position.x += (ductHalfLength * 1) + halfWt;
+                helper.position.x += (arrowLength / 2);
+            } 
+            else if (segmentOrientation == 'east') {
+                helper.position.x += (ductHalfLength * -1) - halfWt;
+                helper.position.x += (arrowLength / -2);
+            } 
+            else if (segmentOrientation == 'north') {
+                helper.position.z += (ductHalfLength * -1) - halfWt;
+                helper.position.z += (arrowLength / -2);
+            } 
+            else if (segmentOrientation == 'south') {
+                helper.position.z += (ductHalfLength * 1) + halfWt;
+                helper.position.z += (arrowLength / 2);
+            }
+        }
+        if (helper.side == "end") {
+            if (segmentOrientation == 'west') {
+                helper.position.x += (ductHalfLength * -1) - halfWt;
+                helper.position.x += (arrowLength / -2);
+            } 
+            else if (segmentOrientation == 'east') {
+                helper.position.x += (ductHalfLength * 1) + halfWt;
+                helper.position.x += (arrowLength / 2);
+            } 
+            else if (segmentOrientation == 'north') {
+                helper.position.z += (ductHalfLength * 1) + halfWt;
+                helper.position.z += (arrowLength / 2);
+            } 
+            else if (segmentOrientation == 'south') {
+                helper.position.z += (ductHalfLength * -1) - halfWt;
+                helper.position.z += (arrowLength / -2);
             }
         }
     }

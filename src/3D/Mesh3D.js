@@ -5,8 +5,6 @@ import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
-import { createTextMesh } from "./Geometry/Helpers/Geometry_Text.js"
-
 export default class Mesh3D {
   constructor(sceneHelper){
     sharedData.sceneHelper = sceneHelper;
@@ -90,7 +88,7 @@ export default class Mesh3D {
     console.log("render3D renderJoints finished:", ahuObject);
     this.renderEnds(ahuObject);
 
-    // this.renderHelpers(ahuObject);
+    this.renderHelpers(ahuObject);
 
     return renderedAssembly;
   }
@@ -112,8 +110,22 @@ export default class Mesh3D {
       arrowMesh.rotation.y = THREE.MathUtils.degToRad( duct.rotation.y);
       // arrowMesh.rotation.y += THREE.MathUtils.degToRad( arrowResource.rotation.y);
       arrowMesh.visible = true;
+      // arrowMesh.material.color = "#FF0000";
+      console.log("arrowMesh:", arrowMesh);
+      arrowMesh.children[0].material = arrowMesh.children[0].material.clone();
+      arrowMesh.children[0].material.color = new THREE.Color(blockStyle.helpers.arrow.material.color);
+      arrowMesh.children[1].material = arrowMesh.children[1].material.clone();
+      arrowMesh.children[1].material.color = new THREE.Color(blockStyle.helpers.arrow.material.color);
       console.log("renderHelpers arrowMesh:", arrowMesh);
       sharedData.sceneHelper.addToScene(arrowMesh);
+
+      // const geometry = new THREE.BoxGeometry(100, 100, 100);
+      // const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+      // const cube = new THREE.Mesh(geometry, material);
+      // cube.position.copy(arrowResource.position);
+      // cube.name = "joint";
+      // sharedData.sceneHelper.addToScene(cube); 
+
     }
 
     for(const labelId in ahuObject.auxiliary["3d"].labels) {

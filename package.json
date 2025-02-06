@@ -1,6 +1,6 @@
 {
   "name": "@musashi/ahu3d",
-  "version": "1.0.149",
+  "version": "1.0.150",
   "description": "",
   "main": "dist/bundle.js",
   "files": [
@@ -31,6 +31,7 @@
     "html-minifier-terser": "^7.2.0",
     "jsdoc": "^4.0.3",
     "minami": "^1.2.3",
+    "raw-loader": "^4.0.2",
     "webpack-obfuscator": "^3.5.1"
   }
 }

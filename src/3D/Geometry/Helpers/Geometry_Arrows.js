@@ -11,11 +11,13 @@ export function createArrowInstance(sceneHelper) {
         depthWrite: true,
     });
 
+    const offset = 0;
+
     // Cylinder (shaft of the arrow)
     const cylinderGeometry = new THREE.CylinderGeometry(0.1, 0.1, 1.5, 32);
     cylinderGeometry.rotateZ(THREE.MathUtils.degToRad(-90));
     cylinderGeometry.scale(500, 500, 500);
-    cylinderGeometry.translate(-125 - 250, 0, 0); // Shift by -250 to center
+    cylinderGeometry.translate(-125 + offset, 0, 0); // Shift by -250 to center
     const cylinder = new THREE.Mesh(cylinderGeometry, material);
     cylinder.name = "cylinder";
 
@@ -23,7 +25,7 @@ export function createArrowInstance(sceneHelper) {
     const coneGeometry = new THREE.ConeGeometry(0.2, 0.5, 32);
     coneGeometry.rotateZ(THREE.MathUtils.degToRad(-90));
     coneGeometry.scale(500, 500, 500);
-    coneGeometry.translate(375 - 250, 0, 0); // Shift by -250 to center
+    coneGeometry.translate(375 + offset, 0, 0); // Shift by -250 to center
     const cone = new THREE.Mesh(coneGeometry, material);
     cone.name = "cone";
 

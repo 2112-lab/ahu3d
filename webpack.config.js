@@ -44,10 +44,18 @@ module.exports = (env, argv) => {
                         },
                     },
                 },
+                {
+                    test: /\.svg$/,
+                    use: [
+                        {
+                            loader: 'raw-loader', // Loads SVG as raw HTML string
+                        },
+                    ],
+                }
             ],
         },
         resolve: {
-            extensions: ['.js', '.json'],
+            extensions: ['.js', '.json', '.svg'],
             fallback: {
                 path: false,
             },

@@ -27,7 +27,6 @@ export default class Ducts {
         this.primaryColor = sharedData.primaryColor;
         this.Mesh3D = Mesh3D;
         this.componentLibrary = componentLibrary;
-        // this.ductEntry = componentLibrary['LinearDuctSliced']; // Retrieve the duct component from the library.
         this.ahuGroup = ahuGroup;
         this.ahuObject = ahuObject;
         

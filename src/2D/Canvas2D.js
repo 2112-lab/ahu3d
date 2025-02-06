@@ -22,67 +22,154 @@ export default class Canvas2D {
 
     this.renderAhuToLayer(layer);
 
-    console.log("drawToViewport step 1");
+    this.drawFrame(layer);
 
-    this.fitLayerToRects(layer, containerWidth, containerHeight, 0.90);
+    this.fitLayerToFrame(layer, containerWidth, containerHeight, 0.90);
 
     this.setCanvasEvents(layer, stage, container);
 
     layer.draw();
   }
 
+  drawFrame(layer) {
+    // Define padding values (adjust as needed)
+    const paddingX = 150;  // Extra horizontal padding
+    const paddingY = 600; // Extra vertical padding
+
+    // Get all elements, including ducts, joints, and ends
+    const shapes = layer.getChildren();
+    let boundingBox = {
+        x: Infinity,
+        y: Infinity,
+        width: 0,
+        height: 0
+    };
+
+    // Compute bounding box from all shapes (ducts, joints, etc.)
+    shapes.forEach(shape => {
+        const rect = shape.getClientRect();
+        boundingBox.x = Math.min(boundingBox.x, rect.x);
+        boundingBox.y = Math.min(boundingBox.y, rect.y);
+        boundingBox.width = Math.max(boundingBox.width, rect.x + rect.width - boundingBox.x);
+        boundingBox.height = Math.max(boundingBox.height, rect.y + rect.height - boundingBox.y);
+    });
+
+    // Ensure ends are included in bounding box calculations
+    for (const endKey in this.ahuObject.resources.ends) {
+        const end = this.ahuObject.resources.ends[endKey];
+
+        const endX = end.position.x;
+        const endY = end.position.z * -1; // Convert to Konva coordinate system
+        const endWidth = end.dimensions.z + paddingX; // Adding padding
+        const endHeight = 200 + paddingY; // Adding padding
+
+        boundingBox.x = Math.min(boundingBox.x, endX - endWidth / 2);
+        boundingBox.y = Math.min(boundingBox.y, endY - endHeight / 2);
+        boundingBox.width = Math.max(boundingBox.width, endX + endWidth / 2 - boundingBox.x);
+        boundingBox.height = Math.max(boundingBox.height, endY + endHeight / 2 - boundingBox.y);
+    }
+
+    // Compute frame position
+    const frameX = boundingBox.x - paddingX;
+    const frameY = boundingBox.y - paddingY / 2; // Center the padding vertically
+    const frameWidth = boundingBox.width + 2 * paddingX;
+    const frameHeight = boundingBox.height + paddingY;
+
+    // Apply padding to the entire bounding box
+    const frame = new Konva.Rect({
+        x: frameX,
+        y: frameY,
+        width: frameWidth,
+        height: frameHeight,
+        stroke: 'white',  // Frame color
+        strokeWidth: 30,   // Frame thickness
+        listening: false,  // Ensure frame does not capture events
+    });
+
+    // Compute text position (slightly above the bottom frame line)
+    const textY = frameY + frameHeight - 240; // Position above bottom frame
+    const text = new Konva.Text({
+        text: "AHU-1 Blueprint",
+        fontSize: 200,  // Adjust size as needed
+        fontFamily: "Arial",
+        fill: "white",  // Text color
+        x: frameX + frameWidth / 2, // Center horizontally
+        y: textY,
+        align: "center",
+        verticalAlign: "bottom",
+    });
+
+    // Adjust text position to center it properly
+    text.offsetX(text.width() / 2);
+
+    // **Add line above the text**
+    const line = new Konva.Line({
+        points: [
+            frameX, textY - 50,  // Start point (left side, slightly above text)
+            frameX + frameWidth, textY - 50,  // End point (right side, same height)
+        ],
+        stroke: 'white',
+        strokeWidth: 20,  // Adjust thickness if needed
+        lineCap: 'round',
+        lineJoin: 'round',
+    });
+
+    // Add frame, text, and line to the layer
+    layer.add(frame);
+    layer.add(text);
+    layer.add(line);
+  }
+
   renderAhuToLayer(layer) {
-    console.log("renderAhuToLayer step 1");
-    for(const ductKey in this.ahuObject.resources.ducts) {
-      // console.log("renderAhuToLayer step 2");
-
+    for (const ductKey in this.ahuObject.resources.ducts) {
       const duct = this.ahuObject.resources.ducts[ductKey];
-
+  
       let width = duct.dimensions.x + 5;
       let height = duct.dimensions.z;
-      let activeWalls = {
-        top: true,
-        bottom: true,
-        left: false,
-        right: false,
+      let activeWalls = { top: true, bottom: true, left: false, right: false };
+  
+      if (duct.rotation.y !== 0 && duct.rotation.y !== 180) {
+        [width, height] = [height, width]; // Swap width and height
+        activeWalls = { top: false, bottom: false, left: true, right: true };
       }
-
-      // console.log("renderAhuToLayer step 3");
-
-      if(duct.rotation.y != 0 && duct.rotation.y != 180) {
-        let temp = width;
-        width = height;
-        height = temp;
-        activeWalls = {
-          top: false,
-          bottom: false,
-          left: true,
-          right: true,
-        }
-      }
-
-      // console.log("renderAhuToLayer step 4");
-
+  
+      // Draw Duct Independently
       const konvaOptions = {
-        stroke: 'white', // White stroke
+        stroke: 'white',
         strokeWidth: 30,
         perfectDrawEnabled: true,
-        filters: [Konva.Filters.Blur],
-        blurRadius: 15,  // Softens the line edges
         opacity: 0.95,
       };
-
-      const lines = this.createDuct(
-          duct.position.x,
-          duct.position.z * -1,
-          width,
-          height,
-          konvaOptions,
-          activeWalls
-      );
+  
+      const lines = this.createDuct(duct.position.x, duct.position.z * -1, width, height, konvaOptions, activeWalls);
       lines.forEach(line => layer.add(line));
-
-      console.log("renderAhuToLayer step 5:", this.ahuObject.associations.ducts[ductKey]);
+  
+      // Create a Group for the Components Only
+      const componentGroup = new Konva.Group({
+        x: duct.position.x,
+        y: duct.position.z * -1,
+        rotation: duct.rotation.y, // Rotate only the components, not the duct
+        offsetX: 0, // No offset applied here
+        offsetY: 0,
+      });
+  
+      // Add components inside the componentGroup
+      if (this.ahuObject.associations.ducts[ductKey].components) {
+        for (const i in this.ahuObject.associations.ducts[ductKey].components) {
+          const componentId = this.ahuObject.associations.ducts[ductKey].components[i];
+          const componentKey = this.ahuObject.xetoDictionary.components[componentId].componentId.split("r:novo.graphics::")[1];
+          const componentSvg = sharedData.componentLibrary[componentKey].svg;
+          const componentResource = this.ahuObject.resources.components[componentId];
+  
+          // Convert absolute component position to relative
+          const relativePosition = {
+            x: componentResource.position.x - duct.position.x,
+            z: (componentResource.position.z - duct.position.z) * -1, // Adjust y-axis flipping
+          };
+  
+          this.renderSvg(componentGroup, relativePosition, componentSvg, duct);
+        }
+      }
 
       if(this.ahuObject.associations.ducts[ductKey].ends) {
         for(const endKey in this.ahuObject.associations.ducts[ductKey].ends) {
@@ -92,15 +179,41 @@ export default class Canvas2D {
           this.drawEnd(layer, end, endKey, konvaOptions);
         }
         
-      }     
-      
-      console.log("renderAhuToLayer step 6");
-      
+      }  
+  
+      // Add only the component group to the layer (so it rotates independently)
+      layer.add(componentGroup);
     }
-
-    for(const jointKey in this.ahuObject.resources.joints) {
+    
+  
+    for (const jointKey in this.ahuObject.resources.joints) {
       this.create2DJoint(layer, this.ahuObject.resources.joints[jointKey], jointKey);
     }
+  }
+
+  renderSvg(componentGroup, relativePosition, componentSvg, duct) {
+    const width = 381;
+    const height = duct.dimensions.z; // Set height dynamically if needed
+  
+    // Convert SVG to Data URL
+    const svgBlob = new Blob([componentSvg], { type: 'image/svg+xml' });
+    const svgUrl = URL.createObjectURL(svgBlob);
+  
+    const img = new Image();
+    img.onload = function () {
+      const konvaImage = new Konva.Image({
+        image: img,
+        x: relativePosition.x, // Now using relative positioning
+        y: relativePosition.z, // Already flipped correctly
+        width: width,
+        height: height,
+        offsetX: width / 2,
+        offsetY: height / 2,
+      });
+  
+      componentGroup.add(konvaImage); // Add to the component group
+    };
+    img.src = svgUrl;
   }
   
   createDuct(x, y, width, height, konvaOptions, options = {}) {
@@ -631,31 +744,18 @@ export default class Canvas2D {
       rotation: end.rotation.y, // Ensure rotation is applied if necessary
       sceneFunc: (context, shape) => {
         context.beginPath();
-
         context.lineCap = 'round';
-    
-        // Define your custom shape's path
-        context.moveTo(
-          (-width / 2), 
-          0 + offset
-        ); // Top-left corner
 
-        context.lineTo(
-          ((-width / 2) - 120), 
-          (height * -1) + offset
-        );  // Top-right corner
+        // Bottom left corner
+        context.moveTo((-width / 2), 0 + offset);
+        context.lineTo(((-width / 2) - 120), (height * -1) + offset);
 
-        context.moveTo(
-          (width / 2), 
-          (0) + offset
-        );
-        context.lineTo(
-          ((width / 2) + 120), 
-          (height * -1) + offset
-        );
+        // Connect to the top right tip
+        context.lineTo(((width / 2) + 120), (height * -1) + offset);
 
-        // context.closePath();
-    
+        // Close only the WIDE end by adding a line back to the other side
+        context.lineTo(((width / 2)), 0 + offset);
+
         // Fill and/or stroke the shape
         context.fillStrokeShape(shape);
       },
@@ -710,7 +810,7 @@ export default class Canvas2D {
       layer.position({ x: 0, y: 0 });
   
       // Call your fit function to re-adjust the content correctly
-      this.fitLayerToRects(layer, newWidth, newHeight, 0.90);
+      this.fitLayerToFrame(layer, newWidth, newHeight, 0.90);
   
       layer.draw();
     };
@@ -725,38 +825,30 @@ export default class Canvas2D {
     resizeObserver.observe(container);
   }
     
-  fitLayerToRects(layer, containerWidth, containerHeight, zoomOutFactor = 0.90) {
-      // Get the bounding box of all rectangles
-      const shapes = layer.getChildren();
-      const boundingBox = shapes.reduce(
-        (box, shape) => {
-          const rect = shape.getClientRect();
-          return {
-            x: Math.min(box.x, rect.x),
-            y: Math.min(box.y, rect.y),
-            width: Math.max(box.width, rect.x + rect.width - box.x),
-            height: Math.max(box.height, rect.y + rect.height - box.y),
-          };
-        },
-        { x: Infinity, y: Infinity, width: 0, height: 0 }
-      );
-  
-      const scaleX = containerWidth / boundingBox.width;
-      const scaleY = containerHeight / boundingBox.height;
-      let scale = Math.min(scaleX, scaleY);
-  
-      scale *= zoomOutFactor;
-  
-      const offsetX = (containerWidth - boundingBox.width * scale) / 2;
-      const offsetY = (containerHeight - boundingBox.height * scale) / 2;
-  
-      layer.scale({ x: scale, y: scale });
-      layer.position({
-        x: -boundingBox.x * scale + offsetX,
-        y: -boundingBox.y * scale + offsetY,
-      });
-  
-      layer.draw();
+  fitLayerToFrame(layer, containerWidth, containerHeight, zoomOutFactor = 0.90) {
+    // Find the frame object in the layer
+    const frame = layer.getChildren().find(shape => shape.getClassName() === "Rect" && shape.stroke() === "white");
+
+    // Get the frame's bounding box
+    const frameBox = frame.getClientRect();
+    
+    // Calculate scaling factors
+    const scaleX = containerWidth / frameBox.width;
+    const scaleY = containerHeight / frameBox.height;
+    let scale = Math.min(scaleX, scaleY) * zoomOutFactor;
+
+    // Centering offsets
+    const offsetX = (containerWidth - frameBox.width * scale) / 2;
+    const offsetY = (containerHeight - frameBox.height * scale) / 2;
+
+    // Apply scaling and positioning to fit to the frame
+    layer.scale({ x: scale, y: scale });
+    layer.position({
+        x: -frameBox.x * scale + offsetX,
+        y: -frameBox.y * scale + offsetY,
+    });
+
+    layer.draw();
   }
   
   setKonvaWheel(stage) {
