@@ -31,95 +31,6 @@ export default class Canvas2D {
     layer.draw();
   }
 
-  drawFrame(layer) {
-    // Define padding values (adjust as needed)
-    const paddingX = 150;  // Extra horizontal padding
-    const paddingY = 600; // Extra vertical padding
-
-    // Get all elements, including ducts, joints, and ends
-    const shapes = layer.getChildren();
-    let boundingBox = {
-        x: Infinity,
-        y: Infinity,
-        width: 0,
-        height: 0
-    };
-
-    // Compute bounding box from all shapes (ducts, joints, etc.)
-    shapes.forEach(shape => {
-        const rect = shape.getClientRect();
-        boundingBox.x = Math.min(boundingBox.x, rect.x);
-        boundingBox.y = Math.min(boundingBox.y, rect.y);
-        boundingBox.width = Math.max(boundingBox.width, rect.x + rect.width - boundingBox.x);
-        boundingBox.height = Math.max(boundingBox.height, rect.y + rect.height - boundingBox.y);
-    });
-
-    // Ensure ends are included in bounding box calculations
-    for (const endKey in this.ahuObject.resources.ends) {
-        const end = this.ahuObject.resources.ends[endKey];
-
-        const endX = end.position.x;
-        const endY = end.position.z * -1; // Convert to Konva coordinate system
-        const endWidth = end.dimensions.z + paddingX; // Adding padding
-        const endHeight = 200 + paddingY; // Adding padding
-
-        boundingBox.x = Math.min(boundingBox.x, endX - endWidth / 2);
-        boundingBox.y = Math.min(boundingBox.y, endY - endHeight / 2);
-        boundingBox.width = Math.max(boundingBox.width, endX + endWidth / 2 - boundingBox.x);
-        boundingBox.height = Math.max(boundingBox.height, endY + endHeight / 2 - boundingBox.y);
-    }
-
-    // Compute frame position
-    const frameX = boundingBox.x - paddingX;
-    const frameY = boundingBox.y - paddingY / 2; // Center the padding vertically
-    const frameWidth = boundingBox.width + 2 * paddingX;
-    const frameHeight = boundingBox.height + paddingY;
-
-    // Apply padding to the entire bounding box
-    const frame = new Konva.Rect({
-        x: frameX,
-        y: frameY,
-        width: frameWidth,
-        height: frameHeight,
-        stroke: 'white',  // Frame color
-        strokeWidth: 30,   // Frame thickness
-        listening: false,  // Ensure frame does not capture events
-    });
-
-    // Compute text position (slightly above the bottom frame line)
-    const textY = frameY + frameHeight - 240; // Position above bottom frame
-    const text = new Konva.Text({
-        text: "AHU-1 Blueprint",
-        fontSize: 200,  // Adjust size as needed
-        fontFamily: "Arial",
-        fill: "white",  // Text color
-        x: frameX + frameWidth / 2, // Center horizontally
-        y: textY,
-        align: "center",
-        verticalAlign: "bottom",
-    });
-
-    // Adjust text position to center it properly
-    text.offsetX(text.width() / 2);
-
-    // **Add line above the text**
-    const line = new Konva.Line({
-        points: [
-            frameX, textY - 50,  // Start point (left side, slightly above text)
-            frameX + frameWidth, textY - 50,  // End point (right side, same height)
-        ],
-        stroke: 'white',
-        strokeWidth: 20,  // Adjust thickness if needed
-        lineCap: 'round',
-        lineJoin: 'round',
-    });
-
-    // Add frame, text, and line to the layer
-    layer.add(frame);
-    layer.add(text);
-    layer.add(line);
-  }
-
   renderAhuToLayer(layer) {
     for (const ductKey in this.ahuObject.resources.ducts) {
       const duct = this.ahuObject.resources.ducts[ductKey];
@@ -189,7 +100,87 @@ export default class Canvas2D {
     for (const jointKey in this.ahuObject.resources.joints) {
       this.create2DJoint(layer, this.ahuObject.resources.joints[jointKey], jointKey);
     }
+
+    this.renderHelpers(layer);
   }
+
+  renderHelpers(layer) {
+    const ahuObject = this.ahuObject;
+    console.log("renderHelpers started:", ahuObject);
+
+    // Process Arrows
+    for (const arrowId in ahuObject.auxiliary["3d"].arrows) {
+        const arrowResource = ahuObject.auxiliary["3d"].arrows[arrowId];
+
+        const ductKey = ahuObject.associations.arrows[arrowId];
+        const duct = ahuObject.resources.ducts[ductKey];
+
+        const blockStyle = ahuObject.xetoDictionary.edges[ductKey].blockStyle;
+
+        console.log("renderHelpers arrowResource:", arrowResource, arrowId);
+
+        let offset = 0;
+        const endKey = ahuObject.associations.ducts[ductKey].ends[0];
+        if(endKey) {
+          if(endKey.includes("Insert")) {
+            offset = 200;
+          }
+        }
+
+        // Convert position and rotation from 3D (Three.js) to 2D (Konva)
+        let x = arrowResource.position.x + offset;
+        let y = -arrowResource.position.z; // Convert to 2D canvas space
+        const rotation = duct.rotation.y; // Keep the same Y rotation
+
+        if(rotation == 90) {
+          x -= offset;
+          y -= offset;
+        }
+
+        const arrowLength = 800; // Total length of arrow                
+
+        // Create a Konva arrow
+        let arrow = new Konva.Arrow({
+            points: [-arrowLength / 2, 0, arrowLength / 2, 0], // Center the arrow on (x, y)
+            pointerLength: 30,
+            pointerWidth: 30,
+            stroke: "white", // blockStyle.helpers.arrow.material.color
+            strokeWidth: 64,
+            x: x, // Position the arrow at its center
+            y: y,
+            rotation: rotation, // Apply rotation in degrees
+        });
+
+        layer.add(arrow); // Add to Konva layer
+    }
+
+    // Process Labels (Text)
+    for (const labelId in ahuObject.auxiliary["3d"].labels) {
+        const labelResource = ahuObject.auxiliary["3d"].labels[labelId];
+
+        const ductKey = ahuObject.associations.labels[labelId];
+        const duct = ahuObject.resources.ducts[ductKey];
+
+        const blockStyle = ahuObject.xetoDictionary.edges[ductKey].blockStyle;
+
+        const x = labelResource.position.x;
+        const y = -labelResource.position.z; // Convert to 2D canvas space
+
+        let label = new Konva.Text({
+            x: x,
+            y: y - 150,
+            text: blockStyle.helpers.text.value || "Label",
+            fontSize: 140,
+            fontFamily: "Arial",
+            fill: "white",
+        });
+
+        layer.add(label); // Add text label to Konva layer
+    }
+
+    layer.batchDraw(); // Redraw the layer after adding elements
+}
+
 
   renderSvg(componentGroup, relativePosition, componentSvg, duct) {
     const width = 381;
@@ -823,6 +814,95 @@ export default class Canvas2D {
       resizeStage();
     });
     resizeObserver.observe(container);
+  }
+
+  drawFrame(layer) {
+    // Define padding values (adjust as needed)
+    const paddingX = 500;  // Extra horizontal padding
+    const paddingY = 500; // Extra vertical padding
+
+    // Get all elements, including ducts, joints, and ends
+    const shapes = layer.getChildren();
+    let boundingBox = {
+        x: Infinity,
+        y: Infinity,
+        width: 0,
+        height: 0
+    };
+
+    // Compute bounding box from all shapes (ducts, joints, etc.)
+    shapes.forEach(shape => {
+        const rect = shape.getClientRect();
+        boundingBox.x = Math.min(boundingBox.x, rect.x);
+        boundingBox.y = Math.min(boundingBox.y, rect.y);
+        boundingBox.width = Math.max(boundingBox.width, rect.x + rect.width - boundingBox.x);
+        boundingBox.height = Math.max(boundingBox.height, rect.y + rect.height - boundingBox.y);
+    });
+
+    // Ensure ends are included in bounding box calculations
+    for (const endKey in this.ahuObject.resources.ends) {
+        const end = this.ahuObject.resources.ends[endKey];
+
+        const endX = end.position.x;
+        const endY = end.position.z * -1; // Convert to Konva coordinate system
+        const endWidth = end.dimensions.z + paddingX; // Adding padding
+        const endHeight = 200 + paddingY; // Adding padding
+
+        boundingBox.x = Math.min(boundingBox.x, endX - endWidth / 2);
+        boundingBox.y = Math.min(boundingBox.y, endY - endHeight / 2);
+        boundingBox.width = Math.max(boundingBox.width, endX + endWidth / 2 - boundingBox.x);
+        boundingBox.height = Math.max(boundingBox.height, endY + endHeight / 2 - boundingBox.y);
+    }
+
+    // Compute frame position
+    const frameX = boundingBox.x - paddingX;
+    const frameY = boundingBox.y - paddingY / 2; // Center the padding vertically
+    const frameWidth = boundingBox.width + 2 * paddingX;
+    const frameHeight = boundingBox.height + paddingY;
+
+    // Apply padding to the entire bounding box
+    const frame = new Konva.Rect({
+        x: frameX,
+        y: frameY,
+        width: frameWidth,
+        height: frameHeight,
+        stroke: 'white',  // Frame color
+        strokeWidth: 30,   // Frame thickness
+        listening: false,  // Ensure frame does not capture events
+    });
+
+    // Compute text position (slightly above the bottom frame line)
+    const textY = frameY + frameHeight - 0; // Position above bottom frame
+    const text = new Konva.Text({
+        text: "AHU-1 Blueprint",
+        fontSize: 200,  // Adjust size as needed
+        fontFamily: "Arial",
+        fill: "white",  // Text color
+        x: frameX + frameWidth / 2, // Center horizontally
+        y: textY,
+        align: "center",
+        verticalAlign: "bottom",
+        offsetY: -70
+    });
+
+    // Adjust text position to center it properly
+    text.offsetX(text.width() / 2);
+
+    // Apply padding to the entire bounding box
+    const textFrame = new Konva.Rect({
+      x: frameX,
+      y: textY,
+      width: frameWidth,
+      height: 320,
+      stroke: 'white',  // Frame color
+      strokeWidth: 30,   // Frame thickness
+      listening: false,  // Ensure frame does not capture events
+    });
+
+    // Add frame, text, and line to the layer
+    layer.add(frame);
+    layer.add(text);
+    layer.add(textFrame);
   }
     
   fitLayerToFrame(layer, containerWidth, containerHeight, zoomOutFactor = 0.90) {

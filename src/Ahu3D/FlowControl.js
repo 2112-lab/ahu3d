@@ -388,41 +388,50 @@ export default class FlowControl {
     }
 
     positionHelper(helper, segmentOrientation, ductHalfLength, halfWt, arrowLength) {
+        const endOffset = 100;
         ductHalfLength += 150;
         if (helper.side == "start") {
             if (segmentOrientation == 'west') {
                 helper.position.x += (ductHalfLength * 1) + halfWt;
                 helper.position.x += (arrowLength / 2);
+                helper.position.x += endOffset;
             } 
             else if (segmentOrientation == 'east') {
                 helper.position.x += (ductHalfLength * -1) - halfWt;
                 helper.position.x += (arrowLength / -2);
+                helper.position.x += endOffset * -1;
             } 
             else if (segmentOrientation == 'north') {
                 helper.position.z += (ductHalfLength * -1) - halfWt;
                 helper.position.z += (arrowLength / -2);
+                helper.position.z += endOffset * -1;
             } 
             else if (segmentOrientation == 'south') {
                 helper.position.z += (ductHalfLength * 1) + halfWt;
                 helper.position.z += (arrowLength / 2);
+                helper.position.z += endOffset;
             }
         }
         if (helper.side == "end") {
             if (segmentOrientation == 'west') {
                 helper.position.x += (ductHalfLength * -1) - halfWt;
                 helper.position.x += (arrowLength / -2);
+                helper.position.x += endOffset * -1;
             } 
             else if (segmentOrientation == 'east') {
                 helper.position.x += (ductHalfLength * 1) + halfWt;
                 helper.position.x += (arrowLength / 2);
+                helper.position.x += endOffset;
             } 
             else if (segmentOrientation == 'north') {
                 helper.position.z += (ductHalfLength * 1) + halfWt;
                 helper.position.z += (arrowLength / 2);
+                helper.position.z += endOffset;
             } 
             else if (segmentOrientation == 'south') {
                 helper.position.z += (ductHalfLength * -1) - halfWt;
                 helper.position.z += (arrowLength / -2);
+                helper.position.z += endOffset * -1;
             }
         }
     }
