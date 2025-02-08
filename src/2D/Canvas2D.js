@@ -78,7 +78,7 @@ export default class Canvas2D {
             z: (componentResource.position.z - duct.position.z) * -1, // Adjust y-axis flipping
           };
   
-          this.renderSvg(componentGroup, relativePosition, componentSvg, duct);
+          this.renderComponentSvg(componentGroup, relativePosition, componentSvg, duct);
         }
       }
 
@@ -182,7 +182,7 @@ export default class Canvas2D {
 }
 
 
-  renderSvg(componentGroup, relativePosition, componentSvg, duct) {
+  renderComponentSvg(componentGroup, relativePosition, componentSvg, duct) {
     const width = 381;
     const height = duct.dimensions.z; // Set height dynamically if needed
   
@@ -200,6 +200,7 @@ export default class Canvas2D {
         height: height,
         offsetX: width / 2,
         offsetY: height / 2,
+        scaleY: duct.rotation.y === 180 ? -1 : 1
       });
   
       componentGroup.add(konvaImage); // Add to the component group
@@ -817,95 +818,76 @@ export default class Canvas2D {
   }
 
   drawFrame(layer) {
-    // Define padding values (adjust as needed)
-    const paddingX = 500;  // Extra horizontal padding
-    const paddingY = 500; // Extra vertical padding
+    const paddingX = 500;
+    const paddingY = 500;
+    const textFrameHeight = 320; // Height of the text frame
 
-    // Get all elements, including ducts, joints, and ends
+    // Get all shapes including groups
     const shapes = layer.getChildren();
-    let boundingBox = {
-        x: Infinity,
-        y: Infinity,
-        width: 0,
-        height: 0
-    };
 
-    // Compute bounding box from all shapes (ducts, joints, etc.)
+    // Initialize bounding box values
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+    // Compute bounding box by iterating over all shapes
     shapes.forEach(shape => {
-        const rect = shape.getClientRect();
-        boundingBox.x = Math.min(boundingBox.x, rect.x);
-        boundingBox.y = Math.min(boundingBox.y, rect.y);
-        boundingBox.width = Math.max(boundingBox.width, rect.x + rect.width - boundingBox.x);
-        boundingBox.height = Math.max(boundingBox.height, rect.y + rect.height - boundingBox.y);
+        const rect = shape.getClientRect(); // Get absolute bounding box
+        minX = Math.min(minX, rect.x);
+        minY = Math.min(minY, rect.y);
+        maxX = Math.max(maxX, rect.x + rect.width);
+        maxY = Math.max(maxY, rect.y + rect.height);
     });
 
-    // Ensure ends are included in bounding box calculations
-    for (const endKey in this.ahuObject.resources.ends) {
-        const end = this.ahuObject.resources.ends[endKey];
+    // Add padding to the bounding box
+    const frameX = minX - paddingX;
+    const frameY = minY - paddingY;
+    const frameWidth = (maxX - minX) + 2 * paddingX;
+    const frameHeight = (maxY - minY) + 2 * paddingY + textFrameHeight; // Add text frame height
 
-        const endX = end.position.x;
-        const endY = end.position.z * -1; // Convert to Konva coordinate system
-        const endWidth = end.dimensions.z + paddingX; // Adding padding
-        const endHeight = 200 + paddingY; // Adding padding
-
-        boundingBox.x = Math.min(boundingBox.x, endX - endWidth / 2);
-        boundingBox.y = Math.min(boundingBox.y, endY - endHeight / 2);
-        boundingBox.width = Math.max(boundingBox.width, endX + endWidth / 2 - boundingBox.x);
-        boundingBox.height = Math.max(boundingBox.height, endY + endHeight / 2 - boundingBox.y);
-    }
-
-    // Compute frame position
-    const frameX = boundingBox.x - paddingX;
-    const frameY = boundingBox.y - paddingY / 2; // Center the padding vertically
-    const frameWidth = boundingBox.width + 2 * paddingX;
-    const frameHeight = boundingBox.height + paddingY;
-
-    // Apply padding to the entire bounding box
+    // Create the frame
     const frame = new Konva.Rect({
         x: frameX,
         y: frameY,
         width: frameWidth,
         height: frameHeight,
-        stroke: 'white',  // Frame color
-        strokeWidth: 30,   // Frame thickness
-        listening: false,  // Ensure frame does not capture events
+        stroke: 'white',
+        strokeWidth: 30,
+        listening: false, 
     });
 
     // Compute text position (slightly above the bottom frame line)
-    const textY = frameY + frameHeight - 0; // Position above bottom frame
+    const textY = frameY + frameHeight - textFrameHeight + 70; // Adjusted position
     const text = new Konva.Text({
         text: "AHU-1 Blueprint",
-        fontSize: 200,  // Adjust size as needed
+        fontSize: 200,
         fontFamily: "Arial",
-        fill: "white",  // Text color
-        x: frameX + frameWidth / 2, // Center horizontally
+        fill: "white",
+        x: frameX + frameWidth / 2,
         y: textY,
         align: "center",
         verticalAlign: "bottom",
-        offsetY: -70
     });
 
-    // Adjust text position to center it properly
+    // Center the text properly
     text.offsetX(text.width() / 2);
 
-    // Apply padding to the entire bounding box
+    // Create the text frame
     const textFrame = new Konva.Rect({
-      x: frameX,
-      y: textY,
-      width: frameWidth,
-      height: 320,
-      stroke: 'white',  // Frame color
-      strokeWidth: 30,   // Frame thickness
-      listening: false,  // Ensure frame does not capture events
+        x: frameX,
+        y: textY - 70, // Adjusted position to surround text properly
+        width: frameWidth,
+        height: textFrameHeight,
+        stroke: 'white',
+        strokeWidth: 30,
+        listening: false, 
     });
 
-    // Add frame, text, and line to the layer
+    // Add elements to the layer
     layer.add(frame);
-    layer.add(text);
     layer.add(textFrame);
+    layer.add(text);
   }
     
-  fitLayerToFrame(layer, containerWidth, containerHeight, zoomOutFactor = 0.90) {
+  fitLayerToFrame(layer, containerWidth, containerHeight, zoomOutFactor = 1) {
     // Find the frame object in the layer
     const frame = layer.getChildren().find(shape => shape.getClassName() === "Rect" && shape.stroke() === "white");
 
@@ -919,7 +901,7 @@ export default class Canvas2D {
 
     // Centering offsets
     const offsetX = (containerWidth - frameBox.width * scale) / 2;
-    const offsetY = (containerHeight - frameBox.height * scale) / 2;
+    const offsetY = ((containerHeight - frameBox.height * scale) / 2) - 10;
 
     // Apply scaling and positioning to fit to the frame
     layer.scale({ x: scale, y: scale });

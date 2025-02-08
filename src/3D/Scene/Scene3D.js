@@ -626,8 +626,8 @@ class Scene3D {
       
         const sceneIndicators = this.scene.children.filter(
           (child) => 
-            child.name == 'arrowClone' || 
-            child.name == 'textMesh' ||
+            child.name.includes('arrow') || 
+            child.name.includes('text') ||
             child.name.includes('joint') ||
             child.name.includes('duct')
         );

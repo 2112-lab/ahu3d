@@ -651,7 +651,7 @@ export default class Geometry_3D_Joints_L {
 
         let geometry = [];
         if(backwall.length >= 3) {
-            // geometry.push(createJointBackwall(backwall));
+            geometry.push(createJointBackwall(backwall));
         }
 
         console.log("createLJointBackwall:", geometry);

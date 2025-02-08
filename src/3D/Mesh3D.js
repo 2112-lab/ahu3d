@@ -117,6 +117,7 @@ export default class Mesh3D {
       arrowMesh.children[1].material = arrowMesh.children[1].material.clone();
       arrowMesh.children[1].material.color = new THREE.Color(blockStyle.helpers.arrow.material.color);
       console.log("renderHelpers arrowMesh:", arrowMesh);
+      arrowMesh.name = "arrow";
       sharedData.sceneHelper.addToScene(arrowMesh);
 
       // const geometry = new THREE.BoxGeometry(100, 100, 100);
