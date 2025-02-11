@@ -75,6 +75,8 @@ export default class Ducts {
 
         const componentPadding = ahuObject.xetoDictionary.edges[ductKey].blockStyle.componentPadding;
 
+        const flowDirection = ahuObject.xetoDictionary.edges[ductKey].blockStyle.flowDirection;
+
         console.log("initializeDuctSegment step 3:", componentPadding);
 
         this.testArray = ahuObject.associations.ducts[ductKey].components;
@@ -160,6 +162,15 @@ export default class Ducts {
             currentComponent.position.x += componentPadding.endSpace;
 
             console.log("initializeDuctSegment moving finished loop:", currentComponent);
+        }
+
+        const duct = ahuObject.resources.ducts[ductKey];
+        for(const uniqueId of ahuObject.associations.ducts[ductKey].components) {
+            console.log("initializeDuctSegment flowDirection uniqueId:", uniqueId);
+            const currentComponent = ahuObject.resources.components[uniqueId];
+            if(flowDirection == "endToStart") {
+                currentComponent.scale.x *= -1;
+            }
         }
 
         console.log("initializeDuctSegment moving finished");

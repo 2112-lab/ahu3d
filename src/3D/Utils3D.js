@@ -180,6 +180,7 @@ export default class Utils3D {
   }
 
   setProxyOpacity(opacity) {
+    const opacityMultiplier = 0.3;
     this.sceneHelper.scene.traverse((object3d) => {
       if (object3d.isObject3D) {
         if(object3d.name.includes('jointProxy')) {
@@ -191,7 +192,7 @@ export default class Utils3D {
             object3d.material.transparent = false;
             object3d.material.depthWrite = true;
           }
-          object3d.material.opacity = opacity;
+          object3d.material.opacity = opacity * opacityMultiplier;
         }
       }
     });

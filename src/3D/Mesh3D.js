@@ -107,7 +107,7 @@ export default class Mesh3D {
 
       let arrowMesh = sharedData.sceneHelper.instanceSet.arrow.clone();
       arrowMesh.position.copy(arrowResource.position);
-      arrowMesh.rotation.y = THREE.MathUtils.degToRad( duct.rotation.y);
+      arrowMesh.rotation.y = THREE.MathUtils.degToRad(arrowResource.rotation.y);
       // arrowMesh.rotation.y += THREE.MathUtils.degToRad( arrowResource.rotation.y);
       arrowMesh.visible = true;
       // arrowMesh.material.color = "#FF0000";
@@ -385,7 +385,7 @@ export default class Mesh3D {
     let length = 0;
     let position = {x: 0, y: 0, z:0};
 
-    const material1 = new THREE.MeshStandardMaterial({ color: sharedData.primaryColor, side: THREE.DoubleSide });
+    const material = new THREE.MeshStandardMaterial({ color: sharedData.primaryColor });
     
 
     function renderProxy(proxy) {
@@ -396,7 +396,7 @@ export default class Mesh3D {
       length = Math.abs(proxy.coordinates[7].y - proxy.coordinates[0].y);
 
       const geometry = new THREE.BoxGeometry(wt, length, wt);
-      const proxyMesh = new THREE.Mesh(geometry, material1);
+      const proxyMesh = new THREE.Mesh(geometry, material);
       proxyMesh.name = "jointProxy";
       proxyMesh.position.copy(position);
       sharedData.sceneHelper.addToScene(proxyMesh);
@@ -469,24 +469,22 @@ export default class Mesh3D {
 
   async cloneAndTransformComponent(componentId, ahuObject, ductId) {
     console.log("cloneAndTransformComponent started:", componentId, ahuObject);
-    console.log("cloneAndTransformComponent sharedData.sceneHelper.instanceSet:", sharedData.sceneHelper.instanceSet);
+    // console.log("cloneAndTransformComponent sharedData.sceneHelper.instanceSet:", sharedData.sceneHelper.instanceSet);
 
     const libraryKey = ahuObject.xetoDictionary.components[componentId].componentId.split("r:novo.graphics::")[1];
     const instanceKey = sharedData.componentLibrary[libraryKey].componentName;
-
-    console.log("cloneAndTransformComponent libraryKey:", libraryKey);
-    console.log("cloneAndTransformComponent instanceKey:", instanceKey);
 
     // Ensure cloning is asynchronous if necessary
     const clonedComponent = sharedData.sceneHelper.instanceSet[instanceKey].clone();
 
     clonedComponent.position.copy(ahuObject.resources.components[componentId].position);
     clonedComponent.scale.copy(ahuObject.resources.components[componentId].scale);
+    clonedComponent.userData.name = componentId;
     clonedComponent.visible = true;
     
     this.extendObject3D(clonedComponent);
 
-    console.log("cloneAndTransformComponent clonedComponent:", clonedComponent);
+    // console.log("cloneAndTransformComponent clonedComponent:", clonedComponent);
     sharedData.sceneHelper.addToScene(clonedComponent);
 
     return clonedComponent;

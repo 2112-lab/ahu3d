@@ -44,8 +44,6 @@ class Ahu3DAPI {
         this.libraryLoadInitiated = false;
         this.Mesh3D = new Mesh3D(this.sceneHelper);
         this.FlowControl = new FlowControl();
-
-        console.log("Ahu3DAPI wildcardSvg:", wildcardSvg);
     }
 
     /**
@@ -145,7 +143,9 @@ class Ahu3DAPI {
 
         this.sceneHelper.clearScene();
 
-        const ahuObject = this.FlowControl.runAhu3D(cleanedXeto, outputMode);
+        const ahuObject = await this.FlowControl.runAhu3D(cleanedXeto, outputMode);
+
+        this.components = ahuObject["3d"].components.meshes;
 
         return ahuObject;
     }

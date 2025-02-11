@@ -414,9 +414,12 @@ class Scene3D {
         const tooltipDiv = document.createElement('div');
         tooltipDiv.innerHTML = this.tooltipTemplate.trim(); // Use the imported template
         const tooltipElement = tooltipDiv.firstElementChild;
+
+        console.log("showTooltip this.selectedMesh:", this.selectedMesh);
+        console.log("showTooltip meshComponentData:", meshComponentData);
     
         // Update the tooltip content
-        tooltipElement.querySelector('.tooltip-header').textContent = (meshComponentData.componentId.split("::")[1]) || 'Mesh';
+        tooltipElement.querySelector('.tooltip-header').textContent = this.selectedMesh.userData.name.split("::")[1] || this.selectedMesh.userData.name;
     
         const attrKeys = Object.keys(meshAttributes);
         const attrKeyDiv = tooltipElement.querySelector('.tooltip-key');

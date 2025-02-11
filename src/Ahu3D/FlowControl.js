@@ -47,7 +47,7 @@ export default class FlowControl {
             this.populate2D();
             this.populate3D();
             this.render2D();
-            this.render3D();
+            await this.render3D();
         } 
 
         return this.ahuObject;
@@ -178,7 +178,8 @@ export default class FlowControl {
                         caps++;
                     }
                 }
-                console.log("defineAssociationsDict arrow:", edge.blockStyle.helpers.arrow.display);
+                console.log("defineAssociationsDict edge.blockStyle:", edge.blockStyle);
+                // console.log("defineAssociationsDict arrow:", edge.blockStyle.helpers.arrow.display);
                 if(edge.blockStyle.helpers.arrow.display) {
                     this.ahuObject.associations.arrows[`Arrow-${arrows}`] = edge.id;
                     this.ahuObject.associations.ducts[edge.id]["arrows"].push(`Arrow-${arrows}`);
@@ -186,6 +187,7 @@ export default class FlowControl {
                         position: {x: 0, y: 0, z: 0},
                         rotation: {x: 0, y: 0, z: 0},
                         side: startIntersections.length == 0 ? "start" : "end",
+                        flowDirection: edge.blockStyle.flowDirection,
                     };   
                     arrows++;                     
                 }
@@ -196,6 +198,7 @@ export default class FlowControl {
                         position: {x: 0, y: 0, z: 0},
                         rotation: {x: 0, y: 0, z: 0},
                         side: startIntersections.length == 0 ? "start" : "end",
+                        flowDirection: edge.blockStyle.flowDirection,
                     };  
                     labels++;
                 }
@@ -348,6 +351,8 @@ export default class FlowControl {
 
             let arrowLength = sharedData.arrowDimensions.x;
 
+            const endKey = this.ahuObject.associations.ducts[ductKey].ends[0];
+
             if(this.ahuObject.associations.ducts[ductKey].arrows.length > 0) {
                 const arrowKey = this.ahuObject.associations.ducts[ductKey].arrows[0];
                 const arrow = this.ahuObject.auxiliary["3d"].arrows[arrowKey];
@@ -359,9 +364,26 @@ export default class FlowControl {
                 console.log("transformHelpers duct:", duct);
                 console.log("transformHelpers arrow.position:", arrow.position);
 
-                console.log("transformHelpers arrow:", arrow);
+                this.positionHelper(arrow, segmentOrientation, ductHalfLength, halfWt, arrowLength, endKey);
 
-                this.positionHelper(arrow, segmentOrientation, ductHalfLength, halfWt, arrowLength);
+                arrow.rotation.y = duct.rotation.y;
+
+                if(arrow.flowDirection == "endToStart") {
+                    if(arrow.rotation.y == 180) {
+                        arrow.rotation.y = 0;
+                    }
+                    else if(arrow.rotation.y == 0) {
+                        arrow.rotation.y = 180;
+                    }
+                    else if(arrow.rotation.y == 90) {
+                        arrow.rotation.y = -90;
+                    }
+                    else if(arrow.rotation.y == -90) {
+                        arrow.rotation.y = 90;
+                    }
+                }
+                
+                
             }
 
             if(this.ahuObject.associations.ducts[ductKey].labels.length > 0) {
@@ -372,22 +394,34 @@ export default class FlowControl {
 
                 console.log("transformHelpers label:", label);
 
-                this.positionHelper(label, segmentOrientation, ductHalfLength, halfWt, arrowLength);
+                this.positionHelper(label, segmentOrientation, ductHalfLength, halfWt, arrowLength, endKey);
 
-                if(segmentOrientation == "north" || segmentOrientation == "south" ) {
-                    label.position.x += 150;
-                    label.position.z += 150;
+                label.rotation.y = duct.rotation.y;
+
+                let offset = 150;
+
+                if(segmentOrientation == "north") {
+                    label.position.x += offset;
+                    label.position.z -= offset;
+                }
+                else if(segmentOrientation == "south" ) {
+                    label.position.x += offset;
+                    // label.position.z -= offset;
+                }
+                else if(segmentOrientation == "east" ) {
+                    label.position.x -= offset * 3;
+                    label.position.z += offset;
                 }
                 else {
-                    label.position.x -= 150;
-                    label.position.z += 150;
+                    label.position.x -= offset;
+                    label.position.z += offset;
                 }
                 
             }
         }
     }
 
-    positionHelper(helper, segmentOrientation, ductHalfLength, halfWt, arrowLength) {
+    positionHelper(helper, segmentOrientation, ductHalfLength, halfWt, arrowLength, endKey) {
         const endOffset = 100;
         ductHalfLength += 150;
         if (helper.side == "start") {
@@ -433,6 +467,27 @@ export default class FlowControl {
                 helper.position.z += (arrowLength / -2);
                 helper.position.z += endOffset * -1;
             }
+        }
+
+        let offset = 0;
+        if(endKey && endKey.includes("Insert")) {
+            offset = 250;
+        }
+        else if(endKey && endKey.includes("Cap")) {
+            offset = 50;
+        }
+
+        if(segmentOrientation == "north") {
+            helper.position.z += offset;
+        }
+        else if(segmentOrientation == "south" ) {
+            helper.position.z -= offset;
+        }
+        else if(segmentOrientation == "east" ) {
+            helper.position.x += offset;
+        }
+        else {
+            helper.position.x -= offset;
         }
     }
 

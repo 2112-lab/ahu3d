@@ -55,6 +55,8 @@ class Ahu3D extends Ahu3DAPI {
 
         this.sceneHelper = new Scene3D(this.moduleConfigs);
 
+        this.setGlowCycleDuration(3000);
+
         sharedData.sceneHelper = this.sceneHelper;
 
         this.Assets3D = null; 

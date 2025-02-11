@@ -119,25 +119,11 @@ export default class Canvas2D {
 
         console.log("renderHelpers arrowResource:", arrowResource, arrowId);
 
-        let offset = 0;
-        const endKey = ahuObject.associations.ducts[ductKey].ends[0];
-        if(endKey) {
-          if(endKey.includes("Insert")) {
-            offset = 200;
-          }
-        }
-
-        // Convert position and rotation from 3D (Three.js) to 2D (Konva)
-        let x = arrowResource.position.x + offset;
+        let x = arrowResource.position.x;
         let y = -arrowResource.position.z; // Convert to 2D canvas space
         const rotation = duct.rotation.y; // Keep the same Y rotation
 
-        if(rotation == 90) {
-          x -= offset;
-          y -= offset;
-        }
-
-        const arrowLength = 800; // Total length of arrow                
+        const arrowLength = 1000; // Total length of arrow                
 
         // Create a Konva arrow
         let arrow = new Konva.Arrow({
@@ -145,7 +131,7 @@ export default class Canvas2D {
             pointerLength: 30,
             pointerWidth: 30,
             stroke: "white", // blockStyle.helpers.arrow.material.color
-            strokeWidth: 64,
+            strokeWidth: 100,
             x: x, // Position the arrow at its center
             y: y,
             rotation: rotation, // Apply rotation in degrees
@@ -179,8 +165,7 @@ export default class Canvas2D {
     }
 
     layer.batchDraw(); // Redraw the layer after adding elements
-}
-
+  }
 
   renderComponentSvg(componentGroup, relativePosition, componentSvg, duct) {
     const width = 381;
