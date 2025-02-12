@@ -129,6 +129,54 @@ class Validation {
       return isValid;
     }
 
+    hasClosedLoop(edges) {
+      console.log("hasClosedLoop started");
+      // Build a graph from the given edges
+      let graph = {};
+    
+      edges.forEach(edge => {
+        const edgeId = edge.id;
+        if (!graph[edgeId]) graph[edgeId] = [];
+    
+        for (let direction in edge.connections) {
+          edge.connections[direction].forEach(connId => {
+            graph[edgeId].push(connId);
+          });
+        }
+      });
+    
+      let visited = new Set();
+      let recStack = new Set();
+    
+      // Function to perform DFS and detect cycles
+      function dfs(node) {
+        if (recStack.has(node)) return true;  // Cycle detected
+        if (visited.has(node)) return false;  // Already visited
+    
+        visited.add(node);
+        recStack.add(node);
+    
+        for (let neighbor of graph[node] || []) {
+          if (dfs(neighbor)) return true;
+        }
+    
+        recStack.delete(node);
+        return false;
+      }
+    
+      // Check each node in the graph for cycles
+      for (let node in graph) {
+        if (dfs(node)) {
+          console.log(`hasClosedLoop: ${node}`);
+          return true;
+        }
+      }
+
+      console.log("hasClosedLoop finished");
+    
+      return false;
+    }
+
     /**
      * propogateBlockStyle
      * 

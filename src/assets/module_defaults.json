@@ -128,23 +128,11 @@
 	},
     "xeto": {
         "joints": {
-            "XZ": {
-                "style": "orthogonal",
-                "direction": "outwards", 
-                "context": "adjacent",
-                "yDirection": "inwards",
-                "padding": 250
-            },
-            "XY": {
-                "style": "diagonal",
-                "direction": "inwards",
-                "context": "adjacent"
-            },
-            "YZ": {
-                "style": "diagonal",
-                "direction": "inwards",
-                "context": "adjacent"
-            }
+            "style": "orthogonal",
+            "direction": "outwards", 
+            "context": "adjacent",
+            "yDirection": "inwards",
+            "padding": 250
         }
     },
     "parametricOptions": {

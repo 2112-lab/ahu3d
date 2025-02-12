@@ -11,12 +11,12 @@ export default class Joints {
         console.log("Joints constructor this.ahuGroup:", this.ahuGroup);
 
         sharedData.jointBlockStyle = this.ahuGroup.blockStyle.joints;
-        sharedData.xzJointStyle = sharedData.jointBlockStyle.XZ.style;
-        sharedData.xzJointDirection = sharedData.jointBlockStyle.XZ.direction;
-        sharedData.xzJointContext = sharedData.jointBlockStyle.XZ.context;
-        sharedData.xzJointPadding = sharedData.jointBlockStyle.XZ.padding;
-        sharedData.xzJointYStyle = sharedData.jointBlockStyle.XZ.yStyle;
-        sharedData.xzJointYDirection = sharedData.jointBlockStyle.XZ.yDirection; 
+        sharedData.jointStyle = sharedData.jointBlockStyle.style;
+        sharedData.jointDirection = sharedData.jointBlockStyle.direction;
+        sharedData.jointContext = sharedData.jointBlockStyle.context;
+        sharedData.jointPadding = sharedData.jointBlockStyle.padding;
+        sharedData.jointYStyle = sharedData.jointBlockStyle.yStyle;
+        sharedData.jointYDirection = sharedData.jointBlockStyle.yDirection; 
         
         console.log("Joints constructor step 2:", this.ahuGroup);
     }
@@ -163,10 +163,10 @@ export default class Joints {
   
         }
 
-        if(sharedData.xzJointDirection == "inwards") {
+        if(sharedData.jointDirection == "inwards") {
             this.alignProxyMediansInwards(intersection, gridKey); 
         }
-        else if(sharedData.xzJointDirection == "outwards") {
+        else if(sharedData.jointDirection == "outwards") {
             this.alignProxyMediansOutwards(intersection, gridKey); 
         }
 
@@ -216,7 +216,7 @@ export default class Joints {
 
         let ductSize1 = 0;
         let ductSize2 = 0;
-        const selectedSize = sharedData.xzJointYDirection;
+        const selectedSize = sharedData.jointYDirection;
         let sizes = {
             inwards: null,
             outwards: null
@@ -249,7 +249,7 @@ export default class Joints {
 
         console.log("calculateAdjacentContext step 3");
 
-        if(sharedData.xzJointContext == "global") {
+        if(sharedData.jointContext == "global") {
             return;
         }
 
@@ -266,7 +266,7 @@ export default class Joints {
 
         console.log("calculateAdjacentContext step 5");
 
-        if(sharedData.xzJointYStyle == "diagonal") {
+        if(sharedData.jointYStyle == "diagonal") {
             for(const key in intersection) {
 
                 console.log("calculateAdjacentContext step 60:", intersection[key]);
@@ -312,7 +312,7 @@ export default class Joints {
 
             
         }
-        else if(sharedData.xzJointYStyle == "orthogonal") {
+        else if(sharedData.jointYStyle == "orthogonal") {
             
             if(definedIntersectionCount == 4) {
 
@@ -611,7 +611,7 @@ export default class Joints {
 
                 console.log("alignProxyMediansInwards step 5");
 
-                if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
+                if(sharedData.jointStyle == "diagonal" || sharedData.jointStyle == "arc") {
 
                     const distances = {
                         right: {
@@ -634,7 +634,7 @@ export default class Joints {
                         upProxies.ductDimensions.y
                     );
 
-                    medianOffset += sharedData.xzJointPadding;
+                    medianOffset += sharedData.jointPadding;
 
                     medianOffset = {
                         x: medianOffset,
@@ -653,7 +653,7 @@ export default class Joints {
 
                 rightProxies.proxyMedian.position.x = downProxies.proxy1.position.x;
 
-                if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
+                if(sharedData.jointStyle == "diagonal" || sharedData.jointStyle == "arc") {
                     const distances = {
                         down: {
                             x: Math.abs(downProxies.proxyMedian.position.x - rightProxies.proxy2.position.x),
@@ -672,7 +672,7 @@ export default class Joints {
                         downProxies.ductDimensions.y
                     );
 
-                    medianOffset += sharedData.xzJointPadding;
+                    medianOffset += sharedData.jointPadding;
 
                     medianOffset = {
                         x: medianOffset * 0,
@@ -688,7 +688,7 @@ export default class Joints {
                 leftProxies.proxyMedian.position.x = upProxies.proxy2.position.x;
                 leftProxies.proxyMedian.position.z = leftProxies.proxy2.position.z;
 
-                if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
+                if(sharedData.jointStyle == "diagonal" || sharedData.jointStyle == "arc") {
                     const distances = {
                         up: {
                             x: Math.abs(upProxies.proxyMedian.position.x - leftProxies.proxy1.position.x),
@@ -708,7 +708,7 @@ export default class Joints {
                         upProxies.ductDimensions.y
                     );
 
-                    medianOffset += sharedData.xzJointPadding;
+                    medianOffset += sharedData.jointPadding;
 
                     medianOffset = {
                         x: medianOffset * 0,
@@ -725,7 +725,7 @@ export default class Joints {
                 downProxies.proxyMedian.position.x = downProxies.proxy2.position.x;
                 downProxies.proxyMedian.position.z = leftProxies.proxy1.position.z;
 
-                if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
+                if(sharedData.jointStyle == "diagonal" || sharedData.jointStyle == "arc") {
                     const distances = {
                         left: {
                             x: Math.abs(leftProxies.proxyMedian.position.x - leftProxies.proxy2.position.x),
@@ -744,7 +744,7 @@ export default class Joints {
                         downProxies.ductDimensions.y
                     );
 
-                    medianOffset += sharedData.xzJointPadding;
+                    medianOffset += sharedData.jointPadding;
 
                     medianOffset = {
                         x: medianOffset * 0,
@@ -778,7 +778,7 @@ export default class Joints {
 
                 console.log("alignProxyMediansInwards step 6");
 
-                if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
+                if(sharedData.jointStyle == "diagonal" || sharedData.jointStyle == "arc") {
                     const distances = {
                         left: {
                             x: Math.abs(leftProxies.proxyMedian.position.x - leftProxies.proxy2.position.x),
@@ -831,7 +831,7 @@ export default class Joints {
 
                 rightProxies.proxyMedian.position.x = upProxies.proxy2.position.x;  
                 
-                if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
+                if(sharedData.jointStyle == "diagonal" || sharedData.jointStyle == "arc") {
                     const distances = {
                         down: {
                             x: Math.abs(downProxies.proxyMedian.position.x - rightProxies.proxy2.position.x),
@@ -881,7 +881,7 @@ export default class Joints {
 
                 rightProxies.proxyMedian.position.x = upProxies.proxy2.position.x;
 
-                if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
+                if(sharedData.jointStyle == "diagonal" || sharedData.jointStyle == "arc") {
                     const distances = {
                         up: {
                             x: Math.abs(upProxies.proxyMedian.position.x - leftProxies.proxy1.position.x),
@@ -936,7 +936,7 @@ export default class Joints {
                     rightProxies.proxyMedian.position.x = leftProxies.proxy1.position.x;
                 }
 
-                if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
+                if(sharedData.jointStyle == "diagonal" || sharedData.jointStyle == "arc") {
                     const distances = {
                         down: {
                             x: Math.abs(downProxies.proxyMedian.position.x - rightProxies.proxy2.position.x),
@@ -987,7 +987,7 @@ export default class Joints {
             // top-right median
             rightProxies.proxyMedian.position.x = upProxies.proxy2.position.x;
 
-            if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
+            if(sharedData.jointStyle == "diagonal" || sharedData.jointStyle == "arc") {
                 const distances = {
                     down: {
                         x: Math.abs(downProxies.proxyMedian.position.x - rightProxies.proxy2.position.x),
@@ -1124,7 +1124,7 @@ export default class Joints {
                 upProxies.proxyMedian.position.z = rightProxies.proxy2.position.z;
                 rightProxies.proxyMedian.position.z = upProxies.proxy2.position.z;
 
-                if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
+                if(sharedData.jointStyle == "diagonal" || sharedData.jointStyle == "arc") {
                     const distances = {
                         right: {
                             x: Math.abs(rightProxies.proxyMedian.position.x - upProxies.proxy2.position.x),
@@ -1144,7 +1144,7 @@ export default class Joints {
                         upProxies.ductDimensions.y
                     );
 
-                    medianOffset += sharedData.xzJointPadding;
+                    medianOffset += sharedData.jointPadding;
 
                     medianOffset = {
                         x: medianOffset * 0,
@@ -1160,7 +1160,7 @@ export default class Joints {
                 downProxies.proxyMedian.position.x = rightProxies.proxy2.position.x;
                 rightProxies.proxyMedian.position.x = downProxies.proxy1.position.x;
 
-                if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
+                if(sharedData.jointStyle == "diagonal" || sharedData.jointStyle == "arc") {
                     const distances = {
                         down: {
                             x: Math.abs(downProxies.proxyMedian.position.x - downProxies.proxy2.position.x),
@@ -1179,7 +1179,7 @@ export default class Joints {
                         downProxies.ductDimensions.y
                     );
 
-                    medianOffset += sharedData.xzJointPadding;
+                    medianOffset += sharedData.jointPadding;
 
                     medianOffset = {
                         x: medianOffset * 0,
@@ -1195,7 +1195,7 @@ export default class Joints {
                 leftProxies.proxyMedian.position.x = upProxies.proxy2.position.x;
                 leftProxies.proxyMedian.position.z = leftProxies.proxy2.position.z;
 
-                if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
+                if(sharedData.jointStyle == "diagonal" || sharedData.jointStyle == "arc") {
                     const distances = {
                         up: {
                             x: Math.abs(upProxies.proxyMedian.position.x - upProxies.proxy1.position.x),
@@ -1215,7 +1215,7 @@ export default class Joints {
                         upProxies.ductDimensions.y
                     );
 
-                    medianOffset += sharedData.xzJointPadding;
+                    medianOffset += sharedData.jointPadding;
 
                     medianOffset = {
                         x: medianOffset * 0,
@@ -1231,7 +1231,7 @@ export default class Joints {
                 downProxies.proxyMedian.position.x = downProxies.proxy2.position.x;
                 downProxies.proxyMedian.position.z = leftProxies.proxy1.position.z;
                 
-                if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
+                if(sharedData.jointStyle == "diagonal" || sharedData.jointStyle == "arc") {
                     const distances = {
                         left: {
                             x: Math.abs(leftProxies.proxyMedian.position.x - downProxies.proxy1.position.x),
@@ -1250,7 +1250,7 @@ export default class Joints {
                         downProxies.ductDimensions.y
                     );
 
-                    medianOffset += sharedData.xzJointPadding;
+                    medianOffset += sharedData.jointPadding;
 
                     medianOffset = {
                         x: medianOffset * 0,
@@ -1278,7 +1278,7 @@ export default class Joints {
                     downProxies.proxyMedian.position.z = upProxies.proxy2.position.z;
                 }
 
-                if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
+                if(sharedData.jointStyle == "diagonal" || sharedData.jointStyle == "arc") {
                     const distances = {
                         left: {
                             x: Math.abs(leftProxies.proxyMedian.position.x - downProxies.proxy1.position.x),
@@ -1328,7 +1328,7 @@ export default class Joints {
 
                 rightProxies.proxyMedian.position.z = upProxies.proxy2.position.z;   
                 
-                if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
+                if(sharedData.jointStyle == "diagonal" || sharedData.jointStyle == "arc") {
                     const distances = {
                         down: {
                             x: Math.abs(downProxies.proxyMedian.position.x - downProxies.proxy2.position.x),
@@ -1378,7 +1378,7 @@ export default class Joints {
 
                 rightProxies.proxyMedian.position.z = upProxies.proxy2.position.z;
 
-                if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
+                if(sharedData.jointStyle == "diagonal" || sharedData.jointStyle == "arc") {
                     const distances = {
                         up: {
                             x: Math.abs(upProxies.proxyMedian.position.x - upProxies.proxy1.position.x),
@@ -1430,7 +1430,7 @@ export default class Joints {
                     rightProxies.proxyMedian.position.x = leftProxies.proxy1.position.x;
                 } 
                 
-                if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
+                if(sharedData.jointStyle == "diagonal" || sharedData.jointStyle == "arc") {
                     const distances = {
                         down: {
                             x: Math.abs(downProxies.proxyMedian.position.x - downProxies.proxy2.position.x),
@@ -1479,7 +1479,7 @@ export default class Joints {
             // top-right median
             rightProxies.proxyMedian.position.z = upProxies.proxyMedian.position.z;
 
-            if(sharedData.xzJointStyle == "diagonal" || sharedData.xzJointStyle == "arc") {
+            if(sharedData.jointStyle == "diagonal" || sharedData.jointStyle == "arc") {
                 const distances = {
                     down: {
                         x: Math.abs(downProxies.proxyMedian.position.x - downProxies.proxy2.position.x),

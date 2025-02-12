@@ -14,7 +14,7 @@ export default class Geometry_3D_Joints_T {
 
         sharedData.backwallArcConfigs = [];
 
-        if(sharedData.xzJointDirection == "outwards") {
+        if(sharedData.jointDirection == "outwards") {
             if(joint.right == null) {
 
                 geometries.push(
@@ -202,7 +202,7 @@ export default class Geometry_3D_Joints_T {
                 );       
             }
         }
-        else if(sharedData.xzJointDirection == "inwards") {
+        else if(sharedData.jointDirection == "inwards") {
             if(joint.right == null) {
                 geometries.push(
                     ...connectProxiesDiagonallyUphill(
@@ -249,7 +249,8 @@ export default class Geometry_3D_Joints_T {
                 geometries.push(
                     ...connectProxiesDiagonallyUphill(
                         joint.up.proxyMedian.coordinates, 
-                        joint.up.proxy1.coordinates
+                        joint.up.proxy1.coordinates,
+                        true
                     )
                 );
                 geometries.push(
@@ -392,6 +393,7 @@ export default class Geometry_3D_Joints_T {
     }
 
     createTJointBackwall(joint) {
+        console.log("createTJointBackwall joint:", joint);
         let backwall = [];
 
         let topLeftMidpoint = {};
@@ -420,7 +422,7 @@ export default class Geometry_3D_Joints_T {
                 joint.left.proxy2.coordinates[5],
                 joint.left.proxy1.coordinates[4],
             ];
-            if(sharedData.xzJointDirection == "inwards" && sharedData.xzJointStyle == "arc") {
+            if(sharedData.jointDirection == "inwards" && sharedData.jointStyle == "arc") {
                 backwall.splice(6, 0, bottomLeftMidpoint);
                 backwall.splice(8, 0, bottomLeftMidpoint);
                 backwall.splice(0, 0, topLeftMidpoint);
@@ -454,7 +456,7 @@ export default class Geometry_3D_Joints_T {
                 joint.down.proxy2.coordinates[6],
                 joint.down.proxy1.coordinates[5],
             ];
-            if(sharedData.xzJointDirection == "inwards" && sharedData.xzJointStyle == "arc") {
+            if(sharedData.jointDirection == "inwards" && sharedData.jointStyle == "arc") {
                 backwall.splice(3, 0, topRightMidpoint);
                 backwall.splice(5, 0, topRightMidpoint);
                 backwall.splice(8, 0, bottomRightMidpoint);
@@ -483,21 +485,21 @@ export default class Geometry_3D_Joints_T {
                 joint.left.proxy2.coordinates[5],
                 joint.left.proxy1.coordinates[5],
             ];
-            if(sharedData.xzJointDirection == "inwards" && sharedData.xzJointStyle == "arc") {
+            if(sharedData.jointDirection == "inwards" && sharedData.jointStyle == "arc") {
                 backwall.splice(4, 0, topRightMidpoint);
                 backwall.splice(0, 0, topLeftMidpoint);
             }
         }
         else if(joint.up == null) {
+            bottomLeftMidpoint = {
+                x: joint.down.proxy1.coordinates[4].x,
+                y: joint.down.proxy1.coordinates[4].y,
+                z: joint.left.proxy2.coordinates[4].z
+            }
             bottomRightMidpoint = {
                 x: joint.down.proxy2.coordinates[4].x,
                 y: joint.down.proxy2.coordinates[4].y,
                 z: joint.right.proxy2.coordinates[4].z
-            }
-            bottomLeftMidpoint = {
-                x: joint.down.proxy2.coordinates[4].x,
-                y: joint.down.proxy2.coordinates[4].y,
-                z: joint.left.proxy2.coordinates[4].z
             }
             backwall = [
                 joint.down.proxyMedian.coordinates[5],
@@ -510,7 +512,7 @@ export default class Geometry_3D_Joints_T {
                 joint.right.proxy1.coordinates[7],
                 joint.right.proxy2.coordinates[6],
             ];
-            if(sharedData.xzJointDirection == "inwards" && sharedData.xzJointStyle == "arc") {
+            if(sharedData.jointDirection == "inwards" && sharedData.jointStyle == "arc") {
                 backwall.splice(4, 0, bottomLeftMidpoint);
                 backwall.splice(0, 0, bottomRightMidpoint);
             }

@@ -27,22 +27,6 @@ class Preprocess {
 
     preprocessXeto(xeto) {
 
-        const isValid = this.validation.validateJsonBlocks(xeto);
-        const isValid2 = this.validation.validateComponentIds(xeto);
-
-        console.log("preprocessXeto step 1");
-
-        // this.ahuGroup = xeto.filter(child => child.spec.includes('AhuGroup'))[0];
-
-        // if(this.ahuGroup.blockStyle.joints.XZ.style == "arc" && this.ahuGroup.blockStyle.joints.XZ.direction == "inwards"){
-        //     console.log("preprocessXeto step 2");
-        //     return false;
-        // }
-
-        if(!isValid || !isValid2) {
-            return false;
-        }
-
         xeto = JSON.parse(JSON.stringify(xeto));
 
         let xetoDictionary = {};
@@ -51,6 +35,22 @@ class Preprocess {
             child => child.spec.includes('DuctEdge') && xetoDictionary.ahuGroup[0].ducts.includes(child.id)
         );
         xetoDictionary.componentsList = xeto.filter(child => child.spec.includes('Component'));
+
+        console.log("preprocessXeto xetoDictionary.ductsList:", xetoDictionary.ductsList);
+
+        const edges = JSON.parse(JSON.stringify(xetoDictionary.ductsList));
+
+        const isValid = this.validation.validateJsonBlocks(xeto);
+        const isValid2 = this.validation.validateComponentIds(xeto);
+
+        // const isValid3 = this.validation.hasClosedLoop(edges) == false;
+        // if(!isValid3) {
+        //     alert("Xeto contains a closed loop.");
+        // }
+
+        if(!isValid || !isValid2) {
+            return false;
+        }
 
         this.analysis.analyzeAndTransform(xetoDictionary);
         this.validation.propogateBlockStyle(xetoDictionary);

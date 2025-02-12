@@ -21,11 +21,11 @@ export default class Geometry_3D_Joints_L {
 
         console.log("createLJoint2 step 1");
 
-        console.log("createLJoint2 step 2:", sharedData.xzJointDirection);
+        console.log("createLJoint2 step 2:", sharedData.jointDirection);
 
-        if(sharedData.xzJointDirection == "outwards") {
+        if(sharedData.jointDirection == "outwards") {
             if(joint.right != null && joint.up != null) {
-                if(sharedData.xzJointStyle == "arc" || sharedData.xzJointStyle == "diagonal") {
+                if(sharedData.jointStyle == "arc" || sharedData.jointStyle == "diagonal") {
 
                     geometries.push(
                         ...connectProxiesDiagonallyDownhill(
@@ -95,7 +95,7 @@ export default class Geometry_3D_Joints_L {
                 }
             }
             else if(joint.right != null && joint.down != null) {
-                if(sharedData.xzJointStyle == "arc" || sharedData.xzJointStyle == "diagonal") {
+                if(sharedData.jointStyle == "arc" || sharedData.jointStyle == "diagonal") {
                     geometries.push(
                         ...connectProxiesDiagonallyUphill(
                             joint.right.proxyMedian.coordinates, 
@@ -151,7 +151,7 @@ export default class Geometry_3D_Joints_L {
                 }
             } 
             else if(joint.left != null && joint.up != null) {
-                if(sharedData.xzJointStyle == "arc" || sharedData.xzJointStyle == "diagonal") {
+                if(sharedData.jointStyle == "arc" || sharedData.jointStyle == "diagonal") {
                     geometries.push(
                         ...connectProxiesDiagonallyUphill(
                             joint.up.proxy1.coordinates,
@@ -213,7 +213,7 @@ export default class Geometry_3D_Joints_L {
                 }
             }
             else if(joint.left != null && joint.down != null) {
-                if(sharedData.xzJointStyle == "arc" || sharedData.xzJointStyle == "diagonal") {
+                if(sharedData.jointStyle == "arc" || sharedData.jointStyle == "diagonal") {
                     geometries.push(
                         ...connectProxiesDiagonallyDownhill(
                             joint.left.proxy2.coordinates, 
@@ -282,9 +282,9 @@ export default class Geometry_3D_Joints_L {
                     
             }  
         }
-        else if(sharedData.xzJointDirection == "inwards") {
+        else if(sharedData.jointDirection == "inwards") {
             if(joint.right != null && joint.up != null) {
-                if(sharedData.xzJointStyle == "arc" || sharedData.xzJointStyle == "diagonal") {
+                if(sharedData.jointStyle == "arc" || sharedData.jointStyle == "diagonal") {
                     geometries.push(
                         ...connectProxiesDiagonallyDownhill(
                             joint.up.proxyMedian.coordinates, 
@@ -344,7 +344,7 @@ export default class Geometry_3D_Joints_L {
                 }
             }
             else if(joint.right != null && joint.down != null) {
-                if(sharedData.xzJointStyle == "arc" || sharedData.xzJointStyle == "diagonal") {
+                if(sharedData.jointStyle == "arc" || sharedData.jointStyle == "diagonal") {
                     geometries.push(
                         ...connectProxiesDiagonallyUphill(
                             joint.right.proxyMedian.coordinates, 
@@ -406,7 +406,7 @@ export default class Geometry_3D_Joints_L {
                 }
             }
             else if(joint.left != null && joint.up != null) {
-                if(sharedData.xzJointStyle == "arc" || sharedData.xzJointStyle == "diagonal") {
+                if(sharedData.jointStyle == "arc" || sharedData.jointStyle == "diagonal") {
                     geometries.push(
                         ...connectProxiesDiagonallyUphill(
                             joint.up.proxy1.coordinates,
@@ -468,7 +468,7 @@ export default class Geometry_3D_Joints_L {
                 }
             }  
             else if(joint.left != null && joint.down != null) {
-                if(sharedData.xzJointStyle == "arc" || sharedData.xzJointStyle == "diagonal") {
+                if(sharedData.jointStyle == "arc" || sharedData.jointStyle == "diagonal") {
                     geometries.push(
                         ...connectProxiesDiagonallyDownhill(
                             joint.left.proxy2.coordinates, 
@@ -533,11 +533,16 @@ export default class Geometry_3D_Joints_L {
 
         console.log("createLJoint2 step 3");
 
-        if(sharedData.xzJointDirection == "inwards" && sharedData.xzJointStyle == "arc") {
+        if(sharedData.jointDirection == "inwards" && sharedData.jointStyle == "arc") {
             console.log("createArchedBackwall");
 
-            this.createWallMesh(joint); 
-            this.patchLJointBackwall(joint, diagonalWidth);
+            // this.createWallMesh(joint); 
+            geometries.push(
+                ...this.createLJointBackwall(joint)
+            );
+            // geometries.push(
+            //     ...this.patchLJointBackwall(joint, diagonalWidth)
+            // );
         }
         else {
             geometries.push(
@@ -575,7 +580,7 @@ export default class Geometry_3D_Joints_L {
                 joint.right.proxy1.coordinates[6],
                 joint.right.proxy2.coordinates[6],
             ];
-            if(sharedData.xzJointStyle == "arc" && sharedData.xzJointDirection == "inwards") {
+            if(sharedData.jointStyle == "arc" && sharedData.jointDirection == "inwards") {
                 let rightMidpoint = {
                     x: joint.up.proxy2.coordinates[4].x,
                     y: joint.up.proxy2.coordinates[4].y,
@@ -583,7 +588,7 @@ export default class Geometry_3D_Joints_L {
                 }
                 backwall.splice(4, 0, rightMidpoint);
             }
-            if(sharedData.xzJointStyle == "arc" || sharedData.xzJointStyle == "diagonal"){
+            if(sharedData.jointStyle == "arc" || sharedData.jointStyle == "diagonal"){
                 backwall.splice(0, 0, joint.up.proxyMedian2.coordinates[4]);
             }
         }
@@ -596,10 +601,10 @@ export default class Geometry_3D_Joints_L {
                 joint.left.proxy2.coordinates[5],
                 joint.left.proxy1.coordinates[4],
             ];
-            if(sharedData.xzJointStyle == "arc" || sharedData.xzJointStyle == "diagonal"){
+            if(sharedData.jointStyle == "arc" || sharedData.jointStyle == "diagonal"){
                 backwall.splice(4, 0, joint.left.proxyMedian2.coordinates[6]);
             }
-            if(sharedData.xzJointStyle == "arc" && sharedData.xzJointDirection == "inwards") {
+            if(sharedData.jointStyle == "arc" && sharedData.jointDirection == "inwards") {
                 let leftMidpoint = {
                     x: joint.up.proxy1.coordinates[4].x,
                     z: joint.left.proxy1.coordinates[4].z
@@ -616,14 +621,14 @@ export default class Geometry_3D_Joints_L {
                 joint.down.proxy1.coordinates[5],
                 joint.right.proxyMedian.coordinates[4],
             ];
-            if(sharedData.xzJointStyle == "arc" && sharedData.xzJointDirection == "inwards") {
+            if(sharedData.jointStyle == "arc" && sharedData.jointDirection == "inwards") {
                 let downMidpoint = {
                     x: joint.down.proxy2.coordinates[4].x,
                     z: joint.right.proxy2.coordinates[4].z
                 }
                 backwall.splice(2, 0, downMidpoint);
             }
-            if(sharedData.xzJointStyle == "arc" || sharedData.xzJointStyle == "diagonal"){
+            if(sharedData.jointStyle == "arc" || sharedData.jointStyle == "diagonal"){
                 backwall.splice(0, 0, joint.right.proxyMedian2.coordinates[4]);
             }
         }
@@ -636,14 +641,14 @@ export default class Geometry_3D_Joints_L {
                 joint.down.proxy2.coordinates[5],
                 joint.down.proxyMedian.coordinates[6],
             ];
-            if(sharedData.xzJointStyle == "arc" && sharedData.xzJointDirection == "inwards") {
+            if(sharedData.jointStyle == "arc" && sharedData.jointDirection == "inwards") {
                 let downMidpoint = {
                     x: joint.down.proxy1.coordinates[4].x,
                     z: joint.left.proxy2.coordinates[4].z
                 }
                 backwall.splice(2, 0, downMidpoint);
             }
-            if(sharedData.xzJointStyle == "arc" || sharedData.xzJointStyle == "diagonal"){
+            if(sharedData.jointStyle == "arc" || sharedData.jointStyle == "diagonal"){
                 backwall.splice(0, 0, joint.down.proxyMedian2.coordinates[4]);
             }
             
@@ -661,6 +666,7 @@ export default class Geometry_3D_Joints_L {
     }
 
     patchLJointBackwall(joint) {
+        let geometry = [];
         let backwall = [];
         if(joint.up != null && joint.right != null) {    
             backwall = [
@@ -670,7 +676,7 @@ export default class Geometry_3D_Joints_L {
                 joint.right.proxy1.coordinates[6],
                 joint.right.proxy1.coordinates[4],
             ];
-            createJointBackwall(backwall);
+            geometry.push(createJointBackwall(backwall));
             backwall = [
                 joint.up.proxyMedian.coordinates[6],
                 joint.up.proxy2.coordinates[6],
@@ -678,7 +684,7 @@ export default class Geometry_3D_Joints_L {
                 joint.up.proxy1.coordinates[4],
                 joint.up.proxyMedian.coordinates[5],
             ];
-            createJointBackwall(backwall);
+            geometry.push(createJointBackwall(backwall));
         }
         else if(joint.up != null && joint.left != null) {  
             backwall = [
@@ -688,7 +694,7 @@ export default class Geometry_3D_Joints_L {
                 joint.left.proxy2.coordinates[5],
                 joint.left.proxyMedian2.coordinates[6],
             ];
-            createJointBackwall(backwall);
+            geometry.push(createJointBackwall(backwall));
             backwall = [
                 joint.left.proxyMedian.coordinates[5],
                 joint.left.proxyMedian.coordinates[6],
@@ -696,7 +702,7 @@ export default class Geometry_3D_Joints_L {
                 joint.up.proxy1.coordinates[4],
                 joint.up.proxy1.coordinates[5],
             ];
-            createJointBackwall(backwall);  
+            geometry.push(createJointBackwall(backwall)); 
         }
         else if(joint.down != null && joint.right != null) {  
             backwall = [
@@ -706,7 +712,7 @@ export default class Geometry_3D_Joints_L {
                 joint.down.proxy2.coordinates[6],
                 joint.down.proxy2.coordinates[7],
             ];
-            createJointBackwall(backwall);
+            geometry.push(createJointBackwall(backwall));
             backwall = [
                 joint.right.proxyMedian2.coordinates[4],
                 joint.right.proxyMedian2.coordinates[5],
@@ -714,7 +720,7 @@ export default class Geometry_3D_Joints_L {
                 joint.right.proxy2.coordinates[6],
                 joint.right.proxy1.coordinates[7],
             ];
-            createJointBackwall(backwall);   
+            geometry.push(createJointBackwall(backwall));  
         }
         else if(joint.down != null && joint.left != null) {   
             backwall = [
@@ -724,16 +730,18 @@ export default class Geometry_3D_Joints_L {
                 joint.left.proxy2.coordinates[5],
                 joint.left.proxy2.coordinates[6],
             ];
-            createJointBackwall(backwall);
+            geometry.push(createJointBackwall(backwall));
             backwall = [
                 joint.down.proxyMedian.coordinates[4],
                 joint.down.proxy1.coordinates[4],
                 joint.down.proxy1.coordinates[5],
                 joint.down.proxy2.coordinates[6],
                 joint.down.proxyMedian.coordinates[7],
-            ];
-            createJointBackwall(backwall);  
+            ]; 
+            geometry.push(createJointBackwall(backwall));
         }
+
+        return geometry;
 
     }
 

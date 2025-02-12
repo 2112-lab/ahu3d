@@ -39,6 +39,9 @@ export default class Ducts {
         this.Geometry_3D_Joints_Colinear = new Geometry_3D_Joints_Colinear();
 
         this.jointCount = 0;
+
+        this.traversalCount = 0;
+        this.traversalLimit = 30;
     }
 
     async initializeAllDuctSegments(ahuObject) {
@@ -244,6 +247,13 @@ export default class Ducts {
      */
     getNextSegment(currentSegmentXeto, currentKey) {
         console.log("getNextSegment:", currentKey, this.ductsDictionary[currentKey]);
+
+        this.traversalCount++;
+        if(this.traversalCount > this.traversalLimit) {
+            console.log("getNextSegment canceled");
+            return;
+        }
+
         const graphicLocation = currentSegmentXeto.graphicLocation;
         const nextKey = currentKey === graphicLocation.start ? graphicLocation.end : graphicLocation.start;
         const adjacentSegments = this.ductsDictionary[nextKey] || [];
@@ -298,7 +308,7 @@ export default class Ducts {
             this.addJointRsrcAndAssoc(key);
         }
 
-        let xzJointPadding = this.ahuGroup.blockStyle.joints.XZ.padding;
+        let jointPadding = this.ahuGroup.blockStyle.joints.padding;
 
         let currentDuctXetos = this.ahuObject.xeto.filter(child => 
             this.ductsDictionary[key].some(duct => duct.id === child.id)
@@ -348,61 +358,61 @@ export default class Ducts {
                 console.log("placeIntersection 4* step 5");
                 length = ((this.ahuObject.resources.ducts[intersectDucts.left.id].dimensions.x) / 2);
                 length += maxHalfWidth + 15;
-                length += xzJointPadding;
+                length += jointPadding;
                 // translateDuct(this.ahuObject.resources.ducts[intersectDucts.left.id], "x", (length * 1));
 
                 length = ((this.ahuObject.resources.ducts[intersectDucts.up.id].dimensions.x) / 2);
                 length += maxHalfHeight + 15;
-                length += xzJointPadding;
+                length += jointPadding;
                 translateDuct(this.ahuObject.resources.ducts[intersectDucts.up.id], "z", (length * 1));
 
                 length = ((this.ahuObject.resources.ducts[intersectDucts.left.id].dimensions.x) / 2);
                 length += maxHalfWidth + 15;
-                length += xzJointPadding;
+                length += jointPadding;
                 translateDuct(this.ahuObject.resources.ducts[intersectDucts.down.id], "x", (length * 1));
 
                 length = ((this.ahuObject.resources.ducts[intersectDucts.left.id].dimensions.x) / 2);
                 length += maxHalfWidth + 15;
-                length += xzJointPadding;
+                length += jointPadding;
                 translateDuct(this.ahuObject.resources.ducts[intersectDucts.up.id], "x", (length * 1))
 
                 length = ((this.ahuObject.resources.ducts[intersectDucts.down.id].dimensions.x) / 2);
                 length += maxHalfHeight + 15;
-                length += xzJointPadding;
+                length += jointPadding;
                 translateDuct(this.ahuObject.resources.ducts[intersectDucts.down.id], "z", (length * -1));
 
                 length = ((this.ahuObject.resources.ducts[intersectDucts.left.id].dimensions.x) / 2);
                 length += ((this.ahuObject.resources.ducts[intersectDucts.right.id].dimensions.x) / 2);
                 length += maxHalfWidth * 2 + 30;
-                length += xzJointPadding * 2;
+                length += jointPadding * 2;
                 translateDuct(this.ahuObject.resources.ducts[intersectDucts.right.id], "x", (length * 1));
             }
             else if(intersectDucts.right == fixedDuctXeto) {
                 console.log("placeIntersection 4* step 6");
                 length = ((this.ahuObject.resources.ducts[intersectDucts.right.id].dimensions.x) / 2);
                 length += maxHalfWidth + 15;
-                length += xzJointPadding;
+                length += jointPadding;
                 translateDuct(this.ahuObject.resources.ducts[intersectDucts.up.id], "x", (length * -1));
 
                 length = ((this.ahuObject.resources.ducts[intersectDucts.up.id].dimensions.x) / 2);
                 length += maxHalfHeight + 15;
-                length += xzJointPadding;
+                length += jointPadding;
                 translateDuct(this.ahuObject.resources.ducts[intersectDucts.up.id], "z", (length * 1));
 
                 length = ((this.ahuObject.resources.ducts[intersectDucts.right.id].dimensions.x) / 2);
                 length += maxHalfWidth + 15;
-                length += xzJointPadding;
+                length += jointPadding;
                 translateDuct(this.ahuObject.resources.ducts[intersectDucts.down.id], "x", (length * -1));
 
                 length = ((this.ahuObject.resources.ducts[intersectDucts.down.id].dimensions.x) / 2);
                 length += maxHalfHeight + 15;
-                length += xzJointPadding;
+                length += jointPadding;
                 translateDuct(this.ahuObject.resources.ducts[intersectDucts.down.id], "z", (length * -1));
 
                 length = ((this.ahuObject.resources.ducts[intersectDucts.right.id].dimensions.x) / 2);
                 length += ((this.ahuObject.resources.ducts[intersectDucts.left.id].dimensions.x) / 2);
                 length += maxHalfWidth * 2 + 30;
-                length += xzJointPadding * 2;
+                length += jointPadding * 2;
                 translateDuct(this.ahuObject.resources.ducts[intersectDucts.left.id], "x", (length * -1));
             }
             else if(intersectDucts.up == fixedDuctXeto) {
@@ -410,27 +420,27 @@ export default class Ducts {
                 length = ((this.ahuObject.resources.ducts[intersectDucts.up.id].dimensions.x) / 2);
                 length += ((this.ahuObject.resources.ducts[intersectDucts.down.id].dimensions.x) / 2);
                 length += maxHalfHeight * 2 + 30;
-                length += xzJointPadding * 2;
+                length += jointPadding * 2;
                 translateDuct(this.ahuObject.resources.ducts[intersectDucts.down.id], "z", (length * -1));
 
                 length = ((this.ahuObject.resources.ducts[intersectDucts.up.id].dimensions.x) / 2);
                 length += maxHalfHeight + 15;
-                length += xzJointPadding;
+                length += jointPadding;
                 translateDuct(this.ahuObject.resources.ducts[intersectDucts.left.id], "z", (length * -1));
 
                 length = ((this.ahuObject.resources.ducts[intersectDucts.left.id].dimensions.x) / 2);
                 length += maxHalfWidth + 15;
-                length += xzJointPadding;
+                length += jointPadding;
                 translateDuct(this.ahuObject.resources.ducts[intersectDucts.left.id], "x", (length * -1));
 
                 length = ((this.ahuObject.resources.ducts[intersectDucts.up.id].dimensions.x) / 2);
                 length += maxHalfHeight + 15;
-                length += xzJointPadding;
+                length += jointPadding;
                 translateDuct(this.ahuObject.resources.ducts[intersectDucts.right.id], "z", (length * -1));
 
                 length = ((this.ahuObject.resources.ducts[intersectDucts.right.id].dimensions.x) / 2);
                 length += maxHalfWidth + 15;
-                length += xzJointPadding;
+                length += jointPadding;
                 translateDuct(this.ahuObject.resources.ducts[intersectDucts.right.id], "x", (length * 1));
             }
             else if(intersectDucts.down == fixedDuctXeto) {
@@ -438,27 +448,27 @@ export default class Ducts {
                 length = ((this.ahuObject.resources.ducts[intersectDucts.up.id].dimensions.x) / 2);
                 length += ((this.ahuObject.resources.ducts[intersectDucts.down.id].dimensions.x) / 2);
                 length += maxHalfHeight * 2 + 30;
-                length += xzJointPadding * 2;
+                length += jointPadding * 2;
                 translateDuct(this.ahuObject.resources.ducts[intersectDucts.up.id], "z", (length * 1));
 
                 length = ((this.ahuObject.resources.ducts[intersectDucts.down.id].dimensions.x) / 2);
                 length += maxHalfHeight + 15;
-                length += xzJointPadding;
+                length += jointPadding;
                 translateDuct(this.ahuObject.resources.ducts[intersectDucts.left.id], "z", (length * 1));
 
                 length = ((this.ahuObject.resources.ducts[intersectDucts.left.id].dimensions.x) / 2);
                 length += maxHalfWidth + 15;
-                length += xzJointPadding;
+                length += jointPadding;
                 translateDuct(this.ahuObject.resources.ducts[intersectDucts.left.id], "x", (length * -1));
 
                 length = ((this.ahuObject.resources.ducts[intersectDucts.down.id].dimensions.x) / 2);
                 length += maxHalfHeight + 15;
-                length += xzJointPadding;
+                length += jointPadding;
                 translateDuct(this.ahuObject.resources.ducts[intersectDucts.right.id], "z", (length * 1));
 
                 length = ((this.ahuObject.resources.ducts[intersectDucts.right.id].dimensions.x) / 2);
                 length += maxHalfWidth + 15;
-                length += xzJointPadding;
+                length += jointPadding;
                 translateDuct(this.ahuObject.resources.ducts[intersectDucts.right.id], "x", (length * 1));
             }
                 
@@ -526,22 +536,22 @@ export default class Ducts {
                 if(fixedDuctXeto == intersectDucts.right) {
                     length = ((this.ahuObject.resources.ducts[intersectDucts.down.id].dimensions.x) / 2);
                     length += maxHalfHeight + 15;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.down.id], "z", (length * -1));
 
                     length = ((this.ahuObject.resources.ducts[intersectDucts.right.id].dimensions.x) / 2);
                     length += maxHalfWidth + 15;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.down.id], "x", (length * -1));
 
                     length = ((this.ahuObject.resources.ducts[intersectDucts.up.id].dimensions.x) / 2);
                     length += maxHalfHeight + 15;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.up.id], "z", (length * 1));
 
                     length = ((this.ahuObject.resources.ducts[intersectDucts.right.id].dimensions.x) / 2);
                     length += maxHalfWidth + 15;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.up.id], "x", (length * -1));
                 }
 
@@ -549,17 +559,17 @@ export default class Ducts {
                     length = ((this.ahuObject.resources.ducts[intersectDucts.up.id].dimensions.x) / 2);
                     length += ((this.ahuObject.resources.ducts[intersectDucts.down.id].dimensions.x) / 2);
                     length += maxHalfHeight * 2 + 30;
-                    length += xzJointPadding * 2;
+                    length += jointPadding * 2;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.down.id], "z", (length * -1));
 
                     length = ((this.ahuObject.resources.ducts[intersectDucts.up.id].dimensions.x) / 2);
                     length += maxHalfHeight + 15;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.right.id], "z", (length * -1));
 
                     length = ((this.ahuObject.resources.ducts[intersectDucts.right.id].dimensions.x) / 2);
                     length += maxHalfWidth + 15;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.right.id], "x", (length * 1));
                 }
 
@@ -567,17 +577,17 @@ export default class Ducts {
                     length = ((this.ahuObject.resources.ducts[intersectDucts.up.id].dimensions.x) / 2);
                     length += ((this.ahuObject.resources.ducts[intersectDucts.down.id].dimensions.x) / 2);
                     length += maxHalfHeight * 2 + 30;
-                    length += xzJointPadding * 2;
+                    length += jointPadding * 2;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.up.id], "z", (length * 1));
 
                     length = ((this.ahuObject.resources.ducts[intersectDucts.down.id].dimensions.x) / 2);
                     length += maxHalfHeight + 15;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.right.id], "z", (length * 1));
 
                     length = ((this.ahuObject.resources.ducts[intersectDucts.right.id].dimensions.x) / 2);
                     length += maxHalfWidth + 15;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.right.id], "x", (length * 1));
                 }
             }
@@ -593,22 +603,22 @@ export default class Ducts {
                 if(fixedDuctXeto == intersectDucts.left) {
                     length = ((this.ahuObject.resources.ducts[intersectDucts.down.id].dimensions.x) / 2);
                     length += maxHalfHeight + 15;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.down.id], "z", (length * -1));
 
                     length = ((this.ahuObject.resources.ducts[intersectDucts.left.id].dimensions.x) / 2);
                     length += maxHalfWidth + 15;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.down.id], "x", (length * 1));
 
                     length = ((this.ahuObject.resources.ducts[intersectDucts.up.id].dimensions.x) / 2);
                     length += maxHalfHeight + 15;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.up.id], "z", (length * 1));
 
                     length = ((this.ahuObject.resources.ducts[intersectDucts.left.id].dimensions.x) / 2);
                     length += maxHalfWidth + 15;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.up.id], "x", (length * 1));
                 }
 
@@ -616,17 +626,17 @@ export default class Ducts {
                     length = ((this.ahuObject.resources.ducts[intersectDucts.up.id].dimensions.x) / 2);
                     length += ((this.ahuObject.resources.ducts[intersectDucts.down.id].dimensions.x) / 2);
                     length += maxHalfHeight * 2 + 30;
-                    length += xzJointPadding * 2;
+                    length += jointPadding * 2;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.down.id], "z", (length * -1));
 
                     length = ((this.ahuObject.resources.ducts[intersectDucts.up.id].dimensions.x) / 2);
                     length += maxHalfHeight + 15;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.left.id], "z", (length * -1));
 
                     length = ((this.ahuObject.resources.ducts[intersectDucts.left.id].dimensions.x) / 2);
                     length += maxHalfWidth + 15;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.left.id], "x", (length * -1));
                 }
 
@@ -634,17 +644,17 @@ export default class Ducts {
                     length = ((this.ahuObject.resources.ducts[intersectDucts.up.id].dimensions.x) / 2);
                     length += ((this.ahuObject.resources.ducts[intersectDucts.down.id].dimensions.x) / 2);
                     length += maxHalfHeight * 2 + 30;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.up.id], "z", (length * 1));
 
                     length = ((this.ahuObject.resources.ducts[intersectDucts.down.id].dimensions.x) / 2);
                     length += maxHalfHeight + 15;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.left.id], "z", (length * 1));
 
                     length = ((this.ahuObject.resources.ducts[intersectDucts.left.id].dimensions.x) / 2);
                     length += maxHalfWidth + 15;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.left.id], "x", (length * -1));
                 }
             }
@@ -660,58 +670,58 @@ export default class Ducts {
                 if(fixedDuctXeto == intersectDucts.left) {
                     length = ((this.ahuObject.resources.ducts[intersectDucts.up.id].dimensions.x) / 2);
                     length += maxHalfHeight + 15;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.up.id], "z", (length * 1));
 
                     length = ((this.ahuObject.resources.ducts[intersectDucts.left.id].dimensions.x) / 2);
                     length += maxHalfWidth + 15;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.up.id], "x", (length * 1));
 
                     length = ((this.ahuObject.resources.ducts[intersectDucts.left.id].dimensions.x) / 2);
                     length += ((this.ahuObject.resources.ducts[intersectDucts.right.id].dimensions.x) / 2);
                     length += maxHalfWidth * 2 + 30;
-                    length += xzJointPadding * 2;
+                    length += jointPadding * 2;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.right.id], "x", (length * 1));
                 }
 
                 if(fixedDuctXeto == intersectDucts.right) {
                     length = ((this.ahuObject.resources.ducts[intersectDucts.up.id].dimensions.x) / 2);
                     length += maxHalfHeight + 15;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.up.id], "z", (length * 1));
 
                     length = ((this.ahuObject.resources.ducts[intersectDucts.right.id].dimensions.x) / 2);
                     length += maxHalfWidth + 15;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.up.id], "x", (length * -1));
 
                     length = ((this.ahuObject.resources.ducts[intersectDucts.left.id].dimensions.x) / 2);
                     length += ((this.ahuObject.resources.ducts[intersectDucts.right.id].dimensions.x) / 2);
                     length += maxHalfWidth * 2 + 30;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.left.id], "x", (length * -1));
                 }
 
                 if(fixedDuctXeto == intersectDucts.up) {
                     length = ((this.ahuObject.resources.ducts[intersectDucts.left.id].dimensions.x) / 2);
                     length += maxHalfWidth + 15;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.left.id], "x", (length * -1));
 
                     length = ((this.ahuObject.resources.ducts[intersectDucts.up.id].dimensions.x) / 2);
                     length += maxHalfHeight + 15;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.left.id], "z", (length * -1));
 
                     length = ((this.ahuObject.resources.ducts[intersectDucts.right.id].dimensions.x) / 2);
                     length += maxHalfWidth + 15;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.right.id], "x", (length * 1));
 
                     length = ((this.ahuObject.resources.ducts[intersectDucts.up.id].dimensions.x) / 2);
                     length += maxHalfHeight + 15;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.right.id], "z", (length * -1));
                 }
             }
@@ -727,58 +737,58 @@ export default class Ducts {
                 if(fixedDuctXeto == intersectDucts.left) {
                     length = ((this.ahuObject.resources.ducts[intersectDucts.down.id].dimensions.x) / 2);
                     length += maxHalfHeight + 15;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.down.id], "z", (length * -1));
 
                     length = ((this.ahuObject.resources.ducts[intersectDucts.left.id].dimensions.x) / 2);
                     length += maxHalfWidth + 15;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.down.id], "x", (length * 1));
 
                     length = ((this.ahuObject.resources.ducts[intersectDucts.left.id].dimensions.x) / 2);
                     length += ((this.ahuObject.resources.ducts[intersectDucts.right.id].dimensions.x) / 2);
                     length += maxHalfWidth * 2 + 30;
-                    length += xzJointPadding * 2;
+                    length += jointPadding * 2;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.right.id], "x", (length * 1));
                 }
 
                 if(fixedDuctXeto == intersectDucts.right) {
                     length = ((this.ahuObject.resources.ducts[intersectDucts.down.id].dimensions.x) / 2);
                     length += maxHalfHeight + 15;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.down.id], "z", (length * -1));
 
                     length = ((this.ahuObject.resources.ducts[intersectDucts.right.id].dimensions.x) / 2);
                     length += maxHalfWidth + 15;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.down.id], "x", (length * -1));
 
                     length = ((this.ahuObject.resources.ducts[intersectDucts.left.id].dimensions.x) / 2);
                     length += ((this.ahuObject.resources.ducts[intersectDucts.right.id].dimensions.x) / 2);
                     length += maxHalfWidth * 2 + 30;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.left.id], "x", (length * -1));
                 }
 
                 if(fixedDuctXeto == intersectDucts.down) {
                     length = ((this.ahuObject.resources.ducts[intersectDucts.left.id].dimensions.x) / 2);
                     length += maxHalfWidth + 15;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.left.id], "x", (length * -1));
 
                     length = ((this.ahuObject.resources.ducts[intersectDucts.down.id].dimensions.x) / 2);
                     length += maxHalfHeight + 15;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.left.id], "z", (length * 1));
 
                     length = ((this.ahuObject.resources.ducts[intersectDucts.right.id].dimensions.x) / 2);
                     length += maxHalfWidth + 15;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.right.id], "x", (length * 1));
 
                     length = ((this.ahuObject.resources.ducts[intersectDucts.down.id].dimensions.x) / 2);
                     length += maxHalfHeight + 15;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.right.id], "z", (length * 1));
                 }
             }
@@ -822,10 +832,10 @@ export default class Ducts {
             console.log("placeIntersection 2* step 6");
 
             if(intersectDucts.up != null && intersectDucts.down != null) {
-                xzJointPadding = 30;
+                jointPadding = 30;
             }
             if(intersectDucts.left != null && intersectDucts.right != null) {
-                xzJointPadding = 30;
+                jointPadding = 30;
             }
 
             console.log("placeIntersection 2* step 7");
@@ -833,65 +843,65 @@ export default class Ducts {
             if(fixedDuctXeto.isVertical == currentDuctXeto.isVertical) {
                 if(currentDuctXeto.relativePosition == "right") {
                     length = ((this.ahuObject.resources.ducts[currentDuctXeto.id].dimensions.x) / 2) + ((this.ahuObject.resources.ducts[fixedDuctXeto.id].dimensions.x) / 2);
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[currentDuctXeto.id], 'x', length * 1);
                 }
                 else if(currentDuctXeto.relativePosition == "left") {
                     length = ((this.ahuObject.resources.ducts[currentDuctXeto.id].dimensions.x) / 2) + ((this.ahuObject.resources.ducts[fixedDuctXeto.id].dimensions.x) / 2);
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[currentDuctXeto.id], 'x', length * -1);
                 }
                 else if(currentDuctXeto.relativePosition == "up") {
                     length = ((this.ahuObject.resources.ducts[currentDuctXeto.id].dimensions.x) / 2) + ((this.ahuObject.resources.ducts[fixedDuctXeto.id].dimensions.x) / 2);
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[currentDuctXeto.id], 'z', (length * 1));
                 }
                 else if(currentDuctXeto.relativePosition == "down") {
                     length = ((this.ahuObject.resources.ducts[currentDuctXeto.id].dimensions.x) / 2) + ((this.ahuObject.resources.ducts[fixedDuctXeto.id].dimensions.x) / 2);
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[currentDuctXeto.id], 'z', (length * -1));
                 }
             }
             else if(fixedDuctXeto.isVertical != currentDuctXeto.isVertical) {
                 if(fixedDuctXeto.relativePosition == "left") {
                     length = ((this.ahuObject.resources.ducts[fixedDuctXeto.id].dimensions.x) / 2) + this.innerDuctDimensions[currentDuctXeto.graphicLocation.size] / 2;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[currentDuctXeto.id], "x", (length * 1) + 15);
                 }
                 else if(fixedDuctXeto.relativePosition == "right") {
                     length = ((this.ahuObject.resources.ducts[fixedDuctXeto.id].dimensions.x) / 2) + this.innerDuctDimensions[currentDuctXeto.graphicLocation.size] / 2;
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[currentDuctXeto.id], "x", (length * -1) - 15);
                 }
                 if(fixedDuctXeto.relativePosition == "up") {
                     length = ((this.ahuObject.resources.ducts[fixedDuctXeto.id].dimensions.x) / 2) + (this.innerDuctDimensions[currentDuctXeto.graphicLocation.size] / 2);
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[currentDuctXeto.id], 'z', (length * -1) - 15);
                 }
                 else if(fixedDuctXeto.relativePosition == "down") {
                     length = ((this.ahuObject.resources.ducts[fixedDuctXeto.id].dimensions.x) / 2) + (this.innerDuctDimensions[currentDuctXeto.graphicLocation.size] / 2);
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[currentDuctXeto.id], 'z', (length * 1) + 15);
                 }
 
                 if(currentDuctXeto.relativePosition == "up") {
                     length = ((this.ahuObject.resources.ducts[currentDuctXeto.id].dimensions.x) / 2) + (this.innerDuctDimensions[fixedDuctXeto.graphicLocation.size] / 2);
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[currentDuctXeto.id], 'z', (length * 1) + 15);
                 }
                 else if(currentDuctXeto.relativePosition == "down") {
                     length = ((this.ahuObject.resources.ducts[currentDuctXeto.id].dimensions.x) / 2) + (this.innerDuctDimensions[fixedDuctXeto.graphicLocation.size] / 2);
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[currentDuctXeto.id], 'z', (length * -1) - 15);
                 }
                 else if(currentDuctXeto.relativePosition == "left") {
                     length = ((this.ahuObject.resources.ducts[currentDuctXeto.id].dimensions.x) / 2) + (this.innerDuctDimensions[fixedDuctXeto.graphicLocation.size] / 2);
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[currentDuctXeto.id], 'x', (length * -1) - 15);
                 }
                 else if(currentDuctXeto.relativePosition == "right") {
                     length = ((this.ahuObject.resources.ducts[currentDuctXeto.id].dimensions.x) / 2) + (this.innerDuctDimensions[fixedDuctXeto.graphicLocation.size] / 2);
-                    length += xzJointPadding;
+                    length += jointPadding;
                     translateDuct(this.ahuObject.resources.ducts[currentDuctXeto.id], 'x', (length * 1) + 15);
                 }
             }

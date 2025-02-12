@@ -13,7 +13,7 @@ export default class Geometry_3D_Joints_Cross {
 
         this.backwallArcConfigs = [];     
 
-        if(sharedData.xzJointStyle == "arc") {     
+        if(sharedData.jointStyle == "arc") {     
 
             let upMidpoint = {
                 x: joint.up.proxy1.coordinates[4].x,
@@ -47,7 +47,7 @@ export default class Geometry_3D_Joints_Cross {
                 joint.left.proxy1.coordinates[4]
             ];
 
-            if(sharedData.xzJointDirection == "inwards") {
+            if(sharedData.jointDirection == "inwards") {
                 upMidpoint = {
                     x: joint.up.proxy1.coordinates[4].x,
                     y: joint.up.proxy1.coordinates[4].y,

@@ -121,9 +121,9 @@ export default class Canvas2D {
 
         let x = arrowResource.position.x;
         let y = -arrowResource.position.z; // Convert to 2D canvas space
-        const rotation = duct.rotation.y; // Keep the same Y rotation
+        const rotation = arrowResource.rotation.y; // Keep the same Y rotation
 
-        const arrowLength = 1000; // Total length of arrow                
+        const arrowLength = 900; // Total length of arrow                
 
         // Create a Konva arrow
         let arrow = new Konva.Arrow({
@@ -252,13 +252,13 @@ export default class Canvas2D {
     let point2 = null;
     let midPoint = null;
 
-    const jointKeys = Object.keys(joint);
+    this.jointKeys = Object.keys(joint);
 
     const jointCenter = this.calculate2DJointCenter(joint, jointKey);
 
     console.log("create2DJoint jointCenter:", jointCenter);
 
-      if(jointKeys.length == 2) {
+      if(this.jointKeys.length == 2) {
         if(joint.up && joint.right) {
           point1 = joint.up.proxy2.position;
           point2 = joint.right.proxy1.position;
@@ -330,7 +330,7 @@ export default class Canvas2D {
           this.createJointCorner(layer, point1, point2, midPoint);
         }
       }
-      else if(jointKeys.length == 3) {
+      else if(this.jointKeys.length == 3) {
         if(!joint.right) {
           point1 = joint.up.proxy2.position;
           point2 = joint.down.proxy2.position;
@@ -339,7 +339,7 @@ export default class Canvas2D {
             midPoint = point2;
           }
 
-          this.createJointCorner(layer, point1, point2, midPoint);
+          this.createJointCorner(layer, point1, point2, midPoint, true);
 
           point1 = joint.down.proxy1.position;
           point2 = joint.left.proxy2.position;
@@ -369,7 +369,7 @@ export default class Canvas2D {
             midPoint = point2;
           }
 
-          this.createJointCorner(layer, point1, point2, midPoint);
+          this.createJointCorner(layer, point1, point2, midPoint, true);
         }
         else if(!joint.up) {
           point1 = joint.right.proxy2.position;
@@ -389,7 +389,7 @@ export default class Canvas2D {
             midPoint = point2;
           }
 
-          this.createJointCorner(layer, point1, point2, midPoint);
+          this.createJointCorner(layer, point1, point2, midPoint, true);
         }
         else if(!joint.down) {
           point1 = joint.up.proxy2.position;
@@ -404,7 +404,7 @@ export default class Canvas2D {
             midPoint = point2;
           }
 
-          this.createJointCorner(layer, point1, point2, midPoint);
+          this.createJointCorner(layer, point1, point2, midPoint, true);
 
           point1 = joint.left.proxy1.position;
           point2 = joint.up.proxy1.position;
@@ -412,38 +412,34 @@ export default class Canvas2D {
           this.createJointCorner(layer, point1, point2, midPoint);
         }
       }
-      else if(jointKeys.length == 4) {
+      else if(this.jointKeys.length == 4) {
         point1 = joint.up.proxy2.position;
         point2 = joint.right.proxy1.position;
         midPoint = joint.right.proxyMedian.position;
-        // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
         this.createJointCorner(layer, point1, point2, midPoint);
 
         point1 = joint.right.proxy2.position;
         point2 = joint.down.proxy2.position;
         midPoint = joint.down.proxyMedian.position;
-        // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
         this.createJointCorner(layer, point1, point2, midPoint);
 
         point1 = joint.down.proxy1.position;
         point2 = joint.left.proxy2.position;
         midPoint = joint.left.proxyMedian.position;
-        // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
         this.createJointCorner(layer, point1, point2, midPoint);
 
         point1 = joint.left.proxy1.position;
         point2 = joint.up.proxy1.position;
         midPoint = joint.up.proxyMedian.position;
-        // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
         this.createJointCorner(layer, point1, point2, midPoint);
       }      
     
   }
 
-  createJointCorner(layer, point1, point2, midPoint) {
+  createJointCorner(layer, point1, point2, midPoint, flipArc = false) {
 
-    if(sharedData.xzJointStyle == "arc") {
-      this.createJointArc(layer, point1, point2, midPoint);
+    if(sharedData.jointStyle == "arc" && this.jointKeys.length != 2) {
+      this.createJointArc(layer, point1, point2, midPoint, flipArc);
     }
     else {
       const points = [
@@ -466,8 +462,8 @@ export default class Canvas2D {
     
   }
 
-  createJointArc(layer, point1, point2, midPoint) {
-    console.log("createJointArc started");
+  createJointArc(layer, point1, point2, midPoint, flipArc = false) {
+    console.log("createJointArc started:", flipArc);
 
     // Convert z to match Konva's coordinate system
     const p1 = { x: point1.x, y: point1.z };
@@ -475,8 +471,6 @@ export default class Canvas2D {
     const mid = { x: midPoint.x, y: midPoint.z };
 
     const cornerDistance = Math.min( Math.abs(p1.x - p2.x), Math.abs(p1.y - p2.y) );
-
-    let flipArc = false;
 
     const wt = 30;
     const halfWT = wt / 2;
@@ -492,14 +486,14 @@ export default class Canvas2D {
       mid.x, mid.y * -1,
     ];
 
-    if(sharedData.xzJointDirection == "outwards") {
+    if(sharedData.jointDirection == "outwards") {
       if (p1.x < p2.x && p1.y > p2.y) {
         rotation = -90;
         cx = mid.x;
         cy = mid.y - radius;
         isSet = true;
         if(!(mid.x != p2.x && mid.y != p2.y)) {
-          flipArc = true;
+          // flipArc = true;
           cx = mid.x - radius;
           cy = mid.y;
         }
@@ -510,7 +504,7 @@ export default class Canvas2D {
         cy = mid.y;
         isSet = true;
         if(!(mid.x != p2.x && mid.y != p2.y)) {
-          flipArc = true;
+          // flipArc = true;
           cx = mid.x;
           cy = mid.y + radius;
         }
@@ -521,7 +515,7 @@ export default class Canvas2D {
         cy = mid.y;
         isSet = true;
         if(!(mid.x != p1.x && mid.y != p1.y)) {
-          flipArc = true;
+          // flipArc = true;
           cx = mid.x;
           cy = mid.y + radius;
         }
@@ -532,20 +526,20 @@ export default class Canvas2D {
         cy = mid.y - radius;
         isSet = true;
         if(!(mid.x != p1.x && mid.y != p1.y)) {
-          flipArc = true;
+          // flipArc = true;
           cx = mid.x + radius;
           cy = mid.y;
         }
       }
     }
-    else if(sharedData.xzJointDirection == "inwards") {
+    else if(sharedData.jointDirection == "inwards") {
       if (p1.x < p2.x && p1.y > p2.y) {
         rotation = 90;
         cx = mid.x + radius;
         cy = mid.y + halfWT;
         isSet = true;
         if(!(mid.x != p2.x && mid.y != p2.y)) {
-          flipArc = true;
+          // flipArc = true;
           cx = mid.x + halfWT;
           cy = mid.y + radius;
         }
@@ -556,7 +550,7 @@ export default class Canvas2D {
         cy = mid.y - radius;
         isSet = true;
         if(!(mid.x != p2.x && mid.y != p2.y)) {
-          flipArc = true;
+          // flipArc = true;
           cx = mid.x + radius;
           cy = mid.y - halfWT;
         }
@@ -567,7 +561,7 @@ export default class Canvas2D {
         cy = mid.y - radius;
         isSet = true;
         if(!(mid.x != p1.x && mid.y != p1.y)) {
-          flipArc = true;
+          // flipArc = true;
           cx = mid.x - radius;
           cy = mid.y - halfWT;
         }
@@ -578,7 +572,7 @@ export default class Canvas2D {
         cy = mid.y + halfWT;
         isSet = true;
         if(!(mid.x != p1.x && mid.y != p1.y)) {
-          flipArc = true;
+          // flipArc = true;
           cx = mid.x - halfWT;
           cy = mid.y + radius;
         }
@@ -590,6 +584,29 @@ export default class Canvas2D {
         mid.x, mid.y * -1,
         p2.x, p2.y * -1,
       ]
+    }
+
+    if(flipArc && sharedData.jointDirection == "inwards") {
+      if(rotation == 90) {
+        rotation = -90;
+        cx += (radius + halfWT) * -1;
+        cy += (radius + halfWT) * -1;
+      }
+      else if(rotation == -90) {
+        rotation = 90;
+        cx += (radius + halfWT) * 1;
+        cy += (radius + halfWT) * 1;
+      }
+      else if(rotation == 0) {
+        rotation = 180;
+        cx += (radius + halfWT);
+        cy += (radius + halfWT) * -1;
+      }
+      else if(rotation == 180) {
+        rotation = 0;
+        cx += (radius + halfWT) * -1;
+        cy += (radius + halfWT) * 1;
+      }
     }
 
     if(isSet){

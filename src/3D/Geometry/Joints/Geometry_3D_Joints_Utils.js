@@ -82,7 +82,7 @@ export function createJointBackwall(points) {
 export function connectProxiesDiagonallyDownhill(leftProxy, rightProxy, flipArc = false, overrideRotation) {
     const geometries = [];
 
-    if(sharedData.xzJointStyle == "arc" && (leftProxy[0].x != rightProxy[0].x && leftProxy[0].z != rightProxy[0].z)) {
+    if(sharedData.jointStyle == "arc" && (leftProxy[0].x != rightProxy[0].x && leftProxy[0].z != rightProxy[0].z)) {
         calculateArc(leftProxy, rightProxy, flipArc, overrideRotation);
         return geometries;
     }
@@ -136,7 +136,7 @@ export function connectProxiesDiagonallyUphill(leftProxy, rightProxy, flipArc = 
 
     console.log("connectProxiesDiagonallyUphill step 1:", leftProxy);
 
-    if(sharedData.xzJointStyle == "arc" && (leftProxy[0].x != rightProxy[0].x && leftProxy[0].z != rightProxy[0].z)) {
+    if(sharedData.jointStyle == "arc" && (leftProxy[0].x != rightProxy[0].x && leftProxy[0].z != rightProxy[0].z)) {
         calculateArc(leftProxy, rightProxy, flipArc, overrideRotation);
         return geometries;
     }
@@ -172,7 +172,7 @@ export function connectProxiesDiagonallyUphill(leftProxy, rightProxy, flipArc = 
 }
 
 export function calculateArc(leftProxy, rightProxy, flipArc = false, overrideRotation) {
-    if(sharedData.xzJointStyle == "arc" && (leftProxy[0].x != rightProxy[0].x && leftProxy[0].z != rightProxy[0].z)) {
+    if(sharedData.jointStyle == "arc" && (leftProxy[0].x != rightProxy[0].x && leftProxy[0].z != rightProxy[0].z)) {
 
         let jointCenter = sharedData.jointCenter;
 
@@ -193,7 +193,7 @@ export function calculateArc(leftProxy, rightProxy, flipArc = false, overrideRot
             arc.rotation.z = Math.PI / -2; // upper-left
         }
 
-        if(sharedData.xzJointDirection == "outwards"){
+        if(sharedData.jointDirection == "outwards"){
             arc.rotation.z += Math.PI;
         }
 
@@ -266,7 +266,7 @@ export function createArc(width, length, isCorner = false) {
     let arcPoints = arcCurve.getPoints(8);
 
     const crescentShape = new THREE.Shape();
-    if(sharedData.xzJointDirection == "outwards" || isCorner) {
+    if(sharedData.jointDirection == "outwards" || isCorner) {
         // Move to the first point of the arc
         crescentShape.moveTo(arcPoints[0].x, arcPoints[0].y);
 
@@ -302,7 +302,7 @@ export function createArc(width, length, isCorner = false) {
         innerCylinderGeometry
     ];
 
-    if(sharedData.xzJointDirection == "inwards" && sharedData.isLJoint) {
+    if(false) {
         sharedData.backwallArcConfigs.push({
             innerRadius: innerRadius, 
             outerRadius: outerRadius, 
