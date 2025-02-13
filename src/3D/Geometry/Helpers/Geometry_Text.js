@@ -4,6 +4,7 @@ import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 import { sharedData } from "../../../Ahu3D/globals.js"
 
 export function createTextMesh(blockStyle, position) {
+    console.log("createTextMesh started:", blockStyle, position);
     const textValue = blockStyle.helpers.text.value || "Default";
 
     const loader = new FontLoader();

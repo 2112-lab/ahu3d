@@ -198,31 +198,6 @@ export default class Utils3D {
     });
   }
 
-  // setJointProxyHelpers(value) {
-  //   this.sceneHelper.scene.traverse((object3d) => {
-  //     if(object3d.isObject3D) {
-  //       if(object3d.name === 'jointHelperProxy') {
-  //         if(value == true) {
-  //           object3d.material.color.setHex(object3d.userData.helperColor);
-  //         }
-  //         else {
-  //           object3d.material.color.setHex(object3d.userData.productionColor);
-  //         }
-  //       }
-  //     }
-  //   });
-  // }
-
-  // setJointVertexHelpers(value) {
-  //   this.sceneHelper.scene.traverse((object3d) => {
-  //     if(object3d.isObject3D) {
-  //       if(object3d.name === 'jointHelperVertices') {
-  //         object3d.visible = value;
-  //       }
-  //     }
-  //   });
-  // }
-
   setComponentOpacity(opacity) {
     this.sceneHelper.scene.traverse((object3d) => {
       if (object3d.isObject3D) {

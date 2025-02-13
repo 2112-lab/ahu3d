@@ -268,7 +268,7 @@ export default class Canvas2D {
           point1 = joint.right.proxy2.position;
           point2 = joint.up.proxy1.position;
           midPoint = joint.up.proxyMedian.position;
-          this.createJointCorner(layer, point1, point2, midPoint);
+          this.createJointCorner(layer, point1, point2, midPoint, 90);
         }
         else if(joint.up && joint.left) {
           point1 = joint.left.proxy1.position;
@@ -279,13 +279,13 @@ export default class Canvas2D {
           point1 = joint.left.proxy2.position;
           point2 = joint.up.proxy2.position;
           midPoint = joint.left.proxyMedian.position;
-          this.createJointCorner(layer, point1, point2, midPoint);
+          this.createJointCorner(layer, point1, point2, midPoint, 360);
         }
         else if(joint.down && joint.right) {
           point1 = joint.right.proxy1.position;
           point2 = joint.down.proxy1.position;
           midPoint = joint.right.proxyMedian.position;
-          this.createJointCorner(layer, point1, point2, midPoint);
+          this.createJointCorner(layer, point1, point2, midPoint, 180);
 
           point1 = joint.right.proxy2.position;
           point2 = joint.down.proxy2.position;
@@ -301,32 +301,28 @@ export default class Canvas2D {
           point1 = joint.left.proxy1.position;
           point2 = joint.down.proxy2.position;
           midPoint = joint.down.proxyMedian.position;
-          this.createJointCorner(layer, point1, point2, midPoint);
+          this.createJointCorner(layer, point1, point2, midPoint, -90);
         }
         else if(joint.up && joint.down) {
           point1 = joint.up.proxy1.position;
           point2 = joint.up.proxy1.position;
           midPoint = joint.down.proxy1.position;
-          // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
           this.createJointCorner(layer, point1, point2, midPoint);
 
           point1 = joint.up.proxy2.position;
           point2 = joint.up.proxy2.position;
           midPoint = joint.down.proxy2.position;
-          // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
           this.createJointCorner(layer, point1, point2, midPoint);
         }
         else if(joint.left && joint.right) {
           point1 = joint.left.proxy1.position;
           point2 = joint.right.proxy1.position;
           midPoint = joint.right.proxy1.position;
-          // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
           this.createJointCorner(layer, point1, point2, midPoint);
 
           point1 = joint.left.proxy2.position;
           point2 = joint.right.proxy2.position;
           midPoint = joint.right.proxy2.position;
-          // midPoint = this.createMidPoint(point1, point2, jointCenter, isOutwards);
           this.createJointCorner(layer, point1, point2, midPoint);
         }
       }
@@ -436,10 +432,10 @@ export default class Canvas2D {
     
   }
 
-  createJointCorner(layer, point1, point2, midPoint, flipArc = false) {
+  createJointCorner(layer, point1, point2, midPoint, rotationOverride = null) {
 
-    if(sharedData.jointStyle == "arc" && this.jointKeys.length != 2) {
-      this.createJointArc(layer, point1, point2, midPoint, flipArc);
+    if(sharedData.jointStyle == "arc") {
+      this.createJointArc(layer, point1, point2, midPoint, rotationOverride);
     }
     else {
       const points = [
@@ -462,8 +458,8 @@ export default class Canvas2D {
     
   }
 
-  createJointArc(layer, point1, point2, midPoint, flipArc = false) {
-    console.log("createJointArc started:", flipArc);
+  createJointArc(layer, point1, point2, midPoint, rotationOverride = null) {
+    console.log("createJointArc started");
 
     // Convert z to match Konva's coordinate system
     const p1 = { x: point1.x, y: point1.z };
@@ -493,7 +489,6 @@ export default class Canvas2D {
         cy = mid.y - radius;
         isSet = true;
         if(!(mid.x != p2.x && mid.y != p2.y)) {
-          // flipArc = true;
           cx = mid.x - radius;
           cy = mid.y;
         }
@@ -504,7 +499,6 @@ export default class Canvas2D {
         cy = mid.y;
         isSet = true;
         if(!(mid.x != p2.x && mid.y != p2.y)) {
-          // flipArc = true;
           cx = mid.x;
           cy = mid.y + radius;
         }
@@ -515,7 +509,6 @@ export default class Canvas2D {
         cy = mid.y;
         isSet = true;
         if(!(mid.x != p1.x && mid.y != p1.y)) {
-          // flipArc = true;
           cx = mid.x;
           cy = mid.y + radius;
         }
@@ -526,7 +519,6 @@ export default class Canvas2D {
         cy = mid.y - radius;
         isSet = true;
         if(!(mid.x != p1.x && mid.y != p1.y)) {
-          // flipArc = true;
           cx = mid.x + radius;
           cy = mid.y;
         }
@@ -586,26 +578,38 @@ export default class Canvas2D {
       ]
     }
 
-    if(flipArc && sharedData.jointDirection == "inwards") {
-      if(rotation == 90) {
-        rotation = -90;
-        cx += (radius + halfWT) * -1;
-        cy += (radius + halfWT) * -1;
+    if(rotationOverride) {
+      rotation = rotationOverride;
+      if(rotationOverride == 90) {
+        if(sharedData.jointDirection == "inwards") {
+          cx += (radius + halfWT) * 1;
+          cy += (radius + halfWT) * 1;
+        }
       }
-      else if(rotation == -90) {
-        rotation = 90;
-        cx += (radius + halfWT) * 1;
-        cy += (radius + halfWT) * 1;
+      else if(rotationOverride == -90) {
+        if(sharedData.jointDirection == "inwards") {
+          cx += (radius + halfWT) * -1;
+          cy += (radius + halfWT) * -1;
+        }
+        
       }
-      else if(rotation == 0) {
-        rotation = 180;
-        cx += (radius + halfWT);
-        cy += (radius + halfWT) * -1;
+      else if(rotationOverride == 0) {
+        if(sharedData.jointDirection == "inwards") {
+          cx += (radius + halfWT) * 1;
+          cy += (radius + halfWT) * -1;
+        }
       }
-      else if(rotation == 180) {
-        rotation = 0;
-        cx += (radius + halfWT) * -1;
-        cy += (radius + halfWT) * 1;
+      else if(rotationOverride == 180) {
+        if(sharedData.jointDirection == "outwards") {
+          cx += (radius + halfWT) * 1;
+          cy += (radius + halfWT) * -1;
+        }
+      }
+      else if(rotationOverride == 360) {
+        if(sharedData.jointDirection == "outwards") {
+          cx += (radius) * -1;
+          cy += (radius + halfWT) * 1;
+        }
       }
     }
 

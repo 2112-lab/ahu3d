@@ -191,18 +191,18 @@ export default class Joints {
 
                 console.log("createJointProxies step 15:", this.ahuObject);
 
-                if(this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxyMedian2 != undefined) {
-                    console.log("createJointProxies step 16:", this.ahuObject);
-                    const tempProxy = this.ahuObject.resources.joints[`Joint-${gridKey}`][key];
-                    tempProxy.proxyMedian2.position = JSON.parse(JSON.stringify(tempProxy.proxyMedian.position));
-                    tempProxy.proxyMedian2.coordinates = JSON.parse(JSON.stringify(tempProxy.proxyMedian.coordinates));
-                    for(const i in tempProxy.proxyMedian2.coordinates) {
-                        console.log("createJointProxies step 17:", tempProxy.proxyMedian2.coordinates[i]);
-                        console.log("createJointProxies step 18:", tempProxy.proxyMedian2.medianOffset);
-                        tempProxy.proxyMedian2.coordinates[i].x += tempProxy.proxyMedian2.medianOffset.x;
-                        tempProxy.proxyMedian2.coordinates[i].z += tempProxy.proxyMedian2.medianOffset.z;
-                    }
-                }
+                // if(this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxyMedian2 != undefined) {
+                //     console.log("createJointProxies step 16:", this.ahuObject);
+                //     const tempProxy = this.ahuObject.resources.joints[`Joint-${gridKey}`][key];
+                //     tempProxy.proxyMedian2.position = JSON.parse(JSON.stringify(tempProxy.proxyMedian.position));
+                //     tempProxy.proxyMedian2.coordinates = JSON.parse(JSON.stringify(tempProxy.proxyMedian.coordinates));
+                //     for(const i in tempProxy.proxyMedian2.coordinates) {
+                //         console.log("createJointProxies step 17:", tempProxy.proxyMedian2.coordinates[i]);
+                //         console.log("createJointProxies step 18:", tempProxy.proxyMedian2.medianOffset);
+                //         tempProxy.proxyMedian2.coordinates[i].x += tempProxy.proxyMedian2.medianOffset.x;
+                //         tempProxy.proxyMedian2.coordinates[i].z += tempProxy.proxyMedian2.medianOffset.z;
+                //     }
+                // }
                 
             }
         }
@@ -636,13 +636,12 @@ export default class Joints {
 
                     medianOffset += sharedData.jointPadding;
 
-                    medianOffset = {
-                        x: medianOffset,
-                        z: medianOffset * 0
+                    if(rightProxies.ductDimensions.y < upProxies.ductDimensions.y) {
+                        upProxies.proxyMedian.position.x += medianOffset + 15;
                     }
-
-                    upProxies.proxyMedian2 = {};
-                    upProxies.proxyMedian2.medianOffset = medianOffset;
+                    else {
+                        upProxies.proxyMedian.position.z += medianOffset + 15;
+                    }
                 }
 
                 console.log("alignProxyMediansInwards step 10:", this.ahuObject);
@@ -674,13 +673,12 @@ export default class Joints {
 
                     medianOffset += sharedData.jointPadding;
 
-                    medianOffset = {
-                        x: medianOffset * 0,
-                        z: medianOffset * 0
+                    if(rightProxies.ductDimensions.y < downProxies.ductDimensions.y) {
+                        rightProxies.proxyMedian.position.x += medianOffset + 15;
                     }
-
-                    rightProxies.proxyMedian2 = {};
-                    rightProxies.proxyMedian2.medianOffset = medianOffset;
+                    else {
+                        rightProxies.proxyMedian.position.z -= medianOffset + 15;
+                    }
                 }
             }
             else if(intersection.up != null && intersection.left != null) {
@@ -710,13 +708,12 @@ export default class Joints {
 
                     medianOffset += sharedData.jointPadding;
 
-                    medianOffset = {
-                        x: medianOffset * 0,
-                        z: medianOffset * 0
+                    if(leftProxies.ductDimensions.y > upProxies.ductDimensions.y) {
+                        leftProxies.proxyMedian.position.z += medianOffset + 15;
                     }
-
-                    leftProxies.proxyMedian2 = {};
-                    leftProxies.proxyMedian2.medianOffset = medianOffset;
+                    else {
+                        leftProxies.proxyMedian.position.x -= medianOffset + 15;
+                    }
                 }
             }
             else if(intersection.down != null && intersection.left != null) {
@@ -746,13 +743,13 @@ export default class Joints {
 
                     medianOffset += sharedData.jointPadding;
 
-                    medianOffset = {
-                        x: medianOffset * 0,
-                        z: medianOffset * 0
+                    if(leftProxies.ductDimensions.y > downProxies.ductDimensions.y) {
+                        downProxies.proxyMedian.position.z -= medianOffset + 15;
+                    }
+                    else {
+                        downProxies.proxyMedian.position.x -= medianOffset + 15;
                     }
 
-                    downProxies.proxyMedian2 = {};
-                    downProxies.proxyMedian2.medianOffset = medianOffset;
                 }
             }
 
@@ -1146,13 +1143,12 @@ export default class Joints {
 
                     medianOffset += sharedData.jointPadding;
 
-                    medianOffset = {
-                        x: medianOffset * 0,
-                        z: medianOffset * 0
+                    if(rightProxies.ductDimensions.y < upProxies.ductDimensions.y) {
+                        upProxies.proxyMedian.position.x += medianOffset + 15;
                     }
-
-                    upProxies.proxyMedian2 = {};
-                    upProxies.proxyMedian2.medianOffset = medianOffset;
+                    else {
+                        upProxies.proxyMedian.position.z += medianOffset + 15;
+                    }
 
                 }
             }
@@ -1181,13 +1177,12 @@ export default class Joints {
 
                     medianOffset += sharedData.jointPadding;
 
-                    medianOffset = {
-                        x: medianOffset * 0,
-                        z: medianOffset * 0
+                    if(rightProxies.ductDimensions.y < downProxies.ductDimensions.y) {
+                        rightProxies.proxyMedian.position.x += medianOffset + 15;
                     }
-
-                    rightProxies.proxyMedian2 = {};
-                    rightProxies.proxyMedian2.medianOffset = medianOffset;
+                    else {
+                        rightProxies.proxyMedian.position.z -= medianOffset + 15;
+                    }
                 }
             }
             else if(intersection.up != null && intersection.left != null) {
@@ -1217,13 +1212,12 @@ export default class Joints {
 
                     medianOffset += sharedData.jointPadding;
 
-                    medianOffset = {
-                        x: medianOffset * 0,
-                        z: medianOffset * 0
+                    if(leftProxies.ductDimensions.y < upProxies.ductDimensions.y) {
+                        leftProxies.proxyMedian.position.x -= medianOffset + 15;
                     }
-
-                    leftProxies.proxyMedian2 = {};
-                    leftProxies.proxyMedian2.medianOffset = medianOffset;
+                    else {
+                        leftProxies.proxyMedian.position.z += medianOffset + 15;
+                    }
                 }
             }
             else if(intersection.down != null && intersection.left != null) {
@@ -1252,13 +1246,12 @@ export default class Joints {
 
                     medianOffset += sharedData.jointPadding;
 
-                    medianOffset = {
-                        x: medianOffset * 0,
-                        z: medianOffset * 0
+                    if(leftProxies.ductDimensions.y > downProxies.ductDimensions.y) {
+                        downProxies.proxyMedian.position.z -= medianOffset + 15;
                     }
-
-                    downProxies.proxyMedian2 = {};
-                    downProxies.proxyMedian2.medianOffset = medianOffset;
+                    else {
+                        downProxies.proxyMedian.position.x -= medianOffset + 15;
+                    }
                 }
             }
         }
