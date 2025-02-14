@@ -16,108 +16,138 @@
 //
 //////////////////////////////////////////////////////////////////////////////////////
 
-/*
- * Ahu3D-API.js
+/**
+ * @fileoverview AHU3D API module provides the main interface for the Air Handling Unit
+ * 3D visualization system. It handles component library loading, scene management,
+ * and interactive features like component manipulation and visual effects.
  * 
- * Author: Caleb Ebers
- * Date: 9/06/2024
+ * @module Ahu3D-API
+ * @requires three
+ * @requires three/examples/jsm/postprocessing/OutlinePass
+ * @requires axios
+ * @requires ../Preprocess/_Preprocess
+ * @requires ../3D/Assets3D
+ * @requires ../3D/Mesh3D
+ * @requires ./FlowControl
+ * @requires ./globals
+ * @requires ../assets/2D-Wildcard.svg
  * 
- * 
+ * @author Caleb Ebers
+ * @copyright Cognitive Dynamics Ltd. 2024
+ * @license Limited Temporary Demo License - Expires 2025/01/01
  */
 
 import * as THREE from 'three';
 import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
-
 import axios from 'axios';
-
 import Preprocess from "../Preprocess/_Preprocess.js"
 import Assets3D from "../3D/Assets3D.js"
 import Mesh3D from "../3D/Mesh3D.js"
 import FlowControl from "./FlowControl.js"
 import { sharedData } from './globals.js';
-
 import wildcardSvg from '../assets/2D-Wildcard.svg';
 
 class Ahu3DAPI {
+    /**
+     * Creates an instance of the AHU3D API.
+     * Initializes core components and state management.
+     * 
+     * @param {Object} ahu3DInstance - Instance of the main AHU3D application
+     */
     constructor(ahu3DInstance) {
+        // Store reference to main AHU3D instance
         this.ahu3D = ahu3DInstance;     
+        // Track library loading state
         this.libraryLoadInitiated = false;
+        // Initialize 3D mesh handler
         this.Mesh3D = new Mesh3D(this.sceneHelper);
+        // Initialize flow control system
         this.FlowControl = new FlowControl();
     }
 
     /**
-     * loadLibrary
+     * Loads and initializes the component library from specified configurations.
+     * Fetches JSON and SVG assets for each component and prepares them for use.
      * 
-     * Loads component library entries from the specified asset configurations by sending asynchronous
-     * requests to fetch JSON files and store their data.
-     * 
-     * @param {Object} assetConfigs - Configuration object with paths to assets and component list.
-     * @returns {Object} The loaded files object.
+     * @param {Object} assetConfigs - Configuration object containing paths and component list
+     * @param {string[]} assetConfigs.componentList - List of component names to load
+     * @param {string} assetConfigs.assetsPath - Base path to component assets
+     * @returns {Object} Loaded component library
      */
     async loadLibrary(assetConfigs) {
+        // Mark library load as initiated
         this.libraryLoadInitiated = true;
     
+        // Initialize storage for loaded files
         const files = {};
         const jsonFiles = assetConfigs.componentList;
         const assetsPath = assetConfigs.assetsPath;
     
+        // Create promises for loading each component's assets
         const requests = jsonFiles.map(async (fileName) => {
             const jsonPath = `${assetsPath}${fileName}/${fileName}.json`;
     
             try {
-                // Load JSON
+                // Load and store component's JSON data
                 const jsonResponse = await axios.get(jsonPath);
                 files[fileName] = jsonResponse.data;
 
                 const svgKey = files[fileName].files.svg;
                 const svgPath = `${assetsPath}${fileName}/${svgKey}`;
 
-                // files[fileName].svg = wildcardSvg;
-
+                // Handle SVG loading for the component
                 if(svgKey != null) {
-                    // Load SVG as text
+                    // Attempt to load component-specific SVG
                     const svgResponse = await fetch(svgPath);
                     if (svgResponse.ok) {
                         files[fileName].svg = await svgResponse.text();
                     } 
                     else {
+                        // Fall back to wildcard SVG if component SVG fails to load
                         console.error(`Failed to load ${fileName}.svg`);
                         files[fileName].svg = wildcardSvg;
                     }
                 }
                 else {
+                    // Use wildcard SVG if no component SVG specified
                     files[fileName].svg = wildcardSvg;
                 }
-    
-                
             } catch (error) {
                 console.error(`Failed to load ${fileName} assets:`, error);
             }
         });
     
-        await Promise.all(requests); // Wait for all promises to resolve
+        // Wait for all assets to load
+        await Promise.all(requests);
     
+        // Store loaded library and share through global state
         this.library = files;
         sharedData.componentLibrary = files;
     
+        // Initialize 3D assets and preprocessing
         this.Assets3D = new Assets3D(this.sceneHelper, this.library, assetConfigs);
         await this.Assets3D.loadInstanceSet();
-    
         this.preprocess = new Preprocess(this.library);
     
         return this.library;
     }    
 
+    /**
+     * Processes and renders AHU data in specified output mode.
+     * Ensures library is loaded before processing XETO data.
+     * 
+     * @param {Object} xeto - XETO data defining the AHU configuration
+     * @param {string} outputMode - Desired output mode for processing
+     * @returns {Object|null} Processed AHU object or null if library not loaded
+     */
     async runAhu3D(xeto, outputMode){
-
-        // Ensure that the loadLibrary method has been invoked.
+        // Verify library has been initialized
         if(this.libraryLoadInitiated == false) {
             alert("Please load in the asset library before loading xeto.");
             return null;
         }
 
-        // This setInterval function will loop until the library is loaded.
+        // Wait for library to finish loading if necessary
         if(this.isLibraryLoaded == false) {
             await new Promise((resolve) => {
                 const checkLibraryInterval = setInterval(() => {
@@ -125,44 +155,46 @@ class Ahu3DAPI {
                         clearInterval(checkLibraryInterval);
                         resolve();
                     }
-                }, 100); // Check every 100ms
+                }, 100);
             });
         }        
 
+        // Preprocess XETO data
         const {cleanedXeto, ductsDictionary} = this.preprocess.preprocessXeto(xeto);
 
-        console.log("runAhu3D cleanedXeto:", cleanedXeto);
-        console.log("runAhu3D ductsDictionary:", ductsDictionary);
-
+        // Update FlowControl with processed data
         this.FlowControl.cleanedXeto = cleanedXeto;
         this.FlowControl.ductsDictionary = ductsDictionary;
 
+        // Handle invalid XETO data
         if(!cleanedXeto) {
             return [];
         }
 
+        // Clear existing scene
         this.sceneHelper.clearScene();
 
+        // Process and render AHU configuration
         const ahuObject = await this.FlowControl.runAhu3D(cleanedXeto, outputMode);
 
+        // Store component meshes for later reference
         this.components = ahuObject["3d"].components.meshes;
 
         return ahuObject;
     }
 
     /**
-     * Translates the position of a component along the Y-axis.
+     * Translates a component's position along the Y-axis within constraints.
      * 
-     * @param {string} componentId - The ID of the component to translate (e.g., "Fan-0", "Filter-2").
-     * @param {number} translateValue - The amount of translation to apply along the Y-axis.
-     * @returns {number} The actual translation value applied (can be less than or equal to the requested value, depending on constraints).
-     * 
-     * @example
-     * ahu3d.translateY("Filter-2", 1000);
+     * @param {string} componentId - ID of the component to translate
+     * @param {number} translateValue - Amount to translate (-2000 to 0)
+     * @returns {number} Actual translation applied
      */
     translateY(componentId, translateValue) {
+        // Get component reference
         const component = this.components[componentId];
         if (component != undefined) {
+            // Apply translation if within valid range
             if(translateValue <= 0 && translateValue >= -2000) {
                 component.position.y = translateValue;
                 return translateValue;
@@ -172,46 +204,41 @@ class Ahu3DAPI {
     }
     
     /**
-     * Sets a glowing effect on a specific component within the 3D scene.
-     * This glow effect is created using the OutlinePass shader and cycles through the specified colors.
+     * Applies a glowing effect to a specified component using the OutlinePass shader.
      * 
-     * @param {string} componentId - The identifier of the component to apply the glow effect (e.g., "Fan-0", "Filter-2").
-     * @param {Array<string>} [colors=['white']] - An array of colors (as strings) that the glow will cycle through.
-     * @param {number} [edgeGlow=1] - The intensity of the glow around the edges (range: 0 to 1).
-     * @param {number} [edgeThickness=4] - The thickness of the glowing edges (range: 1 to 4).
-     * @param {number} [edgeStrengthFactor=6] - A multiplier for the strength of the glowing edges (greater values produce stronger effects).
-     * 
-     * @example
-     * const ahu3d = new Ahu3D();
-     * ahu3d.setGlow("Fan-1", ["red", "#00ff00"]); // Colors can be defined as either names or hex values.
+     * @param {string} componentId - Component identifier
+     * @param {string[]} [colors=['white']] - Array of colors for glow cycling
+     * @param {number} [edgeGlow=1] - Glow intensity (0-1)
+     * @param {number} [edgeThickness=4] - Edge thickness (1-4)
+     * @param {number} [edgeStrengthFactor=6] - Edge strength multiplier
      */
     setGlow(componentId, colors = ['white'], edgeGlow = 1, edgeThickness = 4, edgeStrengthFactor = 6) {       
         const component = this.components[componentId];
         if (component != undefined) {
-
+            // Remove existing glow if present
             if(component.userData.colorQueue != undefined) {
                 this.removeGlow(componentId);
             }
 
-            // If the component is already in the glowingMeshes array, remove it from the array.
+            // Remove from glowing meshes array if present
             const index = this.sceneHelper.glowingMeshes.indexOf(component);
             if (index !== -1) {
                 this.glowingMeshes.splice(index, 1);
             }
 
-            // If the component already has an outlinePass, remove it.
+            // Clean up existing outline pass
             if (component.userData.outlinePass) {
                 this.composer.removePass(component.userData.outlinePass);
-                delete component.userData.outlinePass; // Remove reference
+                delete component.userData.outlinePass;
             }
 
-            // Assign the colors to the mesh's colorQueue
+            // Set up color queue for glow effect
             component.userData.colorQueue = [];
             for (const color of colors) {
                 component.userData.colorQueue.push(new THREE.Color(color));
             }
     
-            // Create a new OutlinePass specifically for this component
+            // Create new outline pass for glow effect
             const newOutlinePass = new OutlinePass(
                 new THREE.Vector2(
                     1 / this.moduleConfigs.scene.renderer.size.width, 
@@ -220,25 +247,28 @@ class Ahu3DAPI {
                 this.sceneHelper.scene,
                 this.sceneHelper.cameras.primary
             );
-            newOutlinePass.edgeGlow = edgeGlow; // Glow around edges: 0 - 1
-            newOutlinePass.edgeThickness = edgeThickness; // Edge thickness: 1 - 4
-            component.userData.edgeStrengthFactor = edgeStrengthFactor; // Edge Strength Multiplier: 0 - infinity
+
+            // Configure outline pass parameters
+            newOutlinePass.edgeGlow = edgeGlow;
+            newOutlinePass.edgeThickness = edgeThickness;
+            component.userData.edgeStrengthFactor = edgeStrengthFactor;
             newOutlinePass.hiddenEdgeColor.set(0x000000);
     
-            // Set the current component to glow (selectedObjects)
+            // Set component as target for outline effect
             newOutlinePass.selectedObjects = [component];
-            
-            // Store the outline pass reference in the component's userData for later update
             component.userData.outlinePass = newOutlinePass;
     
-            // Add the OutlinePass to the composer (important to add it to the rendering pipeline)
+            // Add to rendering pipeline
             this.sceneHelper.composer.addPass(newOutlinePass);
-    
-            // Add the component to the glowingMeshes array so it gets updated in the cycle
             this.sceneHelper.glowingMeshes.push(component);
         }
     }
 
+    /**
+     * Removes glow effect from a specified component.
+     * 
+     * @param {string} componentId - Component to remove glow from
+     */
     removeGlow(componentId) {
         const component = this.components[componentId];
         if (!component) {
@@ -246,48 +276,37 @@ class Ahu3DAPI {
             return;
         }
     
-        // Remove the component from the glowingMeshes array
+        // Remove from glowing meshes list
         const index = this.sceneHelper.glowingMeshes.indexOf(component);
         if (index !== -1) {
             this.sceneHelper.glowingMeshes.splice(index, 1);
         }
     
-        // Remove the OutlinePass from the composer
+        // Clean up outline pass
         if (component.userData.outlinePass) {
             this.sceneHelper.composer.removePass(component.userData.outlinePass);
-            delete component.userData.outlinePass; // Remove reference
+            delete component.userData.outlinePass;
         }
     
-        // Clear the colorQueue
+        // Clear color queue
         if (component.userData.colorQueue) {
             component.userData.colorQueue = undefined;
         }
-    
-        console.log(`Glow removed for component: ${componentId}`);
     }    
     
     /**
-     * Sets the duration for the glow cycle effect across all glowing components in the scene.
+     * Sets the duration for cycling through glow colors.
      * 
-     * @param {number} duration - The total duration (in milliseconds) for the glow cycle to complete.
-     * 
-     * @example
-     * const ahu3d = new Ahu3D();
-     * ahu3d.setGlowCycleDuration(3000);
+     * @param {number} duration - Cycle duration in milliseconds
      */
     setGlowCycleDuration(duration) {
-        // The duration unit is in ms.
         this.sceneHelper.glowCycleDuration = duration;
     }
 
     /**
-     * Attaches the 3D scene to the DOM.
+     * Attaches the 3D scene to a DOM element.
      * 
-     * @param {string} selectorTag - The DOM selector for the container to attach the scene to.
-     * 
-     * @example
-     * const ahu3d = new Ahu3D();
-     * ahu3d.attachScene("#sceneContainer");
+     * @param {string} selectorTag - CSS selector for container element
      */
     attachScene(selectorTag) {
         const container = document.querySelector(selectorTag);
@@ -295,35 +314,32 @@ class Ahu3DAPI {
     }
 
     /**
-     * Toggles the visibility of the grid in the scene.
-     * 
-     * @example
-     * ahu3d.toggleGrid();
+     * Toggles grid visibility in the scene.
      */
     toggleGrid() {
         this.sceneHelper.grid.visible = !this.sceneHelper.grid.visible;
     }
 
     /**
-     * Toggles the selector functionality in the scene.
-     * 
-     * @example
-     * ahu3d.toggleSelector();
+     * Toggles component selector functionality.
      */
     toggleSelector() {
         this.sceneHelper.selectorEnabled = !this.sceneHelper.selectorEnabled;
     }
 
     /**
-     * Toggles the tooltips in the scene.
-     * 
-     * @example
-     * ahu3d.toggleTooltip();
+     * Toggles tooltip visibility.
      */
     toggleTooltip() {
         this.sceneHelper.tooltipEnabled = !this.sceneHelper.tooltipEnabled;
     }
 
+    /**
+     * Sets an attribute value for a specified component.
+     * 
+     * @param {string} key - Component identifier
+     * @param {*} value - Attribute value to set
+     */
     setAttribute(key, value) {
         if (this.components[key]) {
             this.components[key].setAttribute(value);
@@ -333,6 +349,12 @@ class Ahu3DAPI {
         }
     }
 
+    /**
+     * Sets transparency level for a specified component.
+     * 
+     * @param {string} key - Component identifier
+     * @param {number} transparency - Transparency value to set
+     */
     setTransparency(key, transparency) {
         if (this.components[key]) {
             this.components[key].setTransparency(transparency);
@@ -342,32 +364,42 @@ class Ahu3DAPI {
         }
     }
 
+    /**
+     * Loads a component into the scene.
+     * 
+     * @param {Object} component - Component data to load
+     * @param {boolean} [isVisible=true] - Initial visibility state
+     * @param {number} [hvacOpacity=1] - Initial opacity value
+     */
     loadComponent(component, isVisible = true, hvacOpacity = 1){
         this.Assets3D.loadComponent(component, isVisible, hvacOpacity);
     }
 
+    /**
+     * Cleans up and disposes of all resources used by the API.
+     * Releases memory and removes references to allow garbage collection.
+     */
     dispose() {
         console.log("Disposing Ahu3D...");
         
-        // Dispose scene resources
+        // Clean up scene resources
         if (this.sceneHelper) {
             this.sceneHelper.dispose();
             this.sceneHelper = null;
         }
 
-        // Clear components
+        // Clear component references
         this.components = {};
 
-        // Nullify utility references
+        // Clear utility references
         this.imports = null;
         this.utils = null;
 
-        // Nullify other references
+        // Clear library reference
         this.library = null;
 
         console.log("Ahu3D disposed successfully.");
     }
-
 }
 
 export default Ahu3DAPI;

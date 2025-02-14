@@ -1,4 +1,25 @@
 /**
+ * @fileoverview AHU3D API module provides the main interface for the Air Handling Unit
+ * 3D visualization system. It handles component library loading, scene management,
+ * and interactive features like component manipulation and visual effects.
+ * 
+ * @module Ahu3D-API
+ * @requires three
+ * @requires three/examples/jsm/postprocessing/OutlinePass
+ * @requires axios
+ * @requires ../Preprocess/_Preprocess
+ * @requires ../3D/Assets3D
+ * @requires ../3D/Mesh3D
+ * @requires ./FlowControl
+ * @requires ./globals
+ * @requires ../assets/2D-Wildcard.svg
+ * 
+ * @author Caleb Ebers
+ * @copyright Cognitive Dynamics Ltd. 2024
+ * @license Limited Temporary Demo License - Expires 2025/01/01
+ */
+
+/**
  * @license
  * Copyright 2010-2024 Three.js Authors
  * SPDX-License-Identifier: MIT

@@ -131,9 +131,6 @@ class Assets3D {
         mainMesh.rotation.y = cmpJson.object.rotation.y;           
         mainMesh.rotation.z = cmpJson.object.rotation.z;
 
-        // object.rotation.z = 90 * Math.PI/180;
-        // object.rotation.x = -90 * Math.PI/180;
-
         mainMesh.scale.x = cmpJson.object.scale.x;
 
         mainMesh.name = "hvac"; // Name the main mesh "hvac".

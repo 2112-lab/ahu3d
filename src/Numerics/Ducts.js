@@ -1,3 +1,11 @@
+/**
+ * Ducts.js
+ * 
+ * @fileoverview Manages duct system geometry, positioning and connections.
+ * Handles the creation and manipulation of duct segments, their intersections,
+ * and the overall duct network topology.
+ */
+
 import * as THREE from 'three';
 import {
     getSegmentDirection, 
@@ -13,7 +21,21 @@ import Geometry_3D_Joints_T from "../3D/Geometry/Joints/Geometry_3D_Joints_T.js"
 import Geometry_3D_Joints_L from "../3D/Geometry/Joints/Geometry_3D_Joints_L.js";
 import Geometry_3D_Joints_Colinear from "../3D/Geometry/Joints/Geometry_3D_Joints_Colinear.js";
 
+/**
+ * Class handling duct system layout and geometry.
+ * Manages the creation, positioning and connection of duct segments.
+ */
 export default class Ducts {
+    /**
+     * Initialize the ducts manager with required dependencies and configurations.
+     * 
+     * @param {Object} ductsDictionary - Dictionary of all duct definitions
+     * @param {Object} Mesh3D - 3D mesh handling utility
+     * @param {Object} componentLibrary - Library of available components
+     * @param {Object} ahuGroup - Group configuration for the AHU
+     * @param {Object} sceneHelper - Helper for scene manipulation
+     * @param {Object} ahuObject - Main AHU object containing all system data
+     */
     constructor(
         ductsDictionary, 
         Mesh3D, 
@@ -22,42 +44,66 @@ export default class Ducts {
         sceneHelper,
         ahuObject
     ) {
+        // Initialize core configuration properties
         this.innerDuctDimensions = sharedData.innerDuctDimensions;
         this.ductsDictionary = JSON.parse(JSON.stringify(ductsDictionary));
-        // this.ductsDictionary = ductsDictionary
+        
+        // Set for tracking processed segments
         this.positionedSegments = new Set();
+        
+        // Store reference to shared color definition
         this.primaryColor = sharedData.primaryColor;
+        
+        // Store utility class instances
         this.Mesh3D = Mesh3D;
         this.componentLibrary = componentLibrary;
         this.ahuGroup = ahuGroup;
         this.ahuObject = ahuObject;
         
+        // Initialize joint handling classes
         this.Joints = new Joints(this.ahuGroup, this.innerDuctDimensions, sceneHelper);
         this.Geometry_3D_Joints_Cross = new Geometry_3D_Joints_Cross();
         this.Geometry_3D_Joints_T = new Geometry_3D_Joints_T();
         this.Geometry_3D_Joints_L = new Geometry_3D_Joints_L();
         this.Geometry_3D_Joints_Colinear = new Geometry_3D_Joints_Colinear();
 
+        // Counter for joint tracking
         this.jointCount = 0;
 
+        // Traversal control for recursive operations
         this.traversalCount = 0;
         this.traversalLimit = 30;
     }
 
+    /**
+     * Initializes all duct segments in the AHU object.
+     * Sets up initial positions and configurations for each duct.
+     * 
+     * @param {Object} ahuObject - The main AHU object containing duct definitions
+     */
     async initializeAllDuctSegments(ahuObject) {
+        // Get array of all duct identifiers
         const ducts = Object.keys(ahuObject.resources.ducts);
-        for (const i in ducts) { // Iterate over each duct key.
-            this.initializeDuctSegment(ahuObject, ducts[i]); // Build the assembly segment for the duct.
+        
+        // Initialize each duct segment sequentially
+        for (const i in ducts) {
+            this.initializeDuctSegment(ahuObject, ducts[i]);
         } 
-        console.log("initializeDuctSegment:", ahuObject);
     }
 
+    /**
+     * Initializes a single duct segment with components and positioning.
+     * 
+     * @param {Object} ahuObject - The main AHU object
+     * @param {string} ductKey - Identifier for the duct to initialize
+     * @returns {void}
+     */
     initializeDuctSegment(ahuObject, ductKey) {
-        console.log("initializeDuctSegment started:", ahuObject, ductKey);
-
+        // Initialize duct position and rotation vectors
         ahuObject.resources.ducts[ductKey].position = {x: 0, y: 0, z: 0};
         ahuObject.resources.ducts[ductKey].rotation = {x: 0, y: 0, z: 0};
 
+        // Apply rotation based on duct orientation
         if (ahuObject.xetoDictionary.edges[ductKey].orientation == 'north') {
             ahuObject.resources.ducts[ductKey].rotation.y = -90;
         }
@@ -68,126 +114,103 @@ export default class Ducts {
             ahuObject.resources.ducts[ductKey].rotation.y = 180;
         }
 
-        console.log("initializeDuctSegment step 1:", sharedData.innerDuctDimensions );
-
+        // Get inner dimension based on duct size configuration
         const innerDimension = sharedData.innerDuctDimensions[ahuObject.xetoDictionary.edges[ductKey].graphicLocation.size];
-
-        console.log("initializeDuctSegment step 2:", innerDimension );
-
         const componentScale = innerDimension / 1000;
 
+        // Get padding configuration for components
         const componentPadding = ahuObject.xetoDictionary.edges[ductKey].blockStyle.componentPadding;
-
         const flowDirection = ahuObject.xetoDictionary.edges[ductKey].blockStyle.flowDirection;
 
-        console.log("initializeDuctSegment step 3:", componentPadding);
-
+        // Validate component array
         this.testArray = ahuObject.associations.ducts[ductKey].components;
         if (!Array.isArray(this.testArray)) {
             alert(`This data is not an array: ${this.testArray}`)
         }
 
+        // Calculate total span needed for components
         let totalSpan = 0;
         for(const uniqueId of ahuObject.associations.ducts[ductKey].components) {
-            console.log("initializeDuctSegment step 3.1:", ahuObject.xetoDictionary.components[uniqueId]);
+            // Get component type from dictionary
             let componentKey = ahuObject.xetoDictionary.components[uniqueId].componentId.split("r:novo.graphics::").pop();
-            console.log("initializeDuctSegment step 3.2:", componentKey);
-            console.log("initializeDuctSegment step 3.2:", sharedData.componentLibrary);
+            
+            // Initialize component dimensions with scaling
             ahuObject.resources.components[uniqueId].dimensions = JSON.parse(JSON.stringify(sharedData.componentLibrary[componentKey].object.boundingBox.dimensions));
-            console.log("initializeDuctSegment step 3.3");
-
             ahuObject.resources.components[uniqueId].scale = {
                 x: componentScale,
                 y: componentScale,
                 z: componentScale
             };
 
-            console.log("initializeDuctSegment step 3.4");
-
+            // Apply scaling to dimensions
             ahuObject.resources.components[uniqueId].dimensions.x *= componentScale;
             ahuObject.resources.components[uniqueId].dimensions.y *= componentScale;
             ahuObject.resources.components[uniqueId].dimensions.z *= componentScale;
 
+            // Initialize component position and rotation
             ahuObject.resources.components[uniqueId].position = {x: 0, y: 0, z: 0};
             ahuObject.resources.components[uniqueId].rotation = {x: 0, y: 0, z: 0};
 
-            console.log("initializeDuctSegment step 3.5:", ahuObject.resources.components[uniqueId].dimensions.x);
-
+            // Add component span including padding
             totalSpan += componentPadding.startSpace + ahuObject.resources.components[uniqueId].dimensions.x + componentPadding.endSpace;
         }
 
-        console.log("initializeDuctSegment step 4: ", ahuObject.associations.ducts[ductKey].components);
-
-        console.log("initializeDuctSegment totalSpan:", totalSpan);
-
-        // this.testArray = ahuObject.associations.ducts[ductKey].components;
-        // if (!Array.isArray(this.testArray)) {
-        //     alert(`This data is not an array: ${this.testArray}`)
-        // }
-
+        // Calculate offset from center for component positioning
         const halfTotalSpan = totalSpan / 2;
         for(const uniqueId of ahuObject.associations.ducts[ductKey].components) {
+            // Center components by offsetting from half span
             const componentHalfWidth = ahuObject.resources.components[uniqueId].dimensions.x / 2;
             ahuObject.resources.components[uniqueId].position.x -= (halfTotalSpan - componentHalfWidth);
         }
 
-        console.log("initializeDuctSegment step 5");
-
+        // Get array of component keys
         let componentKeys = ahuObject.associations.ducts[ductKey].components;
-
         let componentKeysLength = Object.keys(componentKeys).length;
 
-        console.log("componentKeys:", componentKeys);
-
+        // Position first component with initial padding
         ahuObject.resources.components[componentKeys[0]].position.x += componentPadding.startSpace;
 
-        console.log("initializeDuctSegment moving components starting:", ahuObject, componentKeysLength, componentKeys);
+        // Position remaining components sequentially
         for(let i = 1; i <= componentKeys.length-1; i++) {
-            console.log("initializeDuctSegment moving components index:", i);
-
-            console.log("initializeDuctSegment moving previousComponent key:", componentKeys[i-1]);
-            console.log("initializeDuctSegment moving currentComponent key:", componentKeys[i]);
-
             const previousComponent = ahuObject.resources.components[componentKeys[i-1]];
             const currentComponent = ahuObject.resources.components[componentKeys[i]];
-
-            console.log("initializeDuctSegment moving previousComponent:", previousComponent);
-            console.log("initializeDuctSegment moving currentComponent:", currentComponent);
 
             const previousComponentHalfWidth = previousComponent.dimensions.x / 2;
             const currentComponentHalfWidth = currentComponent.dimensions.x / 2;
 
+            // Position current component relative to previous one
             currentComponent.position.x = previousComponent.position.x;
-
             currentComponent.position.x += previousComponentHalfWidth;
             currentComponent.position.x += currentComponentHalfWidth;
             currentComponent.position.x += componentPadding.startSpace;
             currentComponent.position.x += componentPadding.endSpace;
-
-            console.log("initializeDuctSegment moving finished loop:", currentComponent);
         }
 
+        // Apply flow direction adjustments
         const duct = ahuObject.resources.ducts[ductKey];
         for(const uniqueId of ahuObject.associations.ducts[ductKey].components) {
-            console.log("initializeDuctSegment flowDirection uniqueId:", uniqueId);
             const currentComponent = ahuObject.resources.components[uniqueId];
             if(flowDirection == "endToStart") {
                 currentComponent.scale.x *= -1;
             }
         }
 
-        console.log("initializeDuctSegment moving finished");
-
+        // Set final duct dimensions
         ahuObject.resources.ducts[ductKey].dimensions = {
             x: totalSpan, 
             y: innerDimension, 
             z: innerDimension
         };
-
-        return
     }
 
+    /**
+     * Gets the primary duct key from the duct dictionary.
+     * Primary duct is identified as one with single connection.
+     * 
+     * @returns {string} Key of the primary duct
+     */
     getPrimaryKey() {
+        // Find first duct with only one connection
         for(const key in this.ductsDictionary) {
             if(this.ductsDictionary[key].length == 1) {
                 return key;
@@ -196,30 +219,22 @@ export default class Ducts {
     }
 
     /**
-     * placeSegments
+     * Places segments in correct positions based on their relationships.
      * 
-     * Places assembly segments in the correct position and orientation based on their relationship 
-     * to the primary segment and other segments in the assembly.
-     * 
-     * @returns {Array} The placed assembly segments.
+     * @param {Object} ahuObject - The main AHU object
+     * @returns {Promise<void>}
      */
     async placeSegments(ahuObject) {
-        console.log("placeSegments started:", ahuObject);
+        // Store reference to AHU object
         this.ahuObject = ahuObject;
 
+        // Get starting point for placement
         const primaryKey = this.getPrimaryKey();
-
         const edgeKeys = Object.keys(ahuObject.xetoDictionary.edges); 
-
         const primarySegmentXeto = ahuObject.xetoDictionary.edges[edgeKeys[0]];
 
-        // const primarySegmentXeto = this.ductsDictionary[primaryKey][0];
-
-        console.log("placeSegments primarySegmentXeto:", primarySegmentXeto);
-        console.log("placeSegments this.ductsDictionary:", this.ductsDictionary);
-
+        // Apply initial rotation based on orientation
         let primarySegmentOrientation = primarySegmentXeto.orientation;
-
         if (primarySegmentOrientation == 'north') {
             ahuObject.resources.ducts[primarySegmentXeto.id].rotation.y = -90;
         }
@@ -230,35 +245,36 @@ export default class Ducts {
             ahuObject.resources.ducts[primarySegmentXeto.id].rotation.y = 180;
         }
 
+        // Mark primary segment as positioned
         this.positionedSegments.add(primarySegmentXeto.id);
 
+        // Recursively process connected segments
         this.getNextSegment(primarySegmentXeto, primaryKey);
 
+        // Apply final transformations to components
         this.reTransformComponents();
     }
 
     /**
-     * getNextSegment
+     * Processes the next segment in sequence for placement.
      * 
-     * Recursively retrieves the next segment in a sequence based on the current segment's direction and placement.
-     * 
-     * @param {Object} currentSegment - The current segment in the sequence.
-     * @returns {Object} The next segment in the sequence.
+     * @param {Object} currentSegmentXeto - Current segment being processed
+     * @param {string} currentKey - Key of current segment
      */
     getNextSegment(currentSegmentXeto, currentKey) {
-        console.log("getNextSegment:", currentKey, this.ductsDictionary[currentKey]);
-
+        // Increment traversal counter to prevent infinite loops
         this.traversalCount++;
         if(this.traversalCount > this.traversalLimit) {
             console.log("getNextSegment canceled");
             return;
         }
 
+        // Get location information for current segment
         const graphicLocation = currentSegmentXeto.graphicLocation;
         const nextKey = currentKey === graphicLocation.start ? graphicLocation.end : graphicLocation.start;
         const adjacentSegments = this.ductsDictionary[nextKey] || [];
-        console.log("getNextSegment nextKey:", nextKey);
-    
+
+        // Process each adjacent segment that hasn't been positioned
         for (const adjacentSegmentXeto of adjacentSegments) {
             if(adjacentSegmentXeto != currentSegmentXeto) {
                 if (!this.positionedSegments.has(adjacentSegmentXeto.id)) {
@@ -267,42 +283,37 @@ export default class Ducts {
                 }
             }
         }
+        
+        // Mark current segment as positioned
         this.positionedSegments.add(currentSegmentXeto.id);
     }
 
-    addJointRsrcAndAssoc(key){
+    /**
+     * Adds joint resource and association entries to the AHU object.
+     * 
+     * @param {string} key - Key identifying the joint location
+     */
+    addJointRsrcAndAssoc(key) {
+        // Increment joint counter
         this.jointCount++;
-        console.log("addJointRsrcAndAssoc ductsDictionary and key:", this.ductsDictionary, key);
 
+        // Initialize joint entries if they don't exist
         if(this.ahuObject.associations.joints[`Joint-${key}`] == undefined) {
             this.ahuObject.associations.joints[`Joint-${key}`] = {};
             this.ahuObject.associations.joints[`Joint-${key}`].ducts = [];
             this.ahuObject.resources.joints[`Joint-${key}`] = {};
         }
 
+        // Add duct associations for each connected duct
         for(const i in this.ductsDictionary[key]) {
             this.ahuObject.associations.joints[`Joint-${key}`].ducts.push(this.ductsDictionary[key][i].id);
             this.ahuObject.associations.ducts[this.ductsDictionary[key][i].id].joints.push(`Joint-${key}`);
         }      
-        
-        console.log("addJointRsrcAndAssoc result:", this.ahuObject);
-        
     }
 
     placeIntersection(key) {
         console.log("placeIntersection ** started:", this.ahuObject);
-        console.log("placeIntersection ** this.ductsDictionary[key]:", this.ductsDictionary[key]);
-
-        // Iterate through all duct segments at this intersection
-        // for (const traversedSegmentXeto of this.ductsDictionary[key]) {
-        //     if (!this.positionedSegments.has(traversedSegmentXeto.id)) {
-        //         console.log(`Processing unprocessed segment ${traversedSegmentXeto.id} at key ${key}`);
-        //         this.positionedSegments.add(traversedSegmentXeto.id);  // Mark as positioned
-        //         this.getNextSegment(traversedSegmentXeto, key);        // Safely continue traversal
-        //     }
-        // }
-
-        
+        console.log("placeIntersection ** this.ductsDictionary[key]:", this.ductsDictionary[key]);        
 
         if(this.ductsDictionary[key].length >= 2 && this.ductsDictionary[key].length <= 4) {
             this.addJointRsrcAndAssoc(key);
@@ -644,7 +655,7 @@ export default class Ducts {
                     length = ((this.ahuObject.resources.ducts[intersectDucts.up.id].dimensions.x) / 2);
                     length += ((this.ahuObject.resources.ducts[intersectDucts.down.id].dimensions.x) / 2);
                     length += maxHalfHeight * 2 + 30;
-                    length += jointPadding;
+                    length += jointPadding * 2;
                     translateDuct(this.ahuObject.resources.ducts[intersectDucts.up.id], "z", (length * 1));
 
                     length = ((this.ahuObject.resources.ducts[intersectDucts.down.id].dimensions.x) / 2);
@@ -942,28 +953,21 @@ export default class Ducts {
         
     }
 
-    isPositionValid(segmentXeto) {
-        const position = this.ahuObject.resources.ducts[segmentXeto.id].position;
-        console.log("Validating position for segment:", segmentXeto.id, position);
-    
-        // Add more robust checks depending on your requirements (distance, orientation, etc.)
-        if (position.x !== null && position.z !== null) {
-            return true;
-        }
-        return false;
-    }
-
+    /**
+     * Applies final transformations to components after duct placement.
+     */
     reTransformComponents() {
-        console.log("reTransformComponents component:", this.ahuObject);
+        // Process each component in the AHU object
         for(const componentId in this.ahuObject.resources.components) {
-            console.log("reTransformComponents componentId:", componentId);
+            // Get associated duct for component
             const associatedDuctId = this.ahuObject.associations.components[componentId];
-            console.log("reTransformComponents associatedDuctId:", associatedDuctId);
-            console.log("reTransformComponents associatedDuctId:", associatedDuctId);
+            
+            // Apply duct position to component
             this.ahuObject.resources.components[componentId].position.x += this.ahuObject.resources.ducts[associatedDuctId].position.x;
             this.ahuObject.resources.components[componentId].position.y += this.ahuObject.resources.ducts[associatedDuctId].position.y;
             this.ahuObject.resources.components[componentId].position.z += this.ahuObject.resources.ducts[associatedDuctId].position.z;
 
+            // Apply duct rotation to component
             this.ahuObject.resources.components[componentId].rotation.y += this.ahuObject.resources.ducts[associatedDuctId].rotation.y;
         }
     }

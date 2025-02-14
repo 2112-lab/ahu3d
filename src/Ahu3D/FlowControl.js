@@ -1,3 +1,22 @@
+/**
+ * @fileoverview FlowControl module handles the processing and rendering of Air Handling Unit (AHU)
+ * data in both 2D and 3D contexts. It manages the conversion of XETO data into visualizable
+ * geometry, handles duct systems, joints, and component placement, and coordinates the rendering
+ * process across different output modes.
+ * 
+ * @module FlowControl
+ * @requires ./globals
+ * @requires ../Numerics/Ducts
+ * @requires ../3D/Mesh3D
+ * @requires ../3D/Geometry/Joints/Geometry_3D_Joints_Cross
+ * @requires ../3D/Geometry/Joints/Geometry_3D_Joints_T
+ * @requires ../3D/Geometry/Joints/Geometry_3D_Joints_L
+ * @requires ../3D/Geometry/Joints/Geometry_3D_Joints_Colinear
+ * @requires ../Numerics/Ends
+ * @requires ../2D/Canvas2D
+ * @requires ../3D/Geometry/Joints/Geometry_3D_Joints_Utils
+ */
+
 import { sharedData } from "./globals.js";
 import Ducts from "../Numerics/Ducts.js";
 import Mesh3D from "../3D/Mesh3D.js";
@@ -10,10 +29,16 @@ import Canvas2D from "../2D/Canvas2D.js";
 import { calculateJointCenter } from "../3D/Geometry/Joints/Geometry_3D_Joints_Utils.js";
 
 export default class FlowControl {
-
-	constructor() {
+    /**
+     * Creates an instance of FlowControl.
+     * Initializes all necessary geometry handlers and rendering components.
+     */
+    constructor() {
+        // Store for processed XETO data
         this.cleanedXeto = null;
+        // Dictionary for managing duct system information
         this.ductsDictionary = null;
+        // Initialize all required geometry and rendering handlers
         this.Mesh3D = new Mesh3D();
         this.Geometry_3D_Joints_Cross = new Geometry_3D_Joints_Cross();
         this.Geometry_3D_Joints_T = new Geometry_3D_Joints_T();
@@ -22,28 +47,42 @@ export default class FlowControl {
         this.Canvas2D = new Canvas2D();
     }
 
-	async runAhu3D(cleanedXeto, outputMode) {
+    /**
+     * Primary entry point for processing and rendering AHU data.
+     * @param {Object} cleanedXeto - Processed XETO data containing AHU specifications
+     * @param {string} outputMode - Desired output mode ('numeric', 'only2D', 'full2D', 'only3D', 'full3D', 'all')
+     * @returns {Object} Processed AHU object with all computed data
+     */
+    async runAhu3D(cleanedXeto, outputMode) {
+        // Store the cleaned XETO data for processing
         this.cleanedXeto = cleanedXeto;
         this.setAhuObject();
 
+        // Handle different output modes for rendering and processing
         if (outputMode == "numeric") {
+            // Return only numerical data without any rendering
             return this.ahuObject;
         } 
         else if (outputMode == "only2D") {
+            // Process 2D data without rendering
             this.populate2D();
         } 
         else if (outputMode == "full2D") {
+            // Process and render 2D visualization
             this.populate2D();
             this.render2D();
         } 
         else if (outputMode == "only3D") {
+            // Process 3D data without rendering
             this.populate3D();
         } 
         else if (outputMode == "full3D") {
+            // Process and render 3D visualization
             this.populate3D();
             this.render3D();
         } 
         else if (outputMode == "all") {
+            // Process and render both 2D and 3D visualizations
             this.populate2D();
             this.populate3D();
             this.render2D();
@@ -53,11 +92,15 @@ export default class FlowControl {
         return this.ahuObject;
     }
 
+    /**
+     * Initializes and structures the main AHU object with all required properties and containers.
+     * @returns {Object} Initialized AHU object
+     */
     setAhuObject() {
-
+        // Filter and store AHU group data from XETO
         this.ahuGroup = this.cleanedXeto.filter(child => child.spec.includes('AhuGroup'))[0];
-        console.log("setAhuObject this.cleanedXeto:", this.cleanedXeto);
 
+        // Initialize main AHU object structure with all required properties
         this.ahuObject = {
             id: "ahu-1",
             defaults: sharedData.moduleConfigs,
@@ -105,9 +148,9 @@ export default class FlowControl {
                     meshes: {}
                 },
             }
-            
         }
 
+        // Process and organize XETO data into structured format
         this.reformatXetoDict();
         this.defineAssociationsDict();
         this.prepareResources();
@@ -116,37 +159,51 @@ export default class FlowControl {
         return this.ahuObject;
     }
 
+    /**
+     * Reorganizes XETO data into a more accessible dictionary format.
+     */
     reformatXetoDict() {
+        // Extract duct edges and components from XETO data
         this.ductEdges = this.ahuObject.xeto.filter(child => child.spec.includes('DuctEdge'));
         this.components = this.cleanedXeto.filter(child => child.spec.includes('Component'));
 
+        // Organize duct edges and components into separate dictionaries
         for(const edge of this.ductEdges) {
+            // Map each edge to its ID for easy lookup
             this.ahuObject.xetoDictionary.edges[edge.id] = edge;
         }
         for(const component of this.components) {
+            // Map each component to its ID for easy lookup
             this.ahuObject.xetoDictionary.components[component.id] = component;
         }
     }
 
+    /**
+     * Creates associations between different elements of the AHU system.
+     * Handles duct connections, end caps, arrows, and labels.
+     */
     defineAssociationsDict() {
-        console.log("defineAssociationsDict started:", this.ahuObject);
-
+        // Get end types from shared data
         const endTypes = sharedData.endTypes;  
         
+        // Initialize counters for different element types
         let inserts = 1;
         let caps = 1;
         let arrows = 1;
         let labels = 1;
 
+        // Process each duct edge to establish connections and associations
         for(const edge of this.ductEdges) {
-
+            // Associate components with their respective ducts
             this.ahuObject.associations.ducts[edge.id] = { "components": edge.components }
             this.ahuObject.associations.ducts[edge.id].joints = [];
 
+            // Map components back to their parent ducts
             for(const componentId of edge.components) {
                 this.ahuObject.associations.components[componentId] = edge.id;
             }
 
+            // Find intersecting ducts at start and end points
             const edgeLoc = edge.graphicLocation;
             const startIntersections = this.ductEdges.filter(child => 
                 edgeLoc.start === child.graphicLocation.start &&
@@ -161,11 +218,14 @@ export default class FlowControl {
                 edge != child
             );
 
+            // Initialize arrays for ends, arrows, and labels
             this.ahuObject.associations.ducts[edge.id]["ends"] = [];
             this.ahuObject.associations.ducts[edge.id]["arrows"] = [];
             this.ahuObject.associations.ducts[edge.id]["labels"] = [];
             
+            // Process duct ends if there are no intersections
             if (startIntersections.length == 0 || endIntersections.length == 0) {
+                // Handle different types of duct ends (inserts and caps)
                 if (endTypes.includes(edge.blockStyle.ductEnds)){
                     if(edge.blockStyle.ductEnds == 'insert') {
                         this.ahuObject.associations.ends[`Insert-${inserts}`] = edge.id;
@@ -178,8 +238,8 @@ export default class FlowControl {
                         caps++;
                     }
                 }
-                console.log("defineAssociationsDict edge.blockStyle:", edge.blockStyle);
-                // console.log("defineAssociationsDict arrow:", edge.blockStyle.helpers.arrow.display);
+
+                // Process flow direction arrows if enabled
                 if(edge.blockStyle.helpers.arrow.display) {
                     this.ahuObject.associations.arrows[`Arrow-${arrows}`] = edge.id;
                     this.ahuObject.associations.ducts[edge.id]["arrows"].push(`Arrow-${arrows}`);
@@ -191,6 +251,8 @@ export default class FlowControl {
                     };   
                     arrows++;                     
                 }
+
+                // Process text labels if enabled
                 if(edge.blockStyle.helpers.text.display) {
                     this.ahuObject.associations.labels[`Label-${labels}`] = edge.id;
                     this.ahuObject.associations.ducts[edge.id]["labels"].push(`Label-${labels}`);
@@ -203,26 +265,32 @@ export default class FlowControl {
                     labels++;
                 }
             }
-                
         }
     }
 
+    /**
+     * Initializes resource containers for ducts, components, and ends.
+     */
     prepareResources() {
-        console.log("prepareResources started:", this.ahuObject);
-
+        // Get end types from shared data
         const endTypes = sharedData.endTypes;
         this.ductEdges = this.ahuObject.xeto.filter(child => child.spec.includes('DuctEdge'));
 
+        // Process each duct edge to prepare resource containers
         for(const edge of this.ductEdges) {
+            // Initialize duct resources
             this.ahuObject.resources.ducts[edge.id] = {};
 
+            // Initialize component resources
             for(const componentId of edge.components) {
                 this.ahuObject.resources.components[componentId] = {};
             }
 
+            // Process duct ends if specified
             if (endTypes.includes(edge.blockStyle.ductEnds)){
                 const edgeLoc = edge.graphicLocation;
 
+                // Find intersecting ducts at start and end points
                 const startIntersections = this.ductEdges.filter(child => 
                     edgeLoc.start === child.graphicLocation.start &&
                     edge != child ||
@@ -237,8 +305,11 @@ export default class FlowControl {
                     edge != child
                 );
 
+                // Initialize counters for different end types
                 let inserts = 1;
                 let caps = 1;
+
+                // Create end resources where needed
                 if (startIntersections.length == 0 || endIntersections.length == 0) {
                     if(edge.blockStyle.ductEnds == 'insert') {
                         this.ahuObject.resources.ends[`Insert-${caps}`] = {};
@@ -253,9 +324,11 @@ export default class FlowControl {
         }
     }
 
+    /**
+     * Populates resources with actual geometry and placement data.
+     */
     async populateResources() {
-        console.log("populateResources started:", this.ahuObject);
-
+        // Initialize duct system processor
         this.Ducts = new Ducts(
             this.ductsDictionary, 
             this.Mesh3D, 
@@ -265,41 +338,43 @@ export default class FlowControl {
             this.ahuObject
         );        
 
-        console.log("FlowControl step 1:", this.ahuObject);
-
+        // Initialize and place duct segments
         this.Ducts.initializeAllDuctSegments(this.ahuObject); 
-        
-        console.log("FlowControl step 2:", this.ahuObject);
-
         await this.Ducts.placeSegments(this.ahuObject);
-
-        console.log("FlowControl step 3:", this.ahuObject);
     }
 
+    /**
+     * Prepares 2D visualization data.
+     */
     populate2D() {
-
+        // To be implemented
     }
 
+    /**
+     * Renders 2D visualization to specified viewports.
+     */
     render2D() {
+        // Render to secondary and primary Konva containers
         this.Canvas2D.drawToViewport(this.ahuObject, "secondaryKonvaContainer");
         this.Canvas2D.drawToViewport(this.ahuObject, "primaryKonvaContainer");        
     }
 
+    /**
+     * Processes and prepares 3D geometry for visualization.
+     * Creates and positions joint geometry based on duct connections.
+     */
     populate3D() {
-        console.log("populate3D started:", this.ahuObject);
-        console.log("populate3D ductsDictionary:", this.ductsDictionary);
+        // Initialize joint geometry variable
         let jointGeometry = null;
+
+        // Process each joint in the system
         for(const jointKey of Object.keys(this.ahuObject.resources.joints)) {
             const joint = this.ahuObject.resources.joints[jointKey];
-
-            console.log("populate3D step 0:", jointKey, joint);
-
             const jointKeys = Object.keys(joint);
 
-            console.log("populate3D step 0.1:", jointKeys);
-
+            // Handle two-duct joints (L-joints or colinear)
             if(jointKeys.length == 2) {
-
+                // Determine if ducts are parallel (vertical or horizontal)
                 let pairDirection = null;
                 if(joint.up != null && joint.down != null) {
                     pairDirection = "vertical";
@@ -308,6 +383,7 @@ export default class FlowControl {
                     pairDirection = "horizontal";
                 }
 
+                // Create appropriate geometry based on duct arrangement
                 if(pairDirection) {
                     jointGeometry = this.Geometry_3D_Joints_Colinear.createParallelJoint(joint, pairDirection);
                 }
@@ -316,59 +392,62 @@ export default class FlowControl {
                     jointGeometry = this.Geometry_3D_Joints_L.createLJoint(joint);
                 }
             }
+
+            // Handle three-duct T-joints
             if(jointKeys.length == 3) {
                 calculateJointCenter(jointKey, this.ahuObject);
                 jointGeometry = this.Geometry_3D_Joints_T.createTJoint(joint);
             }
+
+            // Handle four-duct cross joints
             if(jointKeys.length == 4) {
                 calculateJointCenter(jointKey, this.ahuObject);
                 jointGeometry = this.Geometry_3D_Joints_Cross.createCrossJoint(joint);
             }         
 
+            // Store generated geometry if valid
             if(jointKeys.length >= 2) {
                 this.ahuObject["3d"].joints.geometry[jointKey] = jointGeometry;
                 this.ahuObject["3d"].joints.meshes[jointKey] = null;               
             }
-            
         }
-        console.log("populate3D finished:", this.ahuObject);
 
+        // Initialize and create duct end geometry
         this.Ends = new Ends();
-
         this.Ends.createEnds(this.ahuObject);
 
+        // Position and orient helper elements (arrows, labels)
         this.transformHelpers();
     }
 
+    /**
+     * Positions and orients helper elements (arrows and labels) relative to ducts.
+     */
     transformHelpers(){
-        console.log("transformHelpers started:", this.ahuObject);
+        // Process each duct in the system
         for (const ductKey in this.ahuObject.resources.ducts) {
             const duct = this.ahuObject.resources.ducts[ductKey];
 
+            // Get duct orientation and calculate positioning parameters
             let segmentOrientation = this.ahuObject.xetoDictionary.edges[ductKey].orientation;
             let ductHalfLength = JSON.parse(JSON.stringify(duct.dimensions.x)) / 2;
             let halfWt = sharedData.moduleConfigs.parametricOptions.wallThickness / 2; 
-
             let arrowLength = sharedData.arrowDimensions.x;
-
             const endKey = this.ahuObject.associations.ducts[ductKey].ends[0];
 
+            // Position and orient flow direction arrows
             if(this.ahuObject.associations.ducts[ductKey].arrows.length > 0) {
                 const arrowKey = this.ahuObject.associations.ducts[ductKey].arrows[0];
                 const arrow = this.ahuObject.auxiliary["3d"].arrows[arrowKey];
 
+                // Set initial position based on duct position
                 arrow.position = JSON.parse(JSON.stringify(duct.position));
-
-                console.log("transformHelpers segmentOrientation:", segmentOrientation);
-                console.log("transformHelpers ductHalfLength:", ductHalfLength);
-                console.log("transformHelpers duct:", duct);
-                console.log("transformHelpers arrow.position:", arrow.position);
-
                 this.positionHelper(arrow, segmentOrientation, ductHalfLength, halfWt, arrowLength, endKey);
 
+                // Set arrow rotation based on duct orientation and flow direction
                 arrow.rotation.y = duct.rotation.y;
-
                 if(arrow.flowDirection == "endToStart") {
+                    // Adjust arrow rotation for reverse flow direction
                     if(arrow.rotation.y == 180) {
                         arrow.rotation.y = 0;
                     }
@@ -382,31 +461,28 @@ export default class FlowControl {
                         arrow.rotation.y = 90;
                     }
                 }
-                
-                
             }
 
+            // Position and orient labels
             if(this.ahuObject.associations.ducts[ductKey].labels.length > 0) {
                 const labelKey = this.ahuObject.associations.ducts[ductKey].labels[0];
                 const label = this.ahuObject.auxiliary["3d"].labels[labelKey];
 
+                // Set initial position based on duct position
                 label.position = JSON.parse(JSON.stringify(duct.position));
-
-                console.log("transformHelpers label:", label);
-
                 this.positionHelper(label, segmentOrientation, ductHalfLength, halfWt, arrowLength, endKey);
 
+                // Set label rotation to match duct
                 label.rotation.y = duct.rotation.y;
 
+                // Apply additional offset for better visibility
                 let offset = 150;
-
                 if(segmentOrientation == "north") {
                     label.position.x += offset;
                     label.position.z -= offset;
                 }
                 else if(segmentOrientation == "south" ) {
                     label.position.x += offset;
-                    // label.position.z -= offset;
                 }
                 else if(segmentOrientation == "east" ) {
                     label.position.x -= offset * 3;
@@ -416,59 +492,81 @@ export default class FlowControl {
                     label.position.x -= offset;
                     label.position.z += offset;
                 }
-                
             }
         }
     }
 
+    /**
+     * Positions helper elements (arrows/labels) relative to ducts based on orientation.
+     * @param {Object} helper - Helper element to position (arrow or label)
+     * @param {string} segmentOrientation - Orientation of the duct segment
+     * @param {number} ductHalfLength - Half length of the duct
+     * @param {number} halfWt - Half of the wall thickness
+     * @param {number} arrowLength - Length of arrow helper
+     * @param {string} endKey - Identifier for duct end type
+     */
     positionHelper(helper, segmentOrientation, ductHalfLength, halfWt, arrowLength, endKey) {
+        // Base offset from duct end
         const endOffset = 100;
         ductHalfLength += 150;
+
+        // Position helper at start of duct
         if (helper.side == "start") {
             if (segmentOrientation == 'west') {
+                // Adjust position for westward orientation
                 helper.position.x += (ductHalfLength * 1) + halfWt;
                 helper.position.x += (arrowLength / 2);
                 helper.position.x += endOffset;
             } 
             else if (segmentOrientation == 'east') {
+                // Adjust position for eastward orientation
                 helper.position.x += (ductHalfLength * -1) - halfWt;
                 helper.position.x += (arrowLength / -2);
                 helper.position.x += endOffset * -1;
             } 
             else if (segmentOrientation == 'north') {
+                // Adjust position for northward orientation
                 helper.position.z += (ductHalfLength * -1) - halfWt;
                 helper.position.z += (arrowLength / -2);
                 helper.position.z += endOffset * -1;
             } 
             else if (segmentOrientation == 'south') {
+                // Adjust position for southward orientation
                 helper.position.z += (ductHalfLength * 1) + halfWt;
                 helper.position.z += (arrowLength / 2);
                 helper.position.z += endOffset;
             }
         }
+
+        // Position helper at end of duct
         if (helper.side == "end") {
             if (segmentOrientation == 'west') {
+                // Adjust position for westward orientation
                 helper.position.x += (ductHalfLength * -1) - halfWt;
                 helper.position.x += (arrowLength / -2);
                 helper.position.x += endOffset * -1;
             } 
             else if (segmentOrientation == 'east') {
+                // Adjust position for eastward orientation
                 helper.position.x += (ductHalfLength * 1) + halfWt;
                 helper.position.x += (arrowLength / 2);
                 helper.position.x += endOffset;
             } 
             else if (segmentOrientation == 'north') {
+                // Adjust position for northward orientation
                 helper.position.z += (ductHalfLength * 1) + halfWt;
                 helper.position.z += (arrowLength / 2);
                 helper.position.z += endOffset;
             } 
             else if (segmentOrientation == 'south') {
+                // Adjust position for southward orientation
                 helper.position.z += (ductHalfLength * -1) - halfWt;
                 helper.position.z += (arrowLength / -2);
                 helper.position.z += endOffset * -1;
             }
         }
 
+        // Apply additional offset based on end type
         let offset = 0;
         if(endKey && endKey.includes("Insert")) {
             offset = 250;
@@ -477,6 +575,7 @@ export default class FlowControl {
             offset = 50;
         }
 
+        // Apply final position adjustment based on orientation
         if(segmentOrientation == "north") {
             helper.position.z += offset;
         }
@@ -491,13 +590,23 @@ export default class FlowControl {
         }
     }
 
+    /**
+     * Removes temporary metadata from joint definitions.
+     * @param {string} key - Joint identifier
+     */
     cleanupJointMetadata(key) {
+        // Remove temporary properties used during joint creation
         delete this.ahuObject.resources.joints[`Joint-${key}`].key;
         delete this.ahuObject.resources.joints[`Joint-${key}`].pairDirection;
     }
 
+    /**
+     * Renders the 3D visualization and adjusts the view.
+     */
     async render3D() {
+        // Render the 3D scene
         await this.Mesh3D.render3D(this.ahuObject);
+        // Adjust camera to fit entire assembly in view
         sharedData.sceneHelper.fitAssemblyIntoView();
     }
 }

@@ -8,13 +8,26 @@ import {
 } from "./Geometry_3D_Joints_Utils.js";
 
 export default class Geometry_3D_Joints_Cross {
+    /**
+     * createCrossJoint
+     * 
+     * This function generates the geometry for the "cross" joint based on the provided joint data.
+     * The function considers the direction (inwards or outwards) and the joint style (arc or other) 
+     * to create a set of connected geometries representing the cross joint.
+     * 
+     * @param {Object} joint - The joint data, which includes the coordinates of the proxies.
+     * @param {number} largestGlobalSize - A parameter that determines the size of the cross joint geometry.
+     * @returns {THREE.BufferGeometry} - The merged geometry for the cross joint.
+     */
     createCrossJoint(joint, largestGlobalSize) {
         const geometries = [];
 
-        this.backwallArcConfigs = [];     
+        this.backwallArcConfigs = []; // Initialize an empty array for storing arc configurations.
 
+        // Check if the joint style is "arc"
         if(sharedData.jointStyle == "arc") {     
 
+            // Define midpoints for the four directions of the cross joint.
             let upMidpoint = {
                 x: joint.up.proxy1.coordinates[4].x,
                 z: joint.up.proxyMedian.coordinates[4].z
@@ -32,6 +45,7 @@ export default class Geometry_3D_Joints_Cross {
                 z: joint.left.proxyMedian.coordinates[4].z
             }
 
+            // Default backwall geometry for the cross joint in "arc" style.
             let backwall = [
                 joint.up.proxyMedian.coordinates[4],
                 joint.up.proxy1.coordinates[4],
@@ -47,6 +61,7 @@ export default class Geometry_3D_Joints_Cross {
                 joint.left.proxy1.coordinates[4]
             ];
 
+            // Modify midpoints and backwall if the joint direction is "inwards"
             if(sharedData.jointDirection == "inwards") {
                 upMidpoint = {
                     x: joint.up.proxy1.coordinates[4].x,
@@ -69,7 +84,7 @@ export default class Geometry_3D_Joints_Cross {
                     y: joint.up.proxy2.coordinates[4].y,
                     z: joint.right.proxy1.coordinates[4].z
                 }
-                
+
                 leftMidpoint = {
                     x: joint.down.proxy1.coordinates[4].x,
                     y: joint.down.proxy1.coordinates[4].y,
@@ -92,6 +107,7 @@ export default class Geometry_3D_Joints_Cross {
                     z: joint.right.proxy2.coordinates[4].z
                 }
 
+                // Modified backwall for the "inwards" direction.
                 backwall = [
                     upMidpoint2,
                     joint.up.proxyMedian.coordinates[4],
@@ -116,8 +132,10 @@ export default class Geometry_3D_Joints_Cross {
                 ];
             }
 
+            // Create the backwall geometry for the cross joint and add it to the geometries array.
             geometries.push(createJointBackwall(backwall));
         }
+        // If the joint style is not "arc", use a default backwall
         else {
             let backwall = [
                 joint.up.proxyMedian.coordinates[4],
@@ -137,6 +155,7 @@ export default class Geometry_3D_Joints_Cross {
             geometries.push(createJointBackwall(backwall));
         }  
 
+        // Connect the proxies using diagonally-uphill and diagonally-downhill connections to form the cross joint.
         geometries.push(
             ...connectProxiesDiagonallyUphill(
                 joint.left.proxy1.coordinates,
@@ -189,6 +208,7 @@ export default class Geometry_3D_Joints_Cross {
             )
         );        
 
+        // Add joint closures for each side of the joint (horizontal for up/down, vertical for left/right).
         geometries.push(
             ...createJointClosure(joint.up, "horizontal")
         );
@@ -202,8 +222,8 @@ export default class Geometry_3D_Joints_Cross {
             ...createJointClosure(joint.left, "vertical")
         );
 
+        // Merge all the geometries created and return the final geometry for the cross joint.
         const newMergedGeometry = mergeGeometries(geometries);
         return newMergedGeometry;
-
     }
 }

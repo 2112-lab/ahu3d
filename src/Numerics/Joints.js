@@ -2,91 +2,124 @@ import * as THREE from 'three';
 import { sharedData } from "../Ahu3D/globals.js";
 import { moveOriginalProxyVertices, moveProxyVertices } from '../3D/Geometry/Helpers/Geometry_Proxies.js';
 
+/**
+ * Class for creating and managing joints between ducts in the 3D model of the AHU.
+ * This class handles the calculation of joint proxies, alignment of proxy medians, 
+ * and rendering of joint helpers for the ducts.
+ */
 export default class Joints {
+
+    /**
+     * Constructor for the Joints class.
+     * Initializes the class with the provided AHU group, inner duct dimensions, and scene helper.
+     * 
+     * @param {Object} ahuGroup - The AHU group containing the block styles and other configuration.
+     * @param {Object} innerDuctDimensions - The dimensions of the inner duct for size calculations.
+     * @param {Object} sceneHelper - Helper for managing the scene.
+     */
     constructor(ahuGroup, innerDuctDimensions, sceneHelper) {
         this.ahuGroup = ahuGroup;
         this.innerDuctDimensions = innerDuctDimensions;
-        
 
-        console.log("Joints constructor this.ahuGroup:", this.ahuGroup);
-
+        // Initialize shared data for joint block styles and configuration
         sharedData.jointBlockStyle = this.ahuGroup.blockStyle.joints;
         sharedData.jointStyle = sharedData.jointBlockStyle.style;
         sharedData.jointDirection = sharedData.jointBlockStyle.direction;
         sharedData.jointContext = sharedData.jointBlockStyle.context;
         sharedData.jointPadding = sharedData.jointBlockStyle.padding;
         sharedData.jointYStyle = sharedData.jointBlockStyle.yStyle;
-        sharedData.jointYDirection = sharedData.jointBlockStyle.yDirection; 
-        
-        console.log("Joints constructor step 2:", this.ahuGroup);
+        sharedData.jointYDirection = sharedData.jointBlockStyle.yDirection;
     }
 
-
+    /**
+     * Creates joint proxies for duct intersections at the specified grid key. 
+     * The function calculates the size of the ducts, creates necessary proxy geometries (e.g., proxy1, proxy2, and proxyMedian),
+     * and stores the resulting proxies in the `ahuObject.resources.joints` object.
+     * 
+     * @param {Object} intersection - The intersection data for the ducts, containing ducts at each key (up, down, left, right).
+     * @param {Object} ahuObject - The AHU object containing the resources for the ducts and joints.
+     * @param {string} gridKey - The key representing the grid for which to create the joint proxies.
+     */
     createJointProxies(intersection, ahuObject, gridKey) {
         console.log("createJointProxies started:", intersection, ahuObject);
 
+        // Set the current AHU object for further reference
         this.ahuObject = ahuObject;
-          
+
+        // Define the wall thickness used for the proxy geometries
         const wallThickness = sharedData.moduleConfigs.parametricOptions.wallThickness;
-  
+
+        // Find the largest duct size at the intersection to adjust proxy sizes accordingly
         let largestGlobalSize = sharedData.innerDuctDimensions["small"];
-        for(const key in intersection) {
+        for (const key in intersection) {
             let duct = intersection[key];
-            if(duct != null) {
-                const size =  this.ahuObject.resources.ducts[duct.id].dimensions.z;
-                if(size > largestGlobalSize) {
-                    largestGlobalSize = size;
+            if (duct != null) {
+                const size = this.ahuObject.resources.ducts[duct.id].dimensions.z;
+                if (size > largestGlobalSize) {
+                    largestGlobalSize = size; // Update largest duct size
                 }
             }
-        }       
+        }
 
+        // Calculate the y_offset based on wall thickness (negative value for adjustment)
         let y_offset = wallThickness * -1;
 
+        // Count the number of defined ducts at the intersection (used for determining further logic)
         let definedIntersectionCount = 0;
-        for(const key in intersection) {
-            if(intersection[key] != null)  {
-                definedIntersectionCount++;
+        for (const key in intersection) {
+            if (intersection[key] != null) {
+                definedIntersectionCount++; // Increment count for each defined duct
             }
         }
 
         console.log("createJointProxies step 1");
 
+        // Calculate the adjacent context for the intersection (e.g., sizing and offsets)
         this.calculateAdjacentContext(intersection, largestGlobalSize, definedIntersectionCount);
 
         console.log("createJointProxies step 2:", intersection);
-  
-        for(const key in intersection) {
+
+        // Loop through the ducts at the intersection to create proxies for each one
+        for (const key in intersection) {
             let duct = intersection[key];
 
-            if(duct != null) {
+            // Skip if the duct is not defined
+            if (duct != null) {
 
                 console.log("createJointProxies step 3 key:", key);
+
+                // Get the duct's inner dimensions from the resources
                 const innerDuctDimensions = this.ahuObject.resources.ducts[duct.id].dimensions;
 
                 console.log("createJointProxies step 4");
 
+                // Get the depth (z-dimension) of the duct
                 const ductDepth = innerDuctDimensions.z;
 
                 console.log("createJointProxies step 5");
 
+                // Calculate proxy depth, adjusting it based on the y_offset
                 const proxyDepth = ductDepth + y_offset;
 
                 console.log("createJointProxies step 6");
 
+                // Create the geometries for the joint proxies
                 const proxy1Geometry = new THREE.BoxGeometry(wallThickness, proxyDepth, wallThickness);
                 const proxy2Geometry = new THREE.BoxGeometry(wallThickness, proxyDepth, wallThickness);
                 const proxyOriginal1Geometry = new THREE.BoxGeometry(wallThickness, proxyDepth, wallThickness);
-                const proxyOriginal2Geometry = new THREE.BoxGeometry(wallThickness, proxyDepth, wallThickness);    
+                const proxyOriginal2Geometry = new THREE.BoxGeometry(wallThickness, proxyDepth, wallThickness);
                 const proxyMedianGeometry = new THREE.BoxGeometry(wallThickness, proxyDepth, wallThickness);
 
-                let proxy1 = { position: { x: 0, z: 0 } }
-                let proxy2 = { position: { x: 0, z: 0 } }
-                let proxyOriginal1 = { position: { x: 0, z: 0 } }
-                let proxyOriginal2 = { position: { x: 0, z: 0 } }
-                let proxyMedian = { position: { x: 0, z: 0 } }
+                // Initialize proxy objects with default positions
+                let proxy1 = { position: { x: 0, z: 0 } };
+                let proxy2 = { position: { x: 0, z: 0 } };
+                let proxyOriginal1 = { position: { x: 0, z: 0 } };
+                let proxyOriginal2 = { position: { x: 0, z: 0 } };
+                let proxyMedian = { position: { x: 0, z: 0 } };
 
                 console.log("createJointProxies step 7:", duct);
 
+                // Move the proxy vertices based on the duct's dimensions
                 moveProxyVertices(proxy1Geometry, ductDepth, duct.proxyLengths.proxy1, largestGlobalSize);
                 moveProxyVertices(proxy2Geometry, ductDepth, duct.proxyLengths.proxy2, largestGlobalSize);
                 moveProxyVertices(proxyMedianGeometry, ductDepth, duct.proxyLengths.proxyMedian, largestGlobalSize);
@@ -95,53 +128,54 @@ export default class Joints {
 
                 console.log("createJointProxies step 8");
 
-                if(key == "up") {
+                // Position proxies based on the intersection direction (up, down, left, right)
+                if (key == "up") {
                     proxy1.position.x += (innerDuctDimensions.z / -2);
                     proxy1.position.z += (innerDuctDimensions.x) / -2;
-        
+
                     proxy2 = JSON.parse(JSON.stringify(proxy1));
                     proxy2.position.x += (innerDuctDimensions.z);
-                }
-                else if(key == "down") {
+                } else if (key == "down") {
                     proxy1.position.x += (innerDuctDimensions.z / -2);
                     proxy1.position.z += (innerDuctDimensions.x) / 2;
-        
+
                     proxy2 = JSON.parse(JSON.stringify(proxy1));
                     proxy2.position.x += (innerDuctDimensions.z);
-                }
-                else if(key == "left") {
+                } else if (key == "left") {
                     proxy1.position.x += (innerDuctDimensions.x / 2);
                     proxy1.position.z += (innerDuctDimensions.z) / 2;
-        
+
+                    proxy2 = JSON.parse(JSON.stringify(proxy1));
+                    proxy2.position.z += (innerDuctDimensions.z * -1);
+                } else if (key == "right") {
+                    proxy1.position.x += (innerDuctDimensions.x / -2);
+                    proxy1.position.z += (innerDuctDimensions.z) / 2;
+
                     proxy2 = JSON.parse(JSON.stringify(proxy1));
                     proxy2.position.z += (innerDuctDimensions.z * -1);
                 }
-                else if(key == "right") {
-                    proxy1.position.x += (innerDuctDimensions.x / -2);
-                    proxy1.position.z += (innerDuctDimensions.z) / 2;
-        
-                    proxy2 = JSON.parse(JSON.stringify(proxy1));
-                    proxy2.position.z += (innerDuctDimensions.z * -1);
-                }  
 
+                // Apply the overall position of the duct to the proxies
                 proxy1.position.x += this.ahuObject.resources.ducts[duct.id].position.x;
                 proxy1.position.z += this.ahuObject.resources.ducts[duct.id].position.z;
 
                 proxy2.position.x += this.ahuObject.resources.ducts[duct.id].position.x;
                 proxy2.position.z += this.ahuObject.resources.ducts[duct.id].position.z;
 
+                // Clone proxy positions for original proxies and median proxies
                 proxyOriginal1 = JSON.parse(JSON.stringify(proxy1));
                 proxyOriginal2 = JSON.parse(JSON.stringify(proxy2));
                 proxyMedian = JSON.parse(JSON.stringify(proxy1));
 
-                proxy1Geometry.translate( proxy1.position.x, 0, proxy1.position.z );
-                proxy2Geometry.translate( proxy2.position.x, 0, proxy2.position.z );
-                proxyOriginal1Geometry.translate( proxyOriginal1.position.x, 0, proxyOriginal1.position.z );
-                proxyOriginal2Geometry.translate( proxyOriginal2.position.x, 0, proxyOriginal2.position.z );
-                // proxyMedianGeometry.translate( proxyMedian.position.x, 0, proxyMedian.position.z );
+                // Translate the proxy geometries to their correct positions
+                proxy1Geometry.translate(proxy1.position.x, 0, proxy1.position.z);
+                proxy2Geometry.translate(proxy2.position.x, 0, proxy2.position.z);
+                proxyOriginal1Geometry.translate(proxyOriginal1.position.x, 0, proxyOriginal1.position.z);
+                proxyOriginal2Geometry.translate(proxyOriginal2.position.x, 0, proxyOriginal2.position.z);
 
                 console.log("createJointProxies step 10");
 
+                // Store the created proxies in the AHU object's resources
                 this.ahuObject.resources.joints[`Joint-${gridKey}`][key] = {};
 
                 this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxy1 = JSON.parse(JSON.stringify(proxy1));
@@ -152,6 +186,7 @@ export default class Joints {
 
                 console.log("createJointProxies step 11");
 
+                // Map the proxy geometries to their respective vertices and store the coordinates
                 this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxy1.coordinates = this.mapProxyVertices(proxy1Geometry);
                 this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxy2.coordinates = this.mapProxyVertices(proxy2Geometry);
                 this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxyOriginal1.coordinates = this.mapProxyVertices(proxyOriginal1Geometry);
@@ -160,85 +195,83 @@ export default class Joints {
 
                 console.log("createJointProxies step 12:", this.ahuObject);
             }
-  
         }
 
-        if(sharedData.jointDirection == "inwards") {
-            this.alignProxyMediansInwards(intersection, gridKey); 
-        }
-        else if(sharedData.jointDirection == "outwards") {
-            this.alignProxyMediansOutwards(intersection, gridKey); 
+        // Align the proxy medians based on the joint direction (inwards or outwards)
+        if (sharedData.jointDirection == "inwards") {
+            this.alignProxyMediansInwards(intersection, gridKey);
+        } else if (sharedData.jointDirection == "outwards") {
+            this.alignProxyMediansOutwards(intersection, gridKey);
         }
 
         console.log("createJointProxies step 15");
-  
-        for(const key in intersection) {
+
+        // Finalize the proxy median geometry and map the coordinates
+        for (const key in intersection) {
             let duct = intersection[key];
-            if(duct != null) {
+            if (duct != null) {
                 let proxyMedianGeometry = this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxyMedian.geometry;
 
+                // Retrieve the duct position for proper translation
                 const ductPos = this.ahuObject.resources.ducts[duct.id].position;
 
+                // Apply the calculated translation to the proxy median geometry
                 proxyMedianGeometry.translate(
-                    this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxyMedian.position.x, 
-                    0, 
-                    this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxyMedian.position.z,
+                    this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxyMedian.position.x,
+                    0,
+                    this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxyMedian.position.z
                 );
-                let mappedCoordinates = this.mapProxyVertices(proxyMedianGeometry); 
+
+                // Map the vertices of the proxy median geometry
+                let mappedCoordinates = this.mapProxyVertices(proxyMedianGeometry);
                 this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxyMedian.coordinates = mappedCoordinates;
 
+                // Remove the geometry after mapping coordinates
                 delete this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxyMedian.geometry;
 
                 console.log("createJointProxies step 15:", this.ahuObject);
-
-                // if(this.ahuObject.resources.joints[`Joint-${gridKey}`][key].proxyMedian2 != undefined) {
-                //     console.log("createJointProxies step 16:", this.ahuObject);
-                //     const tempProxy = this.ahuObject.resources.joints[`Joint-${gridKey}`][key];
-                //     tempProxy.proxyMedian2.position = JSON.parse(JSON.stringify(tempProxy.proxyMedian.position));
-                //     tempProxy.proxyMedian2.coordinates = JSON.parse(JSON.stringify(tempProxy.proxyMedian.coordinates));
-                //     for(const i in tempProxy.proxyMedian2.coordinates) {
-                //         console.log("createJointProxies step 17:", tempProxy.proxyMedian2.coordinates[i]);
-                //         console.log("createJointProxies step 18:", tempProxy.proxyMedian2.medianOffset);
-                //         tempProxy.proxyMedian2.coordinates[i].x += tempProxy.proxyMedian2.medianOffset.x;
-                //         tempProxy.proxyMedian2.coordinates[i].z += tempProxy.proxyMedian2.medianOffset.z;
-                //     }
-                // }
-                
             }
         }
 
         console.log("createJointProxies step 16:", this.ahuObject.resources.joints[`Joint-${gridKey}`]);
     }
 
+    /**
+     * calculateAdjacentContext
+     * 
+     * Calculates the context for the adjacent proxies at the intersection based on the duct sizes.
+     * It also adjusts the proxy lengths depending on the context (e.g., inwards, outwards, diagonal, orthogonal).
+     * This function is crucial for determining how the proxies are positioned relative to each other based on their sizes and orientations.
+     * 
+     * @param {Object} intersection - The intersection data for the ducts.
+     * @param {number} largestGlobalSize - The largest size of the ducts at the intersection.
+     * @param {number} definedIntersectionCount - The number of defined intersections at the current grid key.
+     */
     calculateAdjacentContext(intersection, largestGlobalSize, definedIntersectionCount) {
-
         console.log("calculateAdjacentContext started");
 
         let ductSize1 = 0;
         let ductSize2 = 0;
-        const selectedSize = sharedData.jointYDirection;
+        const selectedSize = sharedData.jointYDirection; // Select the joint Y direction based on the shared data
         let sizes = {
             inwards: null,
             outwards: null
-        }
+        };
 
-        console.log("calculateAdjacentContext step 1");
-
+        // Helper function to compare two duct sizes and assign inwards/outwards values
         function compareSizes(sizes, ductSize1, ductSize2) {
-            if(ductSize2 < ductSize1) {
+            if (ductSize2 < ductSize1) {
                 sizes.inwards = ductSize2;
                 sizes.outwards = ductSize1;
-            }
-            else {
+            } else {
                 sizes.outwards = ductSize2;
                 sizes.inwards = ductSize1;
             }
         }
 
-        console.log("calculateAdjacentContext step 2");
-
-        for(const key in intersection) {
-            if(intersection[key] != null) {
+        // Initialize proxy lengths for each intersection as the largest global size
+        for (const key in intersection) {
+            if (intersection[key] != null) {
                 intersection[key].proxyLengths = {
                     proxy1: largestGlobalSize,
                     proxy2: largestGlobalSize,
@@ -247,324 +280,178 @@ export default class Joints {
             }
         }
 
-        console.log("calculateAdjacentContext step 3");
-
-        if(sharedData.jointContext == "global") {
+        // Skip further calculations if the joint context is set to "global"
+        if (sharedData.jointContext === "global") {
             return;
         }
 
-        console.log("calculateAdjacentContext step 4");
-
-        if(definedIntersectionCount == 2) {
-            if(intersection.up != null && intersection.down != null) {
-                return
-            }
-            if(intersection.left != null && intersection.right != null) {
-                return
-            }
-        }
-
-        console.log("calculateAdjacentContext step 5");
-
-        if(sharedData.jointYStyle == "diagonal") {
-            for(const key in intersection) {
-
-                console.log("calculateAdjacentContext step 60:", intersection[key]);
-                
-                if(intersection[key] != null) {
+        // Handle cases for diagonal joint style where proxies are calculated for diagonal directions
+        if (sharedData.jointYStyle === "diagonal") {
+            for (const key in intersection) {
+                if (intersection[key] != null) {
                     const currentSize = this.innerDuctDimensions[intersection[key].graphicLocation.size];
                     intersection[key].proxyLengths.proxy1 = currentSize;
                     intersection[key].proxyLengths.proxy2 = currentSize;
                 }
             }
 
-            if(intersection.up != null && intersection.left != null) {
+            // Compare sizes and set proxy median values for diagonal intersections
+            if (intersection.up != null && intersection.left != null) {
                 ductSize1 = this.getSize(intersection.up);
                 ductSize2 = this.getSize(intersection.left);
-    
                 compareSizes(sizes, ductSize1, ductSize2);
                 intersection.up.proxyLengths.proxyMedian = sizes[selectedSize];
             }
 
-            if(intersection.left != null && intersection.down != null) {
+            if (intersection.left != null && intersection.down != null) {
                 ductSize1 = this.getSize(intersection.left);
                 ductSize2 = this.getSize(intersection.down);
-    
                 compareSizes(sizes, ductSize1, ductSize2);
                 intersection.left.proxyLengths.proxyMedian = sizes[selectedSize];
             }
 
-            if(intersection.down != null && intersection.right != null) {
+            if (intersection.down != null && intersection.right != null) {
                 ductSize1 = this.getSize(intersection.down);
                 ductSize2 = this.getSize(intersection.right);
-    
                 compareSizes(sizes, ductSize1, ductSize2);
                 intersection.down.proxyLengths.proxyMedian = sizes[selectedSize];
             }
 
-            if(intersection.right != null && intersection.up != null) {
+            if (intersection.right != null && intersection.up != null) {
                 ductSize1 = this.getSize(intersection.right);
                 ductSize2 = this.getSize(intersection.up);
-    
                 compareSizes(sizes, ductSize1, ductSize2);
                 intersection.right.proxyLengths.proxyMedian = sizes[selectedSize];
             }
-
-            
-        }
-        else if(sharedData.jointYStyle == "orthogonal") {
-            
-            if(definedIntersectionCount == 4) {
-
-                //////////////////
-                // up-left proxies
-                //////////////////
-
-                console.log("calculateAdjacentContext step 6");
-    
+        } else if (sharedData.jointYStyle === "orthogonal") {
+            // Handle orthogonal style where proxies are calculated in a grid-like fashion
+            if (definedIntersectionCount === 4) {
+                // For four defined intersections (up, down, left, right), calculate proxy lengths
                 ductSize1 = this.getSize(intersection.up);
-                console.log("calculateAdjacentContext step 7");
-                ductSize2 = this.getSize( intersection.left );
-    
+                ductSize2 = this.getSize(intersection.left);
                 compareSizes(sizes, ductSize1, ductSize2);
-    
                 intersection.up.proxyLengths.proxy1 = sizes[selectedSize];
                 intersection.up.proxyLengths.proxyMedian = sizes[selectedSize];
                 intersection.left.proxyLengths.proxy1 = sizes[selectedSize];
-    
-                //////////////////
-                // down-left proxies
-                //////////////////
-                
-                ductSize1 = this.getSize( intersection.left );
-                ductSize2 = this.getSize( intersection.down );
-    
-                compareSizes(sizes, ductSize1, ductSize2)
-    
+
+                ductSize1 = this.getSize(intersection.left);
+                ductSize2 = this.getSize(intersection.down);
+                compareSizes(sizes, ductSize1, ductSize2);
                 intersection.left.proxyLengths.proxy2 = sizes[selectedSize];
                 intersection.left.proxyLengths.proxyMedian = sizes[selectedSize];
                 intersection.down.proxyLengths.proxy1 = sizes[selectedSize];
-    
-                //////////////////
-                // down-right proxies
-                //////////////////
-                
-                ductSize1 = this.getSize( intersection.down );
-                ductSize2 = this.getSize( intersection.right );
-    
+
+                ductSize1 = this.getSize(intersection.down);
+                ductSize2 = this.getSize(intersection.right);
                 compareSizes(sizes, ductSize1, ductSize2);
-    
                 intersection.down.proxyLengths.proxy2 = sizes[selectedSize];
                 intersection.down.proxyLengths.proxyMedian = sizes[selectedSize];
                 intersection.right.proxyLengths.proxy2 = sizes[selectedSize];
-    
-                //////////////////
-                // up-right proxies
-                //////////////////
-                
-                ductSize1 = this.getSize( intersection.right );
-                ductSize2 = this.getSize( intersection.up);
-    
+
+                ductSize1 = this.getSize(intersection.right);
+                ductSize2 = this.getSize(intersection.up);
                 compareSizes(sizes, ductSize1, ductSize2);
-    
                 intersection.right.proxyLengths.proxy1 = sizes[selectedSize];
                 intersection.right.proxyLengths.proxyMedian = sizes[selectedSize];
                 intersection.up.proxyLengths.proxy2 = sizes[selectedSize];
-            }
-            else if(definedIntersectionCount == 3) {
-    
-                //////////////////
-                // up-left proxies
-                //////////////////
-    
-                if(intersection.up != null && intersection.left != null) {
-                    ductSize1 = this.getSize( intersection.up);
-                    ductSize2 = this.getSize( intersection.left );
-    
+            } else if (definedIntersectionCount === 3) {
+                // Handle three defined intersections (e.g., up-left-right, down-left-right, etc.)
+                if (intersection.up != null && intersection.left != null) {
+                    ductSize1 = this.getSize(intersection.up);
+                    ductSize2 = this.getSize(intersection.left);
                     compareSizes(sizes, ductSize1, ductSize2);
-    
                     intersection.up.proxyLengths.proxy1 = sizes[selectedSize];
                     intersection.up.proxyLengths.proxyMedian = sizes[selectedSize];
                     intersection.left.proxyLengths.proxy1 = sizes[selectedSize];
                 }
-    
-                //////////////////
-                // down-left proxies
-                //////////////////
-    
-                else if(intersection.left != null && intersection.down != null) {
-                    ductSize1 = this.getSize( intersection.left );
-                    ductSize2 = this.getSize( intersection.down );
-    
-                    compareSizes(sizes, ductSize1, ductSize2)
-    
+
+                if (intersection.left != null && intersection.down != null) {
+                    ductSize1 = this.getSize(intersection.left);
+                    ductSize2 = this.getSize(intersection.down);
+                    compareSizes(sizes, ductSize1, ductSize2);
                     intersection.left.proxyLengths.proxy2 = sizes[selectedSize];
                     intersection.left.proxyLengths.proxyMedian = sizes[selectedSize];
                     intersection.down.proxyLengths.proxy1 = sizes[selectedSize];
                 }
-    
-                //////////////////
-                // down-right proxies
-                //////////////////
-    
-                else if(intersection.down != null && intersection.right != null) {
-                    ductSize1 = this.getSize( intersection.down );
-                    ductSize2 = this.getSize( intersection.right );
-    
+
+                if (intersection.down != null && intersection.right != null) {
+                    ductSize1 = this.getSize(intersection.down);
+                    ductSize2 = this.getSize(intersection.right);
                     compareSizes(sizes, ductSize1, ductSize2);
-    
                     intersection.down.proxyLengths.proxy2 = sizes[selectedSize];
                     intersection.down.proxyLengths.proxyMedian = sizes[selectedSize];
                     intersection.right.proxyLengths.proxy2 = sizes[selectedSize];
                 }
-    
-                //////////////////
-                // up-right proxies
-                //////////////////
-    
-                else if(intersection.right != null && intersection.up != null) {
-                    ductSize1 = this.getSize( intersection.right );
-                    ductSize2 = this.getSize( intersection.up);
-    
-                    compareSizes(sizes, ductSize1, ductSize2);
-    
-                    intersection.right.proxyLengths.proxy1 = sizes[selectedSize];
-                    intersection.right.proxyLengths.proxyMedian = sizes[selectedSize];
-                    intersection.up.proxyLengths.proxy2 = sizes[selectedSize];
-                }
-    
-                //////////////////
-                // up-down proxies
-                //////////////////
-    
-                else if(intersection.left == null) {
-                    ductSize1 = this.getSize( intersection.up);
-                    ductSize2 = this.getSize( intersection.down );
-    
-                    compareSizes(sizes, ductSize1, ductSize2);
-    
-                    intersection.down.proxyLengths.proxy2 = sizes[selectedSize];
-                    intersection.down.proxyLengths.proxyMedian = sizes[selectedSize];
-                    intersection.up.proxyLengths.proxy2 = sizes[selectedSize];
-                }
-                else if(intersection.right != null) {
-                    ductSize1 = this.getSize( intersection.up);
-                    ductSize2 = this.getSize( intersection.down );
-    
-                    compareSizes(sizes, ductSize1, ductSize2);
-    
-                    intersection.up.proxyLengths.proxy2 = sizes[selectedSize];
-                    intersection.down.proxyLengths.proxyMedian = sizes[selectedSize];
-                    intersection.down.proxyLengths.proxy2 = sizes[selectedSize];
-                }
 
-                //////////////////
-                // left-right proxies
-                //////////////////
-    
-                else if(intersection.down == null) {
-                    ductSize1 = this.getSize( intersection.left );
-                    ductSize2 = this.getSize( intersection.right );
-    
-                    compareSizes(sizes, ductSize1, ductSize2);
-    
-                    intersection.left.proxyLengths.proxy2 = sizes[selectedSize];
-                    intersection.left.proxyLengths.proxyMedian = sizes[selectedSize];
-                    intersection.right.proxyLengths.proxy2 = sizes[selectedSize];
-                }
-                else if(intersection.up == null) {
-                    ductSize1 = this.getSize( intersection.left );
-                    ductSize2 = this.getSize( intersection.right );
-    
-                    compareSizes(sizes, ductSize1, ductSize2);
-    
-                    intersection.left.proxyLengths.proxy1 = sizes[selectedSize];
-                    intersection.right.proxyLengths.proxyMedian = sizes[selectedSize];
-                    intersection.right.proxyLengths.proxy1 = sizes[selectedSize];
-                }
-                
-            }
-            else if(definedIntersectionCount == 2) {
-    
-                //////////////////
-                // up-left proxies
-                //////////////////
-
-                console.log("calculateAdjacentContext step 6");
-    
-                if(intersection.up != null && intersection.left != null) {
-
-                    ductSize1 = this.getSize( intersection.up);
-                    ductSize2 = this.getSize( intersection.left );
-    
-                    compareSizes(sizes, ductSize1, ductSize2);
-    
-                    intersection.up.proxyLengths.proxy1 = sizes[selectedSize];
-                    intersection.up.proxyLengths.proxyMedian = sizes[selectedSize];
-                    intersection.left.proxyLengths.proxy1 = sizes[selectedSize];
-                }
-    
-                //////////////////
-                // down-left proxies
-                //////////////////
-    
-                if(intersection.left != null && intersection.down != null) {
-                    ductSize1 = this.getSize( intersection.left );
-                    ductSize2 = this.getSize( intersection.down );
-    
-                    compareSizes(sizes, ductSize1, ductSize2)
-    
-                    intersection.left.proxyLengths.proxy2 = sizes[selectedSize];
-                    intersection.left.proxyLengths.proxyMedian = sizes[selectedSize];
-                    intersection.down.proxyLengths.proxy1 = sizes[selectedSize];
-                }
-    
-                //////////////////
-                // down-right proxies
-                //////////////////
-    
-                if(intersection.down != null && intersection.right != null) {
-                    ductSize1 = this.getSize( intersection.down );
-                    ductSize2 = this.getSize( intersection.right );
-    
-                    compareSizes(sizes, ductSize1, ductSize2);
-    
-                    intersection.down.proxyLengths.proxy2 = sizes[selectedSize];
-                    intersection.down.proxyLengths.proxyMedian = sizes[selectedSize];
-                    intersection.right.proxyLengths.proxy2 = sizes[selectedSize];
-                }
-    
-                //////////////////
-                // up-right proxies
-                //////////////////
-    
-                if(intersection.right != null && intersection.up != null) {
-                    console.log("calculateAdjacentContext step 6.5");
-
+                if (intersection.right != null && intersection.up != null) {
                     ductSize1 = this.getSize(intersection.right);
                     ductSize2 = this.getSize(intersection.up);
-
-                    console.log("calculateAdjacentContext step 7");
-    
                     compareSizes(sizes, ductSize1, ductSize2);
-    
                     intersection.right.proxyLengths.proxy1 = sizes[selectedSize];
                     intersection.right.proxyLengths.proxyMedian = sizes[selectedSize];
                     intersection.up.proxyLengths.proxy2 = sizes[selectedSize];
-
-                    console.log("calculateAdjacentContext step 8");
                 }
-                
+            } else if (definedIntersectionCount === 2) {
+                // Handle two defined intersections (e.g., up-left, left-right, etc.)
+                if (intersection.up != null && intersection.left != null) {
+                    ductSize1 = this.getSize(intersection.up);
+                    ductSize2 = this.getSize(intersection.left);
+                    compareSizes(sizes, ductSize1, ductSize2);
+                    intersection.up.proxyLengths.proxy1 = sizes[selectedSize];
+                    intersection.up.proxyLengths.proxyMedian = sizes[selectedSize];
+                    intersection.left.proxyLengths.proxy1 = sizes[selectedSize];
+                }
+
+                if (intersection.left != null && intersection.down != null) {
+                    ductSize1 = this.getSize(intersection.left);
+                    ductSize2 = this.getSize(intersection.down);
+                    compareSizes(sizes, ductSize1, ductSize2);
+                    intersection.left.proxyLengths.proxy2 = sizes[selectedSize];
+                    intersection.left.proxyLengths.proxyMedian = sizes[selectedSize];
+                    intersection.down.proxyLengths.proxy1 = sizes[selectedSize];
+                }
+
+                if (intersection.down != null && intersection.right != null) {
+                    ductSize1 = this.getSize(intersection.down);
+                    ductSize2 = this.getSize(intersection.right);
+                    compareSizes(sizes, ductSize1, ductSize2);
+                    intersection.down.proxyLengths.proxy2 = sizes[selectedSize];
+                    intersection.down.proxyLengths.proxyMedian = sizes[selectedSize];
+                    intersection.right.proxyLengths.proxy2 = sizes[selectedSize];
+                }
+
+                if (intersection.right != null && intersection.up != null) {
+                    ductSize1 = this.getSize(intersection.right);
+                    ductSize2 = this.getSize(intersection.up);
+                    compareSizes(sizes, ductSize1, ductSize2);
+                    intersection.right.proxyLengths.proxy1 = sizes[selectedSize];
+                    intersection.right.proxyLengths.proxyMedian = sizes[selectedSize];
+                    intersection.up.proxyLengths.proxy2 = sizes[selectedSize];
+                }
             }
         }
-
     }
 
+    /**
+     * getSize
+     * 
+     * Retrieves the size of a duct based on its dimensions.
+     * 
+     * @param {Object} duct - The duct object containing the dimensions.
+     * @returns {number} The size of the duct.
+     */
     getSize(duct) {
         const size = this.ahuObject.resources.ducts[duct.id].dimensions.z;
         return size;
     }
 
+    /**
+     * Aligns the proxy medians inwards based on the defined intersection and joint direction. 
+     * This function adjusts the position of the proxy median geometries based on the joint style and duct dimensions.
+     * 
+     * @param {Object} intersection - The intersection data containing ducts in each direction (up, down, left, right).
+     * @param {string} gridKey - The grid key used to reference the joint in the resources.
+     */
     alignProxyMediansInwards(intersection, gridKey) {
         console.log("alignProxyMediansInwards started:", intersection, gridKey, this.ahuObject);
         let definedIntersectionCount = 0;
@@ -637,10 +524,10 @@ export default class Joints {
                     medianOffset += sharedData.jointPadding;
 
                     if(rightProxies.ductDimensions.y < upProxies.ductDimensions.y) {
-                        upProxies.proxyMedian.position.x += medianOffset + 15;
+                        upProxies.proxyMedian.position.x += medianOffset;
                     }
                     else {
-                        upProxies.proxyMedian.position.z += medianOffset + 15;
+                        upProxies.proxyMedian.position.z += medianOffset;
                     }
                 }
 
@@ -674,10 +561,10 @@ export default class Joints {
                     medianOffset += sharedData.jointPadding;
 
                     if(rightProxies.ductDimensions.y < downProxies.ductDimensions.y) {
-                        rightProxies.proxyMedian.position.x += medianOffset + 15;
+                        rightProxies.proxyMedian.position.x += medianOffset;
                     }
                     else {
-                        rightProxies.proxyMedian.position.z -= medianOffset + 15;
+                        rightProxies.proxyMedian.position.z -= medianOffset;
                     }
                 }
             }
@@ -709,10 +596,10 @@ export default class Joints {
                     medianOffset += sharedData.jointPadding;
 
                     if(leftProxies.ductDimensions.y > upProxies.ductDimensions.y) {
-                        leftProxies.proxyMedian.position.z += medianOffset + 15;
+                        leftProxies.proxyMedian.position.z += medianOffset;
                     }
                     else {
-                        leftProxies.proxyMedian.position.x -= medianOffset + 15;
+                        leftProxies.proxyMedian.position.x -= medianOffset;
                     }
                 }
             }
@@ -744,10 +631,10 @@ export default class Joints {
                     medianOffset += sharedData.jointPadding;
 
                     if(leftProxies.ductDimensions.y > downProxies.ductDimensions.y) {
-                        downProxies.proxyMedian.position.z -= medianOffset + 15;
+                        downProxies.proxyMedian.position.z -= medianOffset;
                     }
                     else {
-                        downProxies.proxyMedian.position.x -= medianOffset + 15;
+                        downProxies.proxyMedian.position.x -= medianOffset;
                     }
 
                 }
@@ -1083,6 +970,13 @@ export default class Joints {
         }
     }
 
+    /**
+     * Aligns the proxy medians outwards based on the defined intersection and joint direction. 
+     * This function adjusts the position of the proxy median geometries based on the joint style and duct dimensions.
+     * 
+     * @param {Object} intersection - The intersection data containing ducts in each direction (up, down, left, right).
+     * @param {string} gridKey - The grid key used to reference the joint in the resources.
+     */
     alignProxyMediansOutwards(intersection, gridKey) {        
         let definedIntersectionCount = 0;
         for(const key in intersection) {
@@ -1144,10 +1038,10 @@ export default class Joints {
                     medianOffset += sharedData.jointPadding;
 
                     if(rightProxies.ductDimensions.y < upProxies.ductDimensions.y) {
-                        upProxies.proxyMedian.position.x += medianOffset + 15;
+                        upProxies.proxyMedian.position.x += medianOffset;
                     }
                     else {
-                        upProxies.proxyMedian.position.z += medianOffset + 15;
+                        upProxies.proxyMedian.position.z += medianOffset;
                     }
 
                 }
@@ -1178,10 +1072,10 @@ export default class Joints {
                     medianOffset += sharedData.jointPadding;
 
                     if(rightProxies.ductDimensions.y < downProxies.ductDimensions.y) {
-                        rightProxies.proxyMedian.position.x += medianOffset + 15;
+                        rightProxies.proxyMedian.position.x += medianOffset;
                     }
                     else {
-                        rightProxies.proxyMedian.position.z -= medianOffset + 15;
+                        rightProxies.proxyMedian.position.z -= medianOffset;
                     }
                 }
             }
@@ -1213,10 +1107,10 @@ export default class Joints {
                     medianOffset += sharedData.jointPadding;
 
                     if(leftProxies.ductDimensions.y < upProxies.ductDimensions.y) {
-                        leftProxies.proxyMedian.position.x -= medianOffset + 15;
+                        leftProxies.proxyMedian.position.x -= medianOffset;
                     }
                     else {
-                        leftProxies.proxyMedian.position.z += medianOffset + 15;
+                        leftProxies.proxyMedian.position.z += medianOffset;
                     }
                 }
             }
@@ -1247,10 +1141,10 @@ export default class Joints {
                     medianOffset += sharedData.jointPadding;
 
                     if(leftProxies.ductDimensions.y > downProxies.ductDimensions.y) {
-                        downProxies.proxyMedian.position.z -= medianOffset + 15;
+                        downProxies.proxyMedian.position.z -= medianOffset;
                     }
                     else {
-                        downProxies.proxyMedian.position.x -= medianOffset + 15;
+                        downProxies.proxyMedian.position.x -= medianOffset;
                     }
                 }
             }
@@ -1522,82 +1416,40 @@ export default class Joints {
         }
     }
 
+    /**
+     * Maps the vertices of the proxy geometry and returns the coordinates of the corners.
+     * The function creates a `THREE.Box3` to calculate the bounding box of the proxy geometry 
+     * and then extracts the corners of the box.
+     * 
+     * @param {THREE.BufferGeometry} proxyGeometry - The geometry of the proxy object to map.
+     * @returns {Array} An array of `THREE.Vector3` objects representing the coordinates of the proxy's corners.
+     */
     mapProxyVertices(proxyGeometry) {
-        // const proxyBB = new THREE.Box3().setFromObject(detachedProxy);
+        // Create a new bounding box from the provided proxy geometry
+        // `THREE.Box3` helps to get the minimum and maximum bounds of the geometry
         const proxyBB = new THREE.Box3().setFromBufferAttribute(proxyGeometry.attributes.position);
+
+        // Get the minimum and maximum points of the bounding box
         const proxyMin = proxyBB.min;
         const proxyMax = proxyBB.max;
-  
+
+        // Define the 8 corners of the bounding box
         const proxyCorners = [
-            new THREE.Vector3(proxyMin.x, proxyMin.y, proxyMax.z),
-            new THREE.Vector3(proxyMin.x, proxyMin.y, proxyMin.z),
-            new THREE.Vector3(proxyMax.x, proxyMin.y, proxyMin.z),
-            new THREE.Vector3(proxyMax.x, proxyMin.y, proxyMax.z),
-    
-            new THREE.Vector3(proxyMin.x, proxyMax.y, proxyMax.z),
-            new THREE.Vector3(proxyMin.x, proxyMax.y, proxyMin.z),
-            new THREE.Vector3(proxyMax.x, proxyMax.y, proxyMin.z),
-            new THREE.Vector3(proxyMax.x, proxyMax.y, proxyMax.z),
-          ];
-  
+            // Bottom and top corners (x, y, z)
+            new THREE.Vector3(proxyMin.x, proxyMin.y, proxyMax.z), // corner 1
+            new THREE.Vector3(proxyMin.x, proxyMin.y, proxyMin.z), // corner 2
+            new THREE.Vector3(proxyMax.x, proxyMin.y, proxyMin.z), // corner 3
+            new THREE.Vector3(proxyMax.x, proxyMin.y, proxyMax.z), // corner 4
+
+            new THREE.Vector3(proxyMin.x, proxyMax.y, proxyMax.z), // corner 5
+            new THREE.Vector3(proxyMin.x, proxyMax.y, proxyMin.z), // corner 6
+            new THREE.Vector3(proxyMax.x, proxyMax.y, proxyMin.z), // corner 7
+            new THREE.Vector3(proxyMax.x, proxyMax.y, proxyMax.z), // corner 8
+        ];
+
+        // Return the array of the 8 corners of the bounding box as a list of Vector3 objects
         return proxyCorners;
     }
 
-    renderProxyVertices(proxyCorners, areHelpersOn) {
-
-        let indicatorSize = 27;
-        if(indicatorSize > 30) {
-            indicatorSize = 30;
-        }
-
-        const createTextCanvasTexture = (text) => {
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            const size = 1000; // Higher size for better resolution
-            canvas.width = size;
-            canvas.height = size;
-
-            // Fill the canvas with a background color
-            context.fillStyle = 'green';
-            context.fillRect(0, 0, size, size);
-
-            // Draw the text
-            context.fillStyle = 'black';
-            context.font = 'bold 800px Arial'; // Adjust font size and style
-            context.textAlign = 'center';
-            context.textBaseline = 'middle';
-            context.fillText(text, size / 2, size / 2);
-
-            // Create a texture from the canvas
-            const texture = new THREE.CanvasTexture(canvas);
-            texture.needsUpdate = true; // Ensure the texture is updated
-            return texture;
-        };
-
-        let vertexIndicators = [];
-        proxyCorners.forEach((proxyCorner, index) => {
-            const textTexture = createTextCanvasTexture(index.toString());
-
-            const material = new THREE.MeshStandardMaterial({
-                map: textTexture,
-                transparent: true,
-            });
-
-            const vertexGeometry = new THREE.BoxGeometry(indicatorSize, indicatorSize, indicatorSize);
-            const vertexIndicator = new THREE.Mesh(vertexGeometry, material);
-
-            if(index >= 4 && index <= 7) {
-                vertexIndicator.rotation.y += Math.PI;
-            }            
-
-            vertexIndicator.position.copy(proxyCorner);
-            vertexIndicator.name = "jointHelperVertices";
-            vertexIndicator.visible = areHelpersOn;
-            vertexIndicators.push(vertexIndicator);
-        });
-
-        return vertexIndicators;
-        
-    }
 
 }

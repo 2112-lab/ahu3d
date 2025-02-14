@@ -9,9 +9,21 @@ import {
 import { sharedData } from "../../../Ahu3D/globals.js";
 
 export default class Geometry_3D_Joints_Colinear {
+    /**
+     * createParallelJoint
+     * 
+     * This function generates the geometry for a parallel joint based on the provided joint data.
+     * The direction of the pair (vertical or horizontal) determines how the geometry will be generated.
+     * It uses various utility functions to create geometry based on the joint's proxy coordinates.
+     * 
+     * @param {Object} joint - The joint data, which includes the coordinates of the proxies.
+     * @param {string} pairDirection - The direction of the pair ("vertical" or "horizontal").
+     * @returns {THREE.BufferGeometry} - The merged geometry for the parallel joint.
+     */
     createParallelJoint(joint, pairDirection) {
         const geometries = [];
 
+        // If the pair direction is vertical, generate vertical geometry for the joint.
         if(pairDirection == "vertical") {
             geometries.push(
                 createGeometryFromPoints(
@@ -110,6 +122,8 @@ export default class Geometry_3D_Joints_Colinear {
                 )
             );
         }
+        
+        // If the pair direction is horizontal, generate horizontal geometry for the joint.
         if(pairDirection == "horizontal") {
             geometries.push(
                 createGeometryFromPoints(
@@ -209,6 +223,7 @@ export default class Geometry_3D_Joints_Colinear {
             );
         }
 
+        // Merge all the geometries created and return the final geometry for the parallel joint.
         const newMergedGeometry = mergeGeometries(geometries);
         return newMergedGeometry;
     }

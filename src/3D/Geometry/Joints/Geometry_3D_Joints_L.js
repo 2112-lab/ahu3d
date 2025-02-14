@@ -9,566 +9,377 @@ import {
 import { sharedData } from "../../../Ahu3D/globals.js";
 
 export default class Geometry_3D_Joints_L {
+    /**
+     * createLJoint
+     * 
+     * This function creates the L-joint geometry based on the provided joint configuration.
+     * It considers the direction (inwards or outwards) and style (arc or diagonal) to generate the appropriate geometries.
+     * 
+     * @param {Object} joint - The joint data containing proxy coordinates for each side.
+     * @returns {THREE.BufferGeometry} - Merged geometry for the L-joint.
+     */
     createLJoint(joint) {
         const geometries = [];
         let diagonalWidth = 0;
 
         console.log("createLJoint2 started:", joint);
 
+        // Initialize shared configurations for the L-joint
         sharedData.backwallArcConfigs = [];
-
         sharedData.isLJoint = true;
 
-        console.log("createLJoint2 step 1");
-
-        console.log("createLJoint2 step 2:", sharedData.jointDirection);
-
+        // Handle different joint directions
         if(sharedData.jointDirection == "outwards") {
+            // Handle the case where the right and up ducts are present
             if(joint.right != null && joint.up != null) {
                 if(sharedData.jointStyle == "arc" || sharedData.jointStyle == "diagonal") {
-
-                    // geometries.push(
-                    //     ...connectProxiesDiagonallyDownhill(
-                    //         joint.up.proxyMedian.coordinates, 
-                    //         joint.up.proxyMedian2.coordinates,
-                    //         true,
-                    //         Math.PI * 2
-                    //     )
-                    // );
-                    geometries.push(
-                        ...connectProxiesDiagonallyDownhill(
-                            joint.up.proxyMedian.coordinates,
-                            joint.right.proxy2.coordinates, 
-                            true,
-                            Math.PI * 2
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyDownhill(
-                            joint.up.proxyMedian.coordinates, 
-                            joint.up.proxy1.coordinates,
-                            true,
-                            Math.PI * 2
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyDownhill(
-                            joint.right.proxyMedian.coordinates, 
-                            joint.right.proxy1.coordinates
-                        )
-                    );
-
-                    geometries.push(
-                        ...connectProxiesDiagonallyDownhill(
-                            joint.up.proxy2.coordinates, 
-                            joint.right.proxyMedian.coordinates
-                        )
-                    );
+                    geometries.push(...connectProxiesDiagonallyDownhill(
+                        joint.up.proxyMedian.coordinates,
+                        joint.right.proxy2.coordinates, 
+                        true,
+                        Math.PI * 2
+                    ));
+                    geometries.push(...connectProxiesDiagonallyDownhill(
+                        joint.up.proxyMedian.coordinates, 
+                        joint.up.proxy1.coordinates,
+                        true,
+                        Math.PI * 2
+                    ));
+                    geometries.push(...connectProxiesDiagonallyDownhill(
+                        joint.right.proxyMedian.coordinates, 
+                        joint.right.proxy1.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyDownhill(
+                        joint.up.proxy2.coordinates, 
+                        joint.right.proxyMedian.coordinates
+                    ));
                 }
                 else {
-                    geometries.push(
-                        ...connectProxiesDiagonallyDownhill(
-                            joint.up.proxy2.coordinates,
-                            joint.right.proxyMedian.coordinates
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyDownhill(
-                            joint.right.proxyMedian.coordinates, 
-                            joint.right.proxy1.coordinates
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyDownhill(
-                            joint.up.proxyMedian.coordinates,
-                            joint.right.proxy2.coordinates
-                        )
-                    );                
-                    geometries.push(
-                        ...connectProxiesDiagonallyDownhill(
-                            joint.up.proxy1.coordinates, 
-                            joint.up.proxyMedian.coordinates
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyDownhill(
-                            joint.up.proxy2.coordinates,
-                            joint.right.proxyMedian.coordinates
-                        )
-                    );
+                    geometries.push(...connectProxiesDiagonallyDownhill(
+                        joint.up.proxy2.coordinates,
+                        joint.right.proxyMedian.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyDownhill(
+                        joint.right.proxyMedian.coordinates, 
+                        joint.right.proxy1.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyDownhill(
+                        joint.up.proxyMedian.coordinates,
+                        joint.right.proxy2.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyDownhill(
+                        joint.up.proxy1.coordinates, 
+                        joint.up.proxyMedian.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyDownhill(
+                        joint.up.proxy2.coordinates,
+                        joint.right.proxyMedian.coordinates
+                    ));
                 }
             }
+            // Handle the case where the right and down ducts are present
             else if(joint.right != null && joint.down != null) {
                 if(sharedData.jointStyle == "arc" || sharedData.jointStyle == "diagonal") {
-                    geometries.push(
-                        ...connectProxiesDiagonallyUphill(
-                            joint.right.proxyMedian.coordinates, 
-                            joint.down.proxy1.coordinates,
-                            true,
-                            Math.PI / -2
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyUphill(
-                            joint.down.proxy2.coordinates,
-                            joint.down.proxyMedian.coordinates
-                        )
-                    );
-                    // geometries.push(
-                    //     ...connectProxiesDiagonallyUphill(
-                    //         joint.right.proxyMedian.coordinates,
-                    //         joint.right.proxyMedian2.coordinates,
-                    //         true,
-                    //         Math.PI / -2
-                    //     )
-                    // );
-                    geometries.push(
-                        ...connectProxiesDiagonallyUphill(
-                            joint.right.proxyMedian.coordinates,
-                            joint.right.proxy1.coordinates,
-                            true,
-                            Math.PI / -2
-                        )
-                    );
+                    geometries.push(...connectProxiesDiagonallyUphill(
+                        joint.right.proxyMedian.coordinates, 
+                        joint.down.proxy1.coordinates,
+                        true,
+                        Math.PI / -2
+                    ));
+                    geometries.push(...connectProxiesDiagonallyUphill(
+                        joint.down.proxy2.coordinates,
+                        joint.down.proxyMedian.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyUphill(
+                        joint.right.proxyMedian.coordinates,
+                        joint.right.proxy1.coordinates,
+                        true,
+                        Math.PI / -2
+                    ));
                 }
                 else {
-                    geometries.push(
-                        ...connectProxiesDiagonallyUphill(
-                            joint.right.proxyMedian.coordinates, 
-                            joint.down.proxy1.coordinates
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyUphill(
-                            joint.down.proxy2.coordinates,
-                            joint.down.proxyMedian.coordinates
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyUphill(
-                            joint.down.proxyMedian.coordinates, 
-                            joint.right.proxy2.coordinates
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyUphill(
-                            joint.right.proxy1.coordinates,
-                            joint.right.proxyMedian.coordinates
-                        )
-                    );
+                    geometries.push(...connectProxiesDiagonallyUphill(
+                        joint.right.proxyMedian.coordinates, 
+                        joint.down.proxy1.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyUphill(
+                        joint.down.proxy2.coordinates,
+                        joint.down.proxyMedian.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyUphill(
+                        joint.down.proxyMedian.coordinates, 
+                        joint.right.proxy2.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyUphill(
+                        joint.right.proxy1.coordinates,
+                        joint.right.proxyMedian.coordinates
+                    ));
                 }
             } 
+            // Handle the case where the left and up ducts are present
             else if(joint.left != null && joint.up != null) {
                 if(sharedData.jointStyle == "arc" || sharedData.jointStyle == "diagonal") {
-                    geometries.push(
-                        ...connectProxiesDiagonallyUphill(
-                            joint.up.proxy1.coordinates,
-                            joint.up.proxyMedian.coordinates
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyUphill(
-                            joint.up.proxyMedian.coordinates, 
-                            joint.left.proxy1.coordinates
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyUphill(
-                            joint.left.proxyMedian.coordinates,
-                            joint.up.proxy2.coordinates,
-                            true,
-                            Math.PI / 2
-                        )
-                    );
-                    // geometries.push(
-                    //     ...connectProxiesDiagonallyUphill(
-                    //         joint.left.proxyMedian.coordinates, 
-                    //         joint.left.proxyMedian2.coordinates,
-                    //         true,
-                    //         Math.PI / 2
-                    //     )
-                    // );
-                    geometries.push(
-                        ...connectProxiesDiagonallyUphill(
-                            joint.left.proxyMedian.coordinates,
-                            joint.left.proxy2.coordinates,
-                            true,
-                            Math.PI / 2
-                        )
-                    );
+                    geometries.push(...connectProxiesDiagonallyUphill(
+                        joint.up.proxy1.coordinates,
+                        joint.up.proxyMedian.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyUphill(
+                        joint.up.proxyMedian.coordinates, 
+                        joint.left.proxy1.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyUphill(
+                        joint.left.proxyMedian.coordinates,
+                        joint.up.proxy2.coordinates,
+                        true,
+                        Math.PI / 2
+                    ));
+                    geometries.push(...connectProxiesDiagonallyUphill(
+                        joint.left.proxyMedian.coordinates,
+                        joint.left.proxy2.coordinates,
+                        true,
+                        Math.PI / 2
+                    ));
                 }
                 else {
-                    geometries.push(
-                        ...connectProxiesDiagonallyUphill(
-                            joint.up.proxy1.coordinates,
-                            joint.up.proxyMedian.coordinates
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyUphill(
-                            joint.up.proxyMedian.coordinates, 
-                            joint.left.proxy1.coordinates
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyUphill(
-                            joint.left.proxy2.coordinates, 
-                            joint.left.proxyMedian.coordinates
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyUphill(
-                            joint.left.proxyMedian.coordinates,
-                            joint.up.proxy2.coordinates
-                        )
-                    );
+                    geometries.push(...connectProxiesDiagonallyUphill(
+                        joint.up.proxy1.coordinates,
+                        joint.up.proxyMedian.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyUphill(
+                        joint.up.proxyMedian.coordinates, 
+                        joint.left.proxy1.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyUphill(
+                        joint.left.proxy2.coordinates, 
+                        joint.left.proxyMedian.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyUphill(
+                        joint.left.proxyMedian.coordinates,
+                        joint.up.proxy2.coordinates
+                    ));
                 }
             }
+            // Handle the case where the left and down ducts are present
             else if(joint.left != null && joint.down != null) {
                 if(sharedData.jointStyle == "arc" || sharedData.jointStyle == "diagonal") {
-                    geometries.push(
-                        ...connectProxiesDiagonallyDownhill(
-                            joint.left.proxy2.coordinates, 
-                            joint.left.proxyMedian.coordinates
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyDownhill(
-                            joint.left.proxyMedian.coordinates,
-                            joint.down.proxy1.coordinates
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyDownhill(
-                            joint.down.proxy2.coordinates,
-                            joint.down.proxyMedian.coordinates,
-                            true,
-                            Math.PI
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyDownhill(
-                            joint.left.proxy1.coordinates,
-                            joint.down.proxyMedian.coordinates,
-                            true,
-                            Math.PI
-                        )
-                    );  
-                    // geometries.push(
-                    //     ...connectProxiesDiagonallyDownhill(
-                    //         joint.down.proxyMedian.coordinates, 
-                    //         joint.down.proxyMedian2.coordinates,
-                    //         true,
-                    //         Math.PI
-                    //     ) 
-                    // );
-                    // geometries.push(
-                    //     ...connectProxiesDiagonallyDownhill(
-                    //         joint.down.proxyMedian2.coordinates, 
-                    //         joint.left.proxy1.coordinates
-                    //     ) 
-                    // );
+                    geometries.push(...connectProxiesDiagonallyDownhill(
+                        joint.left.proxy2.coordinates, 
+                        joint.left.proxyMedian.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyDownhill(
+                        joint.left.proxyMedian.coordinates,
+                        joint.down.proxy1.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyDownhill(
+                        joint.down.proxy2.coordinates,
+                        joint.down.proxyMedian.coordinates,
+                        true,
+                        Math.PI
+                    ));
+                    geometries.push(...connectProxiesDiagonallyDownhill(
+                        joint.left.proxy1.coordinates,
+                        joint.down.proxyMedian.coordinates,
+                        true,
+                        Math.PI
+                    ));
                 }
                 else {
-                    geometries.push(
-                        ...connectProxiesDiagonallyDownhill(
-                            joint.left.proxy2.coordinates, 
-                            joint.left.proxyMedian.coordinates
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyDownhill(
-                            joint.left.proxyMedian.coordinates,
-                            joint.down.proxy1.coordinates
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyDownhill(
-                            joint.down.proxy2.coordinates,
-                            joint.down.proxyMedian.coordinates
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyDownhill(
-                            joint.down.proxyMedian.coordinates, 
-                            joint.left.proxy1.coordinates
-                        )
-                    );  
+                    geometries.push(...connectProxiesDiagonallyDownhill(
+                        joint.left.proxy2.coordinates, 
+                        joint.left.proxyMedian.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyDownhill(
+                        joint.left.proxyMedian.coordinates,
+                        joint.down.proxy1.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyDownhill(
+                        joint.down.proxy2.coordinates,
+                        joint.down.proxyMedian.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyDownhill(
+                        joint.down.proxyMedian.coordinates, 
+                        joint.left.proxy1.coordinates
+                    ));
                 }
-                    
             }  
         }
+        // Handle the "inwards" joint direction
         else if(sharedData.jointDirection == "inwards") {
             if(joint.right != null && joint.up != null) {
                 if(sharedData.jointStyle == "arc" || sharedData.jointStyle == "diagonal") {
-                    // geometries.push(
-                    //     ...connectProxiesDiagonallyDownhill(
-                    //         joint.up.proxyMedian.coordinates, 
-                    //         joint.up.proxyMedian2.coordinates,
-                    //         true,
-                    //         Math.PI * 2
-                    //     )
-                    // );
-
-                    // geometries.push(
-                    //     ...connectProxiesDiagonallyDownhill(
-                    //         joint.right.proxy2.coordinates, 
-                    //         joint.up.proxyMedian2.coordinates
-                    //     )
-                    // );
-                    geometries.push(
-                        ...connectProxiesDiagonallyDownhill(
-                            joint.up.proxy1.coordinates,
-                            joint.up.proxyMedian.coordinates, 
-                            true,
-                            Math.PI * 2
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyDownhill(
-                            joint.up.proxyMedian.coordinates, 
-                            joint.right.proxy2.coordinates, 
-                            true,
-                            Math.PI * 2
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyDownhill(
-                            joint.right.proxyMedian.coordinates, 
-                            joint.right.proxy1.coordinates
-                        )
-                    );
-                    
+                    geometries.push(...connectProxiesDiagonallyDownhill(
+                        joint.up.proxy1.coordinates,
+                        joint.up.proxyMedian.coordinates, 
+                        true,
+                        Math.PI * 2
+                    ));
+                    geometries.push(...connectProxiesDiagonallyDownhill(
+                        joint.up.proxyMedian.coordinates, 
+                        joint.right.proxy2.coordinates, 
+                        true,
+                        Math.PI * 2
+                    ));
+                    geometries.push(...connectProxiesDiagonallyDownhill(
+                        joint.right.proxyMedian.coordinates, 
+                        joint.right.proxy1.coordinates
+                    ));
                 }
                 else {
-                    console.log("createLJoint2 step 3");
-                    geometries.push(
-                        ...connectProxiesDiagonallyDownhill(
-                            joint.right.proxyMedian.coordinates, 
-                            joint.right.proxy1.coordinates
-                        )
-                    );
-                    console.log("createLJoint2 step 4");
-                    geometries.push(
-                        ...connectProxiesDiagonallyDownhill(
-                            joint.up.proxyMedian.coordinates,
-                            joint.right.proxy2.coordinates
-                        )
-                    ); 
-                    console.log("createLJoint2 step 5");
-                    geometries.push(
-                        ...connectProxiesDiagonallyDownhill(
-                            joint.up.proxy1.coordinates, 
-                            joint.up.proxyMedian.coordinates
-                        )
-                    ); 
-                    geometries.push(
-                        ...connectProxiesDiagonallyDownhill(
-                            joint.up.proxy2.coordinates,
-                            joint.right.proxyMedian.coordinates
-                        )
-                    );
+                    geometries.push(...connectProxiesDiagonallyDownhill(
+                        joint.right.proxyMedian.coordinates, 
+                        joint.right.proxy1.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyDownhill(
+                        joint.up.proxyMedian.coordinates,
+                        joint.right.proxy2.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyDownhill(
+                        joint.up.proxy1.coordinates, 
+                        joint.up.proxyMedian.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyDownhill(
+                        joint.up.proxy2.coordinates,
+                        joint.right.proxyMedian.coordinates
+                    ));
                 }
             }
+            // Handle the case where the right and down ducts are present
             else if(joint.right != null && joint.down != null) {
                 if(sharedData.jointStyle == "arc" || sharedData.jointStyle == "diagonal") {
-                    geometries.push(
-                        ...connectProxiesDiagonallyUphill(
-                            joint.right.proxyMedian.coordinates, 
-                            joint.down.proxy1.coordinates,
-                            true,
-                            Math.PI / -2
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyUphill(
-                            joint.down.proxy2.coordinates,
-                            joint.down.proxyMedian.coordinates
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyUphill(
-                            joint.down.proxyMedian.coordinates, 
-                            joint.right.proxy2.coordinates
-                        )
-                    );
-                    // geometries.push(
-                    //     ...connectProxiesDiagonallyUphill(
-                    //         joint.right.proxyMedian.coordinates,
-                    //         joint.right.proxyMedian2.coordinates,
-                    //         true,
-                    //         Math.PI / -2
-                    //     )
-                    // );
-                    geometries.push(
-                        ...connectProxiesDiagonallyUphill(
-                            joint.right.proxyMedian.coordinates,
-                            joint.right.proxy1.coordinates,
-                            true,
-                            Math.PI / -2
-                        )
-                    );
+                    geometries.push(...connectProxiesDiagonallyUphill(
+                        joint.right.proxyMedian.coordinates, 
+                        joint.down.proxy1.coordinates,
+                        true,
+                        Math.PI / -2
+                    ));
+                    geometries.push(...connectProxiesDiagonallyUphill(
+                        joint.down.proxy2.coordinates,
+                        joint.down.proxyMedian.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyUphill(
+                        joint.down.proxyMedian.coordinates, 
+                        joint.right.proxy2.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyUphill(
+                        joint.right.proxyMedian.coordinates,
+                        joint.right.proxy1.coordinates,
+                        true,
+                        Math.PI / -2
+                    ));
                 }
                 else {
-                    geometries.push(
-                        ...connectProxiesDiagonallyUphill(
-                            joint.right.proxyMedian.coordinates, 
-                            joint.down.proxy1.coordinates
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyUphill(
-                            joint.down.proxy2.coordinates,
-                            joint.down.proxyMedian.coordinates
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyUphill(
-                            joint.down.proxyMedian.coordinates, 
-                            joint.right.proxy2.coordinates
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyUphill(
-                            joint.right.proxy1.coordinates,
-                            joint.right.proxyMedian.coordinates
-                        )
-                    );
+                    geometries.push(...connectProxiesDiagonallyUphill(
+                        joint.right.proxyMedian.coordinates, 
+                        joint.down.proxy1.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyUphill(
+                        joint.down.proxy2.coordinates,
+                        joint.down.proxyMedian.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyUphill(
+                        joint.down.proxyMedian.coordinates, 
+                        joint.right.proxy2.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyUphill(
+                        joint.right.proxy1.coordinates,
+                        joint.right.proxyMedian.coordinates
+                    ));
                 }
             }
+            // Handle the case where the left and up ducts are present
             else if(joint.left != null && joint.up != null) {
                 if(sharedData.jointStyle == "arc" || sharedData.jointStyle == "diagonal") {
-                    geometries.push(
-                        ...connectProxiesDiagonallyUphill(
-                            joint.up.proxy1.coordinates,
-                            joint.up.proxyMedian.coordinates
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyUphill(
-                            joint.up.proxyMedian.coordinates, 
-                            joint.left.proxy1.coordinates
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyUphill(
-                            joint.left.proxy2.coordinates,
-                            joint.left.proxyMedian.coordinates,
-                            true,
-                            Math.PI / 2
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyUphill(
-                            joint.left.proxyMedian.coordinates,
-                            joint.up.proxy2.coordinates,
-                            true,
-                            Math.PI / 2
-                        )
-                    );
+                    geometries.push(...connectProxiesDiagonallyUphill(
+                        joint.up.proxy1.coordinates,
+                        joint.up.proxyMedian.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyUphill(
+                        joint.up.proxyMedian.coordinates, 
+                        joint.left.proxy1.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyUphill(
+                        joint.left.proxy2.coordinates,
+                        joint.left.proxyMedian.coordinates,
+                        true,
+                        Math.PI / 2
+                    ));
+                    geometries.push(...connectProxiesDiagonallyUphill(
+                        joint.left.proxyMedian.coordinates,
+                        joint.up.proxy2.coordinates,
+                        true,
+                        Math.PI / 2
+                    ));
                 }
                 else {
-                    geometries.push(
-                        ...connectProxiesDiagonallyUphill(
-                            joint.up.proxy1.coordinates,
-                            joint.up.proxyMedian.coordinates
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyUphill(
-                            joint.up.proxyMedian.coordinates, 
-                            joint.left.proxy1.coordinates
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyUphill(
-                            joint.left.proxy2.coordinates, 
-                            joint.left.proxyMedian.coordinates
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyUphill(
-                            joint.left.proxyMedian.coordinates,
-                            joint.up.proxy2.coordinates
-                        )
-                    );
+                    geometries.push(...connectProxiesDiagonallyUphill(
+                        joint.up.proxy1.coordinates,
+                        joint.up.proxyMedian.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyUphill(
+                        joint.up.proxyMedian.coordinates, 
+                        joint.left.proxy1.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyUphill(
+                        joint.left.proxy2.coordinates, 
+                        joint.left.proxyMedian.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyUphill(
+                        joint.left.proxyMedian.coordinates,
+                        joint.up.proxy2.coordinates
+                    ));
                 }
-            }  
+            }
+            // Handle the case where the left and down ducts are present
             else if(joint.left != null && joint.down != null) {
                 if(sharedData.jointStyle == "arc" || sharedData.jointStyle == "diagonal") {
-                    geometries.push(
-                        ...connectProxiesDiagonallyDownhill(
-                            joint.left.proxy2.coordinates, 
-                            joint.left.proxyMedian.coordinates
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyDownhill(
-                            joint.left.proxyMedian.coordinates,
-                            joint.down.proxy1.coordinates
-                        )
-                    );
-
-                    geometries.push(
-                        ...connectProxiesDiagonallyDownhill(
-                            joint.left.proxy1.coordinates,
-                            joint.down.proxyMedian.coordinates,
-                            true,
-                            Math.PI
-                        )
-                    );
-
-                    geometries.push(
-                        ...connectProxiesDiagonallyDownhill(
-                            joint.down.proxy2.coordinates,
-                            joint.down.proxyMedian.coordinates,
-                            true,
-                            Math.PI
-                        )
-                    );
-
+                    geometries.push(...connectProxiesDiagonallyDownhill(
+                        joint.left.proxy2.coordinates, 
+                        joint.left.proxyMedian.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyDownhill(
+                        joint.left.proxyMedian.coordinates,
+                        joint.down.proxy1.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyDownhill(
+                        joint.left.proxy1.coordinates,
+                        joint.down.proxyMedian.coordinates,
+                        true,
+                        Math.PI
+                    ));
+                    geometries.push(...connectProxiesDiagonallyDownhill(
+                        joint.down.proxy2.coordinates,
+                        joint.down.proxyMedian.coordinates,
+                        true,
+                        Math.PI
+                    ));
                 }
                 else {
-                    geometries.push(
-                        ...connectProxiesDiagonallyDownhill(
-                            joint.left.proxy2.coordinates, 
-                            joint.left.proxyMedian.coordinates
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyDownhill(
-                            joint.left.proxyMedian.coordinates,
-                            joint.down.proxy1.coordinates
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyDownhill(
-                            joint.down.proxy2.coordinates,
-                            joint.down.proxyMedian.coordinates
-                        )
-                    );
-                    geometries.push(
-                        ...connectProxiesDiagonallyDownhill(
-                            joint.down.proxyMedian.coordinates, 
-                            joint.left.proxy1.coordinates
-                        ) 
-                    );
+                    geometries.push(...connectProxiesDiagonallyDownhill(
+                        joint.left.proxy2.coordinates, 
+                        joint.left.proxyMedian.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyDownhill(
+                        joint.left.proxyMedian.coordinates,
+                        joint.down.proxy1.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyDownhill(
+                        joint.down.proxy2.coordinates,
+                        joint.down.proxyMedian.coordinates
+                    ));
+                    geometries.push(...connectProxiesDiagonallyDownhill(
+                        joint.down.proxyMedian.coordinates, 
+                        joint.left.proxy1.coordinates
+                    ));
                 }
             }  
         }
 
-        console.log("createLJoint2 step 3");
-
+        // Handle the backwall creation based on joint direction and style
         if(sharedData.jointDirection == "inwards" && sharedData.jointStyle == "arc") {
             console.log("createArchedBackwall");
-
-            // this.createWallMesh(joint); 
             geometries.push(
                 ...this.createLJointBackwall(joint)
             );
-            // geometries.push(
-            //     ...this.patchLJointBackwall(joint, diagonalWidth)
-            // );
         }
         else {
             geometries.push(
@@ -576,25 +387,28 @@ export default class Geometry_3D_Joints_L {
             );
         }
 
-        geometries.push(
-            ...createJointClosure(joint.up, "horizontal")
-        ); 
-        geometries.push(
-            ...createJointClosure(joint.right, "vertical")
-        ); 
-        geometries.push(
-            ...createJointClosure(joint.down, "horizontal")
-        ); 
-        geometries.push(
-            ...createJointClosure(joint.left, "vertical")
-        ); 
+        // Create joint closures for each side of the L-joint
+        geometries.push(...createJointClosure(joint.up, "horizontal"));
+        geometries.push(...createJointClosure(joint.right, "vertical"));
+        geometries.push(...createJointClosure(joint.down, "horizontal"));
+        geometries.push(...createJointClosure(joint.left, "vertical"));
 
         sharedData.isLJoint = false;
 
+        // Merge all geometries into one
         const newMergedGeometry = mergeGeometries(geometries);
         return newMergedGeometry;
     }
 
+    /**
+     * createLJointBackwall
+     * 
+     * This function generates the backwall geometry for the L-joint based on the provided 
+     * joint data (proxies and direction). It adds midpoints if the joint style is "arc".
+     * 
+     * @param {Object} joint - The joint data containing coordinates and duct information.
+     * @returns {Array} - The backwall geometry for the L-joint.
+     */
     createLJointBackwall(joint) {
         let backwall = [];
         if(joint.up != null && joint.right != null) {    
@@ -667,7 +481,6 @@ export default class Geometry_3D_Joints_L {
                 }
                 backwall.splice(2, 0, downMidpoint);
             }
-            
         }
 
         let geometry = [];
@@ -678,9 +491,17 @@ export default class Geometry_3D_Joints_L {
         console.log("createLJointBackwall:", geometry);
 
         return geometry;
-
     }
 
+    /**
+     * patchLJointBackwall
+     * 
+     * This function creates additional backwall geometries for the L-joint when necessary.
+     * It ensures the wall is patched and complete by generating the missing parts of the joint.
+     * 
+     * @param {Object} joint - The joint data containing coordinates and duct information.
+     * @returns {Array} - The patched backwall geometries for the L-joint.
+     */
     patchLJointBackwall(joint) {
         let geometry = [];
         let backwall = [];
@@ -758,9 +579,16 @@ export default class Geometry_3D_Joints_L {
         }
 
         return geometry;
-
     }
 
+    /**
+     * createWallMesh
+     * 
+     * This function generates a wall mesh from the backwall arc configurations and applies transformations.
+     * It is used to create the geometry for the joint wall and add it to the scene.
+     * 
+     * @param {Object} joint - The joint data used for generating the wall mesh.
+     */
     createWallMesh(joint) {
         const mergeLineValue = 5;
         const backwallArcConfigs = sharedData.backwallArcConfigs;
@@ -768,8 +596,6 @@ export default class Geometry_3D_Joints_L {
         console.log("createWallMesh backwallArcConfigs:", JSON.stringify(backwallArcConfigs, null, 2));
 
         const wallMaterial = new THREE.MeshStandardMaterial({ color: sharedData.primaryColor, side: THREE.DoubleSide });
-
-        console.log("createWallMesh step 1:", backwallArcConfigs[0]);
 
         const backwallGeometry = new THREE.RingGeometry(
             backwallArcConfigs[0].innerRadius + mergeLineValue, 
@@ -779,8 +605,6 @@ export default class Geometry_3D_Joints_L {
             backwallArcConfigs[0].thetaStart, 
             backwallArcConfigs[0].thetaLength
         );
-
-        console.log("createWallMesh step 2:", backwallArcConfigs[1]);
 
         if(backwallArcConfigs[1] == undefined) {
             backwallArcConfigs.push(backwallArcConfigs[0]);
@@ -821,9 +645,6 @@ export default class Geometry_3D_Joints_L {
         backwall2.position.x += ((width2 / 2) - 15) * xFactor;
         backwall2.position.z += ((width2 / 2) - 15) * zFactor;
 
-        // this.sceneHelper.addToScene(backwall);
-        // this.sceneHelper.addToScene(backwall2);
-
         backwall.updateMatrix();
         backwall.geometry.applyMatrix4(backwall.matrix);
 
@@ -841,6 +662,16 @@ export default class Geometry_3D_Joints_L {
         sharedData.sceneHelper.addToScene(wallMesh2);
     }
 
+    /**
+     * connectWallArcs
+     * 
+     * This function connects two wall arcs (using two ring geometries) to form a complete wall mesh. 
+     * It generates the vertices and faces to create a quad between the two arcs.
+     * 
+     * @param {THREE.BufferGeometry} backwallGeometry - The geometry for the first arc.
+     * @param {THREE.BufferGeometry} backwallGeometry2 - The geometry for the second arc.
+     * @returns {THREE.Mesh} - The complete wall mesh connecting the two arcs.
+     */
     connectWallArcs(backwallGeometry, backwallGeometry2) {
         // Extract the outer vertices of each ring
         function getArcVertices(geometry) {
