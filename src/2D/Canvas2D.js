@@ -2,16 +2,28 @@
 import { sharedData } from "../Ahu3D/globals.js"
 
 export default class Canvas2D {
+
+  createLayer(ahuObject) {
+    this.ahuObject = ahuObject;
+
+    const layer = new Konva.Layer();
+
+    // Create the AHU shapes and add to the layer
+    this.ahuToLayer(layer);
+
+    return layer;
+  }
+
   /**
    * Draws the AHU object to the canvas viewport using Konva.js.
    * @param {Object} ahuObject - The AHU object that contains resources and components to draw.
    * @param {string} domID - The ID of the DOM element to attach the canvas to.
    */
-  drawToViewport(ahuObject, domID) {
-    console.log("drawToViewport ahuObject", domID, ahuObject);
+  drawToViewport(layer, domID) {
+    console.log("drawToViewport ahuObject", domID);
 
     // Storing the AHU object for use in other functions
-    this.ahuObject = ahuObject;
+    
     const container = document.getElementById(domID);
 
     // Get the container's width and height for setting canvas size
@@ -28,11 +40,7 @@ export default class Canvas2D {
     });
 
     // Create a Konva Layer to add shapes to the stage
-    const layer = new Konva.Layer();
-    stage.add(layer);
-
-    // Render the AHU to the layer (includes ducts and components)
-    this.renderAhuToLayer(layer);
+    stage.add(layer);    
 
     // Draw the frame around the objects in the viewport
     this.drawFrame(layer);
@@ -44,14 +52,17 @@ export default class Canvas2D {
     this.setCanvasEvents(layer, stage, container);
 
     // Redraw the layer after setup
-    layer.draw();
+    // layer.draw();
+
+    return stage;
   }
+
 
   /**
    * Renders the AHU's ducts and components to the given layer.
    * @param {Konva.Layer} layer - The layer to render the AHU onto.
    */
-  renderAhuToLayer(layer) {
+  ahuToLayer(layer) {
     // Iterate over all ducts in the AHU object and render them
     for (const ductKey in this.ahuObject.resources.ducts) {
       const duct = this.ahuObject.resources.ducts[ductKey];
@@ -80,13 +91,13 @@ export default class Canvas2D {
       lines.forEach(line => layer.add(line));
   
       // Create a group for the components inside the duct
-      const componentGroup = new Konva.Group({
-        x: duct.position.x,
-        y: duct.position.z * -1,
-        rotation: duct.rotation.y, // Rotate only the components, not the duct
-        offsetX: 0, // No offset applied here
-        offsetY: 0,
-      });
+      // const componentGroup = new Konva.Group({
+      //   x: duct.position.x,
+      //   y: duct.position.z * -1,
+      //   rotation: duct.rotation.y, // Rotate only the components, not the duct
+      //   offsetX: 0, // No offset applied here
+      //   offsetY: 0,
+      // });
   
       // Render components if they are associated with the duct
       if (this.ahuObject.associations.ducts[ductKey].components) {
@@ -103,7 +114,7 @@ export default class Canvas2D {
           };
   
           // Render the SVG of the component to the layer
-          this.renderComponentSvg(componentGroup, relativePosition, componentSvg, duct);
+          this.renderComponentSvg(layer, relativePosition, componentSvg, duct);
         }
       }
 
@@ -112,13 +123,13 @@ export default class Canvas2D {
         for(const endKey in this.ahuObject.associations.ducts[ductKey].ends) {
           const endKey = this.ahuObject.associations.ducts[ductKey].ends[0];
           const end = this.ahuObject.resources.ends[endKey];
-          console.log("renderAhuToLayer drawEnd starting:", this.ahuObject, endKey);
+          console.log("ahuToLayer drawEnd starting:", this.ahuObject, endKey);
           this.drawEnd(layer, end, endKey, konvaOptions);
         }
       }  
 
       // Add the component group to the layer for independent rotation
-      layer.add(componentGroup);
+      // layer.add(componentGroup);
     }
   
     // Create 2D joints and add them to the layer
@@ -129,6 +140,67 @@ export default class Canvas2D {
     // Render additional helper elements (arrows, labels, etc.)
     this.renderHelpers(layer);
   }
+
+  /**
+   * Renders an SVG component directly onto the layer instead of using a group.
+   * @param {Konva.Layer} layer - The Konva layer to add the component image to.
+   * @param {Object} relativePosition - The relative position of the component inside the duct.
+   * @param {string} componentSvg - The SVG content for the component.
+   * @param {Object} duct - The duct to which the component belongs.
+   */
+  renderComponentSvg(layer, relativePosition, componentSvg, duct) {
+    const parser = new DOMParser();
+    const svgDoc = parser.parseFromString(componentSvg, "image/svg+xml");
+    const paths = svgDoc.querySelectorAll("path");
+
+    const width = 381;
+    const height = duct.dimensions.z;
+
+    let viewBox = svgDoc.documentElement.getAttribute("viewBox");
+    let [vbX, vbY, vbWidth, vbHeight] = viewBox
+        ? viewBox.split(" ").map(Number)
+        : [0, 0, width, height]; // Fallback to default size if no viewBox
+
+    // Calculate scaling factors
+    const scaleX = width / vbWidth;
+    const scaleY = height / vbHeight;
+
+    const adjustedX = duct.position.x + relativePosition.x;
+    const adjustedY = (duct.position.z + relativePosition.z) * -1;
+    const rotation = duct.rotation.y;
+
+    // If the duct is rotated 90 or 270 degrees, swap x and z coordinates
+    let finalX = adjustedX;
+    let finalY = adjustedY;
+    if (rotation !== 0 && rotation !== 180) {
+        finalX = duct.position.x + relativePosition.z;
+        finalY = (duct.position.z + relativePosition.x) * -1;
+    }
+
+    paths.forEach((pathElement) => {
+        const pathData = pathElement.getAttribute("d");
+        if (!pathData) return;
+
+        const konvaPath = new Konva.Path({
+            data: pathData,
+            x: finalX,
+            y: finalY,
+            stroke: "white",
+            strokeWidth: 15 / Math.max(scaleX, scaleY), // Normalize stroke width
+            fill: "transparent",
+            scaleX: scaleX,
+            scaleY: rotation === 180 ? -scaleY : scaleY, // Flip if rotated 180 degrees
+            rotation: rotation,
+            offsetX: width / (2 * scaleX),
+            offsetY: height / (2 * scaleY),
+        });
+
+        layer.add(konvaPath);
+    });
+
+    layer.batchDraw(); // Ensure rendering update
+}
+
 
   /**
    * Renders arrows and labels as part of the AHU helpers.
@@ -167,8 +239,10 @@ export default class Canvas2D {
             rotation: rotation, // Apply rotation in degrees
         });
 
+        let arrowPath = this.convertArrowToPath(arrow);
+
         // Add the arrow to the layer
-        layer.add(arrow);
+        layer.add(arrowPath);
     }
 
     // Process Labels (Text helpers for descriptions or identifiers)
@@ -197,8 +271,52 @@ export default class Canvas2D {
     }
 
     // Redraw the layer after adding elements
-    layer.batchDraw(); 
+    // layer.batchDraw(); 
   }
+
+  convertArrowToPath(arrow) {
+    const points = arrow.points(); // Extract the arrow points array
+    const pointerLength = arrow.pointerLength() * 4;
+    const pointerWidth = arrow.pointerWidth() * 4;
+    const strokeWidth = arrow.strokeWidth();
+    const strokeColor = arrow.stroke();
+
+    // Extract start and end points
+    const [x1, y1, x2, y2] = points;
+
+    // Calculate the arrowhead points
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    const arrowHead1 = [
+        x2 - pointerLength * Math.cos(angle) + (pointerWidth / 2) * Math.sin(angle),
+        y2 - pointerLength * Math.sin(angle) - (pointerWidth / 2) * Math.cos(angle)
+    ];
+    const arrowHead2 = [
+        x2 - pointerLength * Math.cos(angle) - (pointerWidth / 2) * Math.sin(angle),
+        y2 - pointerLength * Math.sin(angle) + (pointerWidth / 2) * Math.cos(angle)
+    ];
+
+    // Construct SVG path data equivalent to the arrow shape
+    const pathData = `
+        M ${x1} ${y1}
+        L ${x2} ${y2}
+        M ${arrowHead1[0]} ${arrowHead1[1]}
+        L ${x2} ${y2}
+        L ${arrowHead2[0]} ${arrowHead2[1]}
+    `;
+
+    // Create a Konva.Path with the same style as the original arrow
+    const path = new Konva.Path({
+        data: pathData,
+        stroke: strokeColor,
+        strokeWidth: strokeWidth
+    });
+
+    // Apply the same position and rotation
+    path.position(arrow.position());
+    path.rotation(arrow.rotation());
+
+    return path;
+}
 
   /**
    * Draws an end (either an insert or a cap) to the given layer in the canvas.
@@ -337,39 +455,6 @@ export default class Canvas2D {
     // Example: this.renderPoint(layer, jointCenter);
 
     return jointCenter;  // Return the calculated joint center
-  }
-
-  /**
-   * Renders an SVG component to the Konva group.
-   * @param {Konva.Group} componentGroup - The group to add the component image to.
-   * @param {Object} relativePosition - The relative position of the component inside the duct.
-   * @param {string} componentSvg - The SVG content for the component.
-   * @param {Object} duct - The duct to which the component belongs.
-   */
-  renderComponentSvg(componentGroup, relativePosition, componentSvg, duct) {
-    const width = 381;
-    const height = duct.dimensions.z; // Set height dynamically if needed
-  
-    // Convert SVG to a URL to be used as an image
-    const svgBlob = new Blob([componentSvg], { type: 'image/svg+xml' });
-    const svgUrl = URL.createObjectURL(svgBlob);
-  
-    const img = new Image();
-    img.onload = function () {
-      const konvaImage = new Konva.Image({
-        image: img,
-        x: relativePosition.x, // Now using relative positioning
-        y: relativePosition.z, // Already flipped correctly
-        width: width,
-        height: height,
-        offsetX: width / 2,
-        offsetY: height / 2,
-        scaleY: duct.rotation.y === 180 ? -1 : 1
-      });
-  
-      componentGroup.add(konvaImage); // Add to the component group
-    };
-    img.src = svgUrl;
   }
   
   /**
@@ -912,6 +997,7 @@ export default class Canvas2D {
         width: frameWidth,
         height: frameHeight,
         stroke: 'white',
+        fill: "transparent",
         strokeWidth: 30,
         listening: false, // Disable event listening on the frame
     });
@@ -939,6 +1025,7 @@ export default class Canvas2D {
         width: frameWidth,
         height: textFrameHeight,
         stroke: 'white',
+        fill: "transparent",
         strokeWidth: 30,
         listening: false, // Disable event listening on the text frame
     });
@@ -947,6 +1034,12 @@ export default class Canvas2D {
     layer.add(frame);
     layer.add(textFrame);
     layer.add(text);
+
+    layer.frameWidth = frameWidth;
+    layer.frameHeight = frameHeight;
+
+    frame.moveToBottom();
+
   }
 
   /**
@@ -986,7 +1079,7 @@ export default class Canvas2D {
     });
 
     // Redraw the layer after applying the transformations
-    layer.draw();
+    // layer.draw();
   }
 
   /**
@@ -1023,7 +1116,7 @@ export default class Canvas2D {
         this.fitLayerToFrame(layer, newWidth, newHeight, 0.90);
 
         // Redraw the layer after applying transformations
-        layer.draw();
+        // layer.draw();
     };
 
     // Listen for window resize events to trigger resizing of the stage
@@ -1081,7 +1174,7 @@ export default class Canvas2D {
 
         // Update the stage's position and redraw it
         stage.position(newPos);
-        stage.batchDraw();
+        // stage.batchDraw();
     });
   }
 

@@ -949,7 +949,7 @@ export default class Ducts {
         }
 
         this.ahuObject["3d"].joints.geometry[`Joint-${key}`] = null;
-        this.ahuObject["3d"].joints.meshes[`Joint-${key}`] = null;
+        // this.ahuObject["3d"].joints.meshes[`Joint-${key}`] = null;
         
     }
 

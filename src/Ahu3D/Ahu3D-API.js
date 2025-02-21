@@ -46,6 +46,9 @@ import Mesh3D from "../3D/Mesh3D.js"
 import FlowControl from "./FlowControl.js"
 import { sharedData } from './globals.js';
 import wildcardSvg from '../assets/2D-Wildcard.svg';
+import { Context } from "svgcanvas";
+import jsPDF from "jspdf";
+import "svg2pdf.js";
 
 class Ahu3DAPI {
     /**
@@ -63,6 +66,167 @@ class Ahu3DAPI {
         this.Mesh3D = new Mesh3D(this.sceneHelper);
         // Initialize flow control system
         this.FlowControl = new FlowControl();
+    }
+
+    /**
+     * Converts a Konva Layer to an embedded SVG in a PDF with customizable options.
+     * @param {Konva.Layer} layer - The Konva Layer
+     * @param {Object} imageParams - Image Parameters (e.g., colors, file name)
+     * @param {Object} [pdfOptions] - Additional PDF settings
+     */
+    async exportLayerAsVector(layer, imageParams, pdfOptions = {}) {
+        return new Promise(async (resolve) => {
+            if (!layer) {
+                console.error("No layer provided.");
+                return resolve(null);
+            }            
+
+            const allText = layer.find("Text");
+            const allRects = layer.find("Rect");
+            const allPaths = layer.getChildren(node => node.getClassName() !== 'Text' && node.getClassName() !== 'Rect');
+
+            let oldTextFill = allText[0].fill();
+            let oldRectStroke = allRects[0].stroke();
+            let oldRectFill = allRects[0].fill();
+            let oldPathStroke = allPaths[0].stroke();
+
+            for (const text of allText) {
+                text.fill(imageParams.textColor);
+            }
+            for (const rect of allRects) {
+                rect.stroke(imageParams.strokeColor);
+                rect.fill(imageParams.backgroundColor);
+            }
+            for (const path of allPaths) {
+                path.stroke(imageParams.strokeColor);
+            }
+
+            // Get the existing 2D rendering context
+            const oldContext = layer.canvas.context._context;
+
+            // Create an SVG rendering context
+            const exportShrinkFactor = 0.25; // Shrink SVG size further
+            const c2s = layer.canvas.context._context = new Context({
+                height: layer.height() * exportShrinkFactor,
+                width: layer.width() * exportShrinkFactor,
+                ctx: oldContext
+            });
+
+            pdfOptions.x = 
+
+            // Draw the layer
+            layer.draw();
+
+            // Get the SVG data
+            let svgData = c2s.getSerializedSvg();
+
+            console.log("exportLayerAsVector fileType:", imageParams.fileType);
+
+            if (imageParams.fileType === "svg") {
+                svgData = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+                const svgDataUrl = URL.createObjectURL(svgData);
+
+                // Export the SVG file
+                const a = document.createElement("a");
+                a.href = svgDataUrl;
+                a.download = `${imageParams.fileName}.${imageParams.fileType}`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(svgDataUrl); // Cleanup
+            } 
+            else if (imageParams.fileType === "pdf") {
+                layer.width(100);
+                layer.height(200);
+                // Get the original SVG dimensions
+                const svgWidth = layer.width();
+                const svgHeight = layer.height();
+
+                // Set default PDF dimensions (A4 size in points: 595x842)
+                const pdfWidth = 794;
+                const pdfHeight = 1123;
+
+                // Calculate scaling factor
+                const scaleX = pdfWidth / svgWidth;
+                const scaleY = pdfHeight / svgHeight;
+                const scale = pdfOptions.scale || Math.min(scaleX, scaleY); // Default: Fit inside PDF
+
+                // Create jsPDF instance
+                const pdf = new jsPDF({
+                    orientation: "portrait",
+                    unit: "px",
+                    format: [svgWidth, svgHeight]
+                });
+
+                // Convert SVG string to a DOM element
+                const parser = new DOMParser();
+                const svgElement = parser.parseFromString(svgData, "image/svg+xml").documentElement;
+
+                // Embed SVG into PDF with options
+                await pdf.svg(svgElement, {
+                    x: pdfOptions.x || 0,  // Custom X position (default: 0)
+                    y: pdfOptions.y || 0,  // Custom Y position (default: 0)
+                    width: svgWidth,  // Scale width
+                    height: svgHeight, // Scale height
+                });
+
+                // Save or download the PDF
+                pdf.save(`${imageParams.fileName}.pdf`);
+            }
+
+            for (const text of allText) {
+                text.fill(oldTextFill);
+            }
+            for (const rect of allRects) {
+                rect.stroke(oldRectStroke);
+                rect.fill(oldRectFill);
+            }
+            for (const path of allPaths) {
+                path.stroke(oldPathStroke);
+            }
+
+            // Restore original context
+            layer.canvas.context._context = oldContext;
+            layer.draw();
+
+            resolve(svgData);
+        });
+    }
+
+    exportLayerAsRaster(layer, imageParams) {
+        console.log("exportLayerAsSVGRaster started:", layer);
+
+        const allText = layer.find("Text");
+        const allRects = layer.find("Rect");
+        const allPaths = layer.getChildren(node => node.getClassName() !== 'Text' && node.getClassName() !== 'Rect');
+
+        let oldTextFill = allText[0].fill();
+        let oldRectStroke = allRects[0].stroke();
+        let oldRectFill = allRects[0].fill();
+        let oldPathStroke = allPaths[0].stroke();
+
+        for (const text of allText) {
+            text.fill(imageParams.textColor);
+        }
+        for (const rect of allRects) {
+            rect.stroke(imageParams.strokeColor);
+            rect.fill(imageParams.backgroundColor);
+        }
+        for (const path of allPaths) {
+            path.stroke(imageParams.strokeColor);
+        }
+
+        const pngDataUrl = layer.toDataURL({x:0, y:0});
+
+        console.log("exportLayerAsSVGRaster pngDataUrl:", pngDataUrl);
+
+        const a = document.createElement('a');
+        a.href = pngDataUrl;
+        a.download = imageParams.fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(pngDataUrl);  // Cleanup
     }
 
     /**
@@ -130,7 +294,7 @@ class Ahu3DAPI {
         this.preprocess = new Preprocess(this.library);
     
         return this.library;
-    }    
+    } 
 
     /**
      * Processes and renders AHU data in specified output mode.

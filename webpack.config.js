@@ -16,6 +16,7 @@ module.exports = (env, argv) => {
             library: 'Ahu3D',  // Explicitly name the library
             libraryTarget: 'umd',
             globalObject: 'this',  // Ensure compatibility in both browser and Node.js environments
+            publicPath: 'auto',
         },
         module: {
             rules: [

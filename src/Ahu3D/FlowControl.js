@@ -58,35 +58,45 @@ export default class FlowControl {
         this.cleanedXeto = cleanedXeto;
         this.setAhuObject();
 
+        outputMode = outputMode.toLowerCase();
+
         // Handle different output modes for rendering and processing
         if (outputMode == "numeric") {
             // Return only numerical data without any rendering
-            return this.ahuObject;
+            this.populate3D();
         } 
-        else if (outputMode == "only2D") {
+        else if (outputMode == "only2d") {
+            this.populate3D();
+
             // Process 2D data without rendering
-            this.populate2D();
+            await this.populate2D();
         } 
-        else if (outputMode == "full2D") {
+        else if (outputMode == "full2d") {
+            this.populate3D();
+            
             // Process and render 2D visualization
-            this.populate2D();
+            await this.populate2D();
             this.render2D();
         } 
-        else if (outputMode == "only3D") {
+        else if (outputMode == "only3d") {
             // Process 3D data without rendering
             this.populate3D();
+            await this.render3D();
+            console.log("this.ahuObject:", JSON.stringify(this.ahuObject["3d"].components.meshes, null, 2));
+            return this.ahuObject["3d"].components.meshes;
         } 
-        else if (outputMode == "full3D") {
+        else if (outputMode == "full3d") {
             // Process and render 3D visualization
             this.populate3D();
-            this.render3D();
+            await this.render3D();
         } 
         else if (outputMode == "all") {
             // Process and render both 2D and 3D visualizations
-            this.populate2D();
             this.populate3D();
-            this.render2D();
             await this.render3D();
+
+            await this.populate2D();
+            await this.render2D();
         } 
 
         return this.ahuObject;
@@ -142,11 +152,21 @@ export default class FlowControl {
                 },
                 joints: {
                     geometry: {},
-                    meshes: {}
+                    arcs: []
                 },
                 ends: {
                     meshes: {}
                 },
+            },
+            "2d": {
+                "layers": {
+                    "secondary": null,
+                    "primary": null,
+                },
+                "stages": {
+                    "secondary": null,
+                    "primary": null,
+                }
             }
         }
 
@@ -346,17 +366,19 @@ export default class FlowControl {
     /**
      * Prepares 2D visualization data.
      */
-    populate2D() {
-        // To be implemented
+    async populate2D() {
+        // Create the layers for secondary and primary Konva containers
+        this.ahuObject["2d"].layers.secondary = await this.Canvas2D.createLayer(this.ahuObject);
+        this.ahuObject["2d"].layers.primary = await this.Canvas2D.createLayer(this.ahuObject);
     }
 
     /**
      * Renders 2D visualization to specified viewports.
      */
-    render2D() {
+    async render2D() {
         // Render to secondary and primary Konva containers
-        this.Canvas2D.drawToViewport(this.ahuObject, "secondaryKonvaContainer");
-        this.Canvas2D.drawToViewport(this.ahuObject, "primaryKonvaContainer");        
+        this.Canvas2D.drawToViewport(this.ahuObject["2d"].layers.secondary, "secondaryKonvaContainer");
+        this.Canvas2D.drawToViewport(this.ahuObject["2d"].layers.primary, "primaryKonvaContainer");        
     }
 
     /**
@@ -366,6 +388,8 @@ export default class FlowControl {
     populate3D() {
         // Initialize joint geometry variable
         let jointGeometry = null;
+
+        sharedData.ahuObject = this.ahuObject;
 
         // Process each joint in the system
         for(const jointKey of Object.keys(this.ahuObject.resources.joints)) {
@@ -388,27 +412,26 @@ export default class FlowControl {
                     jointGeometry = this.Geometry_3D_Joints_Colinear.createParallelJoint(joint, pairDirection);
                 }
                 else {
-                    calculateJointCenter(jointKey, this.ahuObject);
+                    calculateJointCenter(jointKey);
                     jointGeometry = this.Geometry_3D_Joints_L.createLJoint(joint);
                 }
             }
 
             // Handle three-duct T-joints
             if(jointKeys.length == 3) {
-                calculateJointCenter(jointKey, this.ahuObject);
+                calculateJointCenter(jointKey);
                 jointGeometry = this.Geometry_3D_Joints_T.createTJoint(joint);
             }
 
             // Handle four-duct cross joints
             if(jointKeys.length == 4) {
-                calculateJointCenter(jointKey, this.ahuObject);
+                calculateJointCenter(jointKey);
                 jointGeometry = this.Geometry_3D_Joints_Cross.createCrossJoint(joint);
             }         
 
             // Store generated geometry if valid
             if(jointKeys.length >= 2) {
-                this.ahuObject["3d"].joints.geometry[jointKey] = jointGeometry;
-                this.ahuObject["3d"].joints.meshes[jointKey] = null;               
+                this.ahuObject["3d"].joints.geometry[jointKey] = jointGeometry;             
             }
         }
 

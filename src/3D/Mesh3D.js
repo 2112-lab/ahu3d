@@ -78,11 +78,9 @@ export default class Mesh3D {
         }
         this.rotateComponentsWithDuct(ductInstance, componentMeshes, duct.rotation.y);
 
-        console.log("render3D addCubesFromData starting:", ahuObject);
         this.renderProxies(ahuObject.resources.joints);
         this.renderJointVertexHelpers(ahuObject.resources.joints);
 
-        console.log("render3D renderJoints starting:", ahuObject["3d"]);
         this.renderJoints(ahuObject["3d"]);
     }
 
@@ -350,6 +348,10 @@ export default class Mesh3D {
 
           sharedData.sceneHelper.addToScene(mergedMesh);
           items3d.joints.mergedMesh = mergedMesh;
+      }
+
+      for (const arc of items3d.joints.arcs) {
+        sharedData.sceneHelper.addToScene(arc);
       }
 
       delete items3d.joints.geometry; // Clean up the original geometry data

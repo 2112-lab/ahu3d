@@ -1,6 +1,6 @@
 {
   "name": "@musashi/ahu3d",
-  "version": "1.0.158",
+  "version": "1.0.163",
   "description": "",
   "main": "dist/bundle.js",
   "files": [
@@ -17,7 +17,10 @@
   "license": "ISC",
   "dependencies": {
     "axios": "^1.7.5",
+    "jspdf": "^2.5.2",
     "konva": "^9.3.18",
+    "svg2pdf.js": "^2.3.0",
+    "svgcanvas": "^2.5.0",
     "three": "^0.170.0",
     "webpack": "^5.94.0",
     "webpack-cli": "^5.1.4"

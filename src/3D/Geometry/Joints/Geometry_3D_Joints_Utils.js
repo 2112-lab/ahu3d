@@ -11,9 +11,8 @@ import { sharedData } from "../../../Ahu3D/globals.js";
  * @param {string} jointKey - The key identifying the joint.
  * @param {Object} ahuObject - The AHU object containing the joint and duct information.
  */
-export function calculateJointCenter(jointKey, ahuObject) {
-    console.log("calculateJointCenter utils jointKey:", jointKey);
-    console.log("calculateJointCenter utils ahuObject:", ahuObject);
+export function calculateJointCenter(jointKey) {
+    console.log("calculateJointCenter started");
 
     let jointCenter = {
         x: 0,
@@ -21,10 +20,10 @@ export function calculateJointCenter(jointKey, ahuObject) {
     };
 
     // Iterate through all ducts associated with the joint
-    for (const ductKey of ahuObject.associations.joints[jointKey].ducts) {
-        const duct = ahuObject.resources.ducts[ductKey];
+    for (const ductKey of sharedData.ahuObject.associations.joints[jointKey].ducts) {
+        const duct = sharedData.ahuObject.resources.ducts[ductKey];
         // Check if the duct is vertical
-        if (ahuObject.xetoDictionary.edges[ductKey].isVertical) {
+        if (sharedData.ahuObject.xetoDictionary.edges[ductKey].isVertical) {
             jointCenter.x = duct.position.x;
         } else {
             jointCenter.z = duct.position.z;
@@ -111,10 +110,10 @@ export function connectProxiesDiagonallyDownhill(leftProxy, rightProxy, flipArc 
     }
 
     // Create geometries connecting the left and right proxies diagonally
-    geometries.push(createGeometryFromPoints(leftProxy[1], rightProxy[1], rightProxy[3], leftProxy[3], leftProxy, rightProxy));
-    geometries.push(createGeometryFromPoints(leftProxy[5], rightProxy[5], rightProxy[7], leftProxy[7], leftProxy, rightProxy));
-    geometries.push(createGeometryFromPoints(leftProxy[1], leftProxy[5], rightProxy[5], rightProxy[1], leftProxy, rightProxy));
-    geometries.push(createGeometryFromPoints(leftProxy[3], leftProxy[7], rightProxy[7], rightProxy[3], leftProxy, rightProxy));
+    geometries.push(createGeometryFromPoints(leftProxy[1], rightProxy[1], rightProxy[3], leftProxy[3]));
+    geometries.push(createGeometryFromPoints(leftProxy[5], rightProxy[5], rightProxy[7], leftProxy[7]));
+    geometries.push(createGeometryFromPoints(leftProxy[1], leftProxy[5], rightProxy[5], rightProxy[1]));
+    geometries.push(createGeometryFromPoints(leftProxy[3], leftProxy[7], rightProxy[7], rightProxy[3]));
 
     return geometries;
 }
@@ -197,6 +196,8 @@ export function calculateArc(leftProxy, rightProxy, flipArc = false, overrideRot
         sharedData.backwallArcConfigs[sharedData.backwallArcConfigs.length - 1].ring2.userData.position = arc.position.clone();
         sharedData.backwallArcConfigs[sharedData.backwallArcConfigs.length - 1].ring2.userData.width = width;
         sharedData.backwallArcConfigs[sharedData.backwallArcConfigs.length - 1].ring2.userData.rotation = arc.rotation;
+
+        sharedData.ahuObject["3d"].joints.arcs.push(arc);
     }
 }
 
@@ -299,7 +300,7 @@ export function createArc(width, length, isCorner = false) {
     arcMesh.rotation.z = Math.PI / -2;
     arcMesh.position.x -= 1000;
 
-    sharedData.sceneHelper.addToScene(arcMesh);
+    // sharedData.sceneHelper.addToScene(arcMesh);
 
     return arcMesh;
 }
