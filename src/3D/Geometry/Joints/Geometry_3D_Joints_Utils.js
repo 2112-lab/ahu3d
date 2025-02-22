@@ -222,9 +222,7 @@ export function createArc(width, length, isCorner = false) {
 
     const material = new THREE.MeshStandardMaterial({
         color: sharedData.primaryColor,
-        side: THREE.DoubleSide,
-        transparent: true,
-        opacity: 1
+        side: THREE.DoubleSide
     });
 
     const ring1 = new THREE.RingGeometry(innerRadius, outerRadius, thetaSegments, 1, thetaStart, thetaLength);

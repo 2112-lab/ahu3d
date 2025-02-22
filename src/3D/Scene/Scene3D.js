@@ -597,7 +597,8 @@ class Scene3D {
         const sceneChildren = this.scene.children.filter(
           (child) => 
             child.name == 'hvac' && child.isObject3D && child.visible ||
-            child.name == 'duct' && child.isObject3D
+            child.name == 'duct' && child.isObject3D ||
+            child.name == 'glb'
         );
       
         sceneChildren.forEach((child) => {

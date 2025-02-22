@@ -88,8 +88,6 @@ export default class Mesh3D {
     this.renderEnds(ahuObject);
 
     this.renderHelpers(ahuObject);
-
-    return renderedAssembly;
   }
 
   /**
@@ -100,41 +98,81 @@ export default class Mesh3D {
    * 
    * @param {Object} ahuObject - The AHU object containing auxiliary 3D data for arrows and labels.
    */
-  renderHelpers(ahuObject) {
+  async renderHelpers(ahuObject) {
     console.log("renderHelpers started:", ahuObject);
-    for(const arrowId in ahuObject.auxiliary["3d"].arrows) {
-      const arrowResource = ahuObject.auxiliary["3d"].arrows[arrowId];
 
-      const ductKey = ahuObject.associations.arrows[arrowId];
-      const duct = ahuObject.resources.ducts[ductKey];
-
-      const blockStyle = ahuObject.xetoDictionary.edges[ductKey].blockStyle;
-
-      console.log("renderHelpers arrowResource:", arrowResource, arrowId);
-
-      let arrowMesh = sharedData.sceneHelper.instanceSet.arrow.clone();
-      arrowMesh.position.copy(arrowResource.position);
-      arrowMesh.rotation.y = THREE.MathUtils.degToRad(arrowResource.rotation.y);
-      arrowMesh.visible = true;
-      arrowMesh.children[0].material = arrowMesh.children[0].material.clone();
-      arrowMesh.children[0].material.color = new THREE.Color(blockStyle.helpers.arrow.material.color);
-      arrowMesh.children[1].material = arrowMesh.children[1].material.clone();
-      arrowMesh.children[1].material.color = new THREE.Color(blockStyle.helpers.arrow.material.color);
-      console.log("arrowMesh:", arrowMesh);
-      arrowMesh.name = "arrow";
-      sharedData.sceneHelper.addToScene(arrowMesh);
+    // Ensure the "3d" object structure includes "helpers"
+    if (!ahuObject["3d"]) {
+        ahuObject["3d"] = {};
+    }
+    if (!ahuObject["3d"].helpers) {
+        ahuObject["3d"].helpers = { meshes: {} };
     }
 
-    // Render label helpers for the assembly
-    for(const labelId in ahuObject.auxiliary["3d"].labels) {
-      const labelResource = ahuObject.auxiliary["3d"].labels[labelId];
+    // Render arrow helpers
+    for (const arrowId in ahuObject.auxiliary["3d"].arrows) {
+        const arrowResource = ahuObject.auxiliary["3d"].arrows[arrowId];
 
-      const ductKey = ahuObject.associations.labels[labelId];
-      const duct = ahuObject.resources.ducts[ductKey];
+        const ductKey = ahuObject.associations.arrows[arrowId];
+        const duct = ahuObject.resources.ducts[ductKey];
 
-      const blockStyle = ahuObject.xetoDictionary.edges[ductKey].blockStyle;
+        const blockStyle = ahuObject.xetoDictionary.edges[ductKey]?.blockStyle;
+        if (!blockStyle) {
+            console.warn(`Missing blockStyle for ductKey: ${ductKey}`);
+            continue;
+        }
 
-      createTextMesh(blockStyle, labelResource.position);
+        console.log("renderHelpers arrowResource:", arrowResource, arrowId);
+
+        let arrowMesh = sharedData.sceneHelper.instanceSet?.arrow?.clone();
+        if (!arrowMesh) {
+            console.error(`Failed to clone arrow instance for arrowId: ${arrowId}`);
+            continue;
+        }
+
+        arrowMesh.position.copy(arrowResource.position);
+        arrowMesh.rotation.y = THREE.MathUtils.degToRad(arrowResource.rotation.y);
+        arrowMesh.visible = true;
+
+        if (arrowMesh.children.length > 1) {
+            arrowMesh.children[0].material = arrowMesh.children[0].material.clone();
+            arrowMesh.children[0].material.color = new THREE.Color(blockStyle.helpers.arrow.material.color);
+            arrowMesh.children[1].material = arrowMesh.children[1].material.clone();
+            arrowMesh.children[1].material.color = new THREE.Color(blockStyle.helpers.arrow.material.color);
+        } else {
+            console.warn(`Arrow mesh has unexpected children structure for arrowId: ${arrowId}`);
+        }
+
+        console.log("arrowMesh:", arrowMesh);
+        arrowMesh.name = "arrow";
+
+        // Store arrow mesh in ahuObject["3d"].helpers.meshes
+        ahuObject["3d"].helpers.meshes[arrowId] = arrowMesh;
+
+        sharedData.sceneHelper.addToScene(arrowMesh);
+    }
+
+    // Render label helpers
+    for (const labelId in ahuObject.auxiliary["3d"].labels) {
+        const labelResource = ahuObject.auxiliary["3d"].labels[labelId];
+
+        const ductKey = ahuObject.associations.labels[labelId];
+        const duct = ahuObject.resources.ducts[ductKey];
+
+        const blockStyle = ahuObject.xetoDictionary.edges[ductKey]?.blockStyle;
+        if (!blockStyle) {
+            console.warn(`Missing blockStyle for ductKey: ${ductKey}`);
+            continue;
+        }
+
+        console.log(`📝 Creating text mesh for labelId: ${labelId} at`, labelResource.position);
+
+        try {
+            await createTextMesh(blockStyle, labelResource.position, ahuObject, labelId); // ✅ Await the async function
+            console.log(`✅ Label mesh for ${labelId} stored in ahuObject["3d"].helpers.meshes`);
+        } catch (error) {
+            console.error(`❌ Error creating text mesh for labelId: ${labelId}`, error);
+        }
     }
   }
 
@@ -147,23 +185,27 @@ export default class Mesh3D {
    * @param {Object} ahuObject - The AHU object containing the end resources for ducts.
    */
   renderEnds(ahuObject) {
-    for(const endId in ahuObject.resources.ends) {
-      const endResource = ahuObject.resources.ends[endId];
+    if (!ahuObject["3d"].ends) {
+        ahuObject["3d"].ends = { meshes: {} };
+    }
 
-      console.log("renderEnds endResource:", endResource, endId);
+    for (const endId in ahuObject.resources.ends) {
+        const endResource = ahuObject.resources.ends[endId];
 
-      let ductEndMesh = null;
-      if(endId.includes('Insert')) {
-        ductEndMesh = this.createParametricInsert(endResource.dimensions.y);
-      }
-      else if(endId.includes('Cap')) {
-        ductEndMesh = this.createParametricCap(endResource.dimensions.y);
-      }
+        console.log("renderEnds endResource:", endResource, endId);
 
-      if(ductEndMesh != null) {
-        ductEndMesh.position.copy(endResource.position);
-        ductEndMesh.rotation.y = THREE.MathUtils.degToRad( endResource.rotation.y);
-      }
+        let ductEndMesh = null;
+        if (endId.includes('Insert')) {
+            ductEndMesh = this.createParametricInsert(endResource.dimensions.y);
+        } else if (endId.includes('Cap')) {
+            ductEndMesh = this.createParametricCap(endResource.dimensions.y);
+        }
+
+        if (ductEndMesh != null) {
+            ductEndMesh.position.copy(endResource.position);
+            ductEndMesh.rotation.y = THREE.MathUtils.degToRad(endResource.rotation.y);
+            ahuObject["3d"].ends.meshes[endId] = ductEndMesh; // Store it in the 3d object
+        }
     }
   }
 
