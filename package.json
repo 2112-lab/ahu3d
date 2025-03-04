@@ -1,6 +1,6 @@
 {
   "name": "@musashi/ahu3d",
-  "version": "1.0.166",
+  "version": "1.0.167",
   "description": "",
   "main": "dist/bundle.js",
   "files": [
@@ -16,7 +16,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@babel/core": "^7.26.9",
+    "@babel/preset-env": "^7.26.9",
     "axios": "^1.7.5",
+    "babel-loader": "^10.0.0",
+    "json-loader": "^0.5.7",
     "jspdf": "^2.5.2",
     "konva": "^9.3.18",
     "svg2pdf.js": "^2.3.0",

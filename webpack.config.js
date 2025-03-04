@@ -21,6 +21,21 @@ module.exports = (env, argv) => {
         module: {
             rules: [
                 {
+                    test: /\.js$/, // Apply Babel to JavaScript files
+                    exclude: /node_modules/,
+                    use: {
+                        loader: 'babel-loader',
+                        options: {
+                            presets: ['@babel/preset-env']
+                        }
+                    }
+                },
+                {
+                    test: /\.json$/, // Allow importing JSON files
+                    type: 'javascript/auto',
+                    loader: 'json-loader'
+                },
+                {
                     test: /\.html$/,
                     use: {
                         loader: 'html-loader',
