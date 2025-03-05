@@ -102,7 +102,7 @@ export default class Ducts {
         // Initialize duct position and rotation vectors
         ahuObject.resources.ducts[ductKey].position = {x: 0, y: 0, z: 0};
         ahuObject.resources.ducts[ductKey].rotation = {x: 0, y: 0, z: 0};
-
+    
         // Apply rotation based on duct orientation
         if (ahuObject.xetoDictionary.edges[ductKey].orientation == 'north') {
             ahuObject.resources.ducts[ductKey].rotation.y = -90;
@@ -113,26 +113,30 @@ export default class Ducts {
         else if (ahuObject.xetoDictionary.edges[ductKey].orientation == 'west') {
             ahuObject.resources.ducts[ductKey].rotation.y = 180;
         }
-
+    
         // Get inner dimension based on duct size configuration
         const innerDimension = sharedData.innerDuctDimensions[ahuObject.xetoDictionary.edges[ductKey].graphicLocation.size];
         const componentScale = innerDimension / 1000;
-
-        // Get padding configuration for components
-        const componentPadding = ahuObject.xetoDictionary.edges[ductKey].blockStyle.componentPadding;
+    
+        // Get flow direction from the duct
         const flowDirection = ahuObject.xetoDictionary.edges[ductKey].blockStyle.flowDirection;
-
+    
         // Validate component array
         this.testArray = ahuObject.associations.ducts[ductKey].components;
         if (!Array.isArray(this.testArray)) {
             alert(`This data is not an array: ${this.testArray}`)
         }
-
+    
         // Calculate total span needed for components
         let totalSpan = 0;
         for(const uniqueId of ahuObject.associations.ducts[ductKey].components) {
             // Get component type from dictionary
             let componentKey = ahuObject.xetoDictionary.components[uniqueId].componentId.split("r:novo.graphics::").pop();
+            
+            // Get the component-specific padding instead of the duct's padding
+            // Default to the duct's padding if component padding is not defined
+            const componentPadding = ahuObject.xetoDictionary.components[uniqueId].blockStyle?.componentPadding || 
+                                    ahuObject.xetoDictionary.edges[ductKey].blockStyle.componentPadding;
             
             // Initialize component dimensions with scaling
             ahuObject.resources.components[uniqueId].dimensions = JSON.parse(JSON.stringify(sharedData.componentLibrary[componentKey].object.boundingBox.dimensions));
@@ -141,20 +145,23 @@ export default class Ducts {
                 y: componentScale,
                 z: componentScale
             };
-
+    
             // Apply scaling to dimensions
             ahuObject.resources.components[uniqueId].dimensions.x *= componentScale;
             ahuObject.resources.components[uniqueId].dimensions.y *= componentScale;
             ahuObject.resources.components[uniqueId].dimensions.z *= componentScale;
-
+    
             // Initialize component position and rotation
             ahuObject.resources.components[uniqueId].position = {x: 0, y: 0, z: 0};
             ahuObject.resources.components[uniqueId].rotation = {x: 0, y: 0, z: 0};
-
+    
+            // Store component padding for later use in positioning
+            ahuObject.resources.components[uniqueId].padding = componentPadding;
+    
             // Add component span including padding
             totalSpan += componentPadding.startSpace + ahuObject.resources.components[uniqueId].dimensions.x + componentPadding.endSpace;
         }
-
+    
         // Calculate offset from center for component positioning
         const halfTotalSpan = totalSpan / 2;
         for(const uniqueId of ahuObject.associations.ducts[ductKey].components) {
@@ -162,39 +169,42 @@ export default class Ducts {
             const componentHalfWidth = ahuObject.resources.components[uniqueId].dimensions.x / 2;
             ahuObject.resources.components[uniqueId].position.x -= (halfTotalSpan - componentHalfWidth);
         }
-
+    
         // Get array of component keys
         let componentKeys = ahuObject.associations.ducts[ductKey].components;
-        let componentKeysLength = Object.keys(componentKeys).length;
-
-        // Position first component with initial padding
-        ahuObject.resources.components[componentKeys[0]].position.x += componentPadding.startSpace;
-
+    
+        // Position first component with its initial padding
+        const firstComponentPadding = ahuObject.resources.components[componentKeys[0]].padding;
+        ahuObject.resources.components[componentKeys[0]].position.x += firstComponentPadding.startSpace;
+    
         // Position remaining components sequentially
         for(let i = 1; i <= componentKeys.length-1; i++) {
             const previousComponent = ahuObject.resources.components[componentKeys[i-1]];
             const currentComponent = ahuObject.resources.components[componentKeys[i]];
-
+            
             const previousComponentHalfWidth = previousComponent.dimensions.x / 2;
             const currentComponentHalfWidth = currentComponent.dimensions.x / 2;
-
+            
+            // Use the previous component's end padding and current component's start padding
+            const previousComponentEndPadding = previousComponent.padding.endSpace;
+            const currentComponentStartPadding = currentComponent.padding.startSpace;
+    
             // Position current component relative to previous one
             currentComponent.position.x = previousComponent.position.x;
             currentComponent.position.x += previousComponentHalfWidth;
             currentComponent.position.x += currentComponentHalfWidth;
-            currentComponent.position.x += componentPadding.startSpace;
-            currentComponent.position.x += componentPadding.endSpace;
+            currentComponent.position.x += previousComponentEndPadding;
+            currentComponent.position.x += currentComponentStartPadding;
         }
-
+    
         // Apply flow direction adjustments
-        const duct = ahuObject.resources.ducts[ductKey];
         for(const uniqueId of ahuObject.associations.ducts[ductKey].components) {
             const currentComponent = ahuObject.resources.components[uniqueId];
             if(flowDirection == "endToStart") {
                 currentComponent.scale.x *= -1;
             }
         }
-
+    
         // Set final duct dimensions
         ahuObject.resources.ducts[ductKey].dimensions = {
             x: totalSpan, 

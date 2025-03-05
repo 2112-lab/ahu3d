@@ -168,10 +168,10 @@ export default class Mesh3D {
         console.log(`📝 Creating text mesh for labelId: ${labelId} at`, labelResource.position);
 
         try {
-            await createTextMesh(blockStyle, labelResource.position, ahuObject, labelId); // ✅ Await the async function
-            console.log(`✅ Label mesh for ${labelId} stored in ahuObject["3d"].helpers.meshes`);
+            await createTextMesh(blockStyle, labelResource.position, ahuObject, labelId); // Await the async function
+            console.log(`Label mesh for ${labelId} stored in ahuObject["3d"].helpers.meshes`);
         } catch (error) {
-            console.error(`❌ Error creating text mesh for labelId: ${labelId}`, error);
+            console.error(`Error creating text mesh for labelId: ${labelId}`, error);
         }
     }
   }

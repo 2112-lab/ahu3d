@@ -68,6 +68,187 @@ class Ahu3DAPI {
         this.FlowControl = new FlowControl();
     }
 
+    insertComponent(xeto, selectedLibraryItem, selectedEdge, insertIndex = null) {
+        let group = xeto.filter(child => child.spec.includes('Group'));
+        let edgesList = xeto.filter(child => child.spec.includes('Edge'));
+        let componentsList = xeto.filter(child => child.spec.includes('Component'));
+    
+        // Generate a unique component ID
+        let i = 0;
+        let componentId = `${selectedLibraryItem}-${i}`;
+    
+        while(xeto.filter(child => child.id.includes(componentId)).length != 0) {
+            i++;
+            componentId = `${selectedLibraryItem}-${i}`;
+        }
+    
+        // Create the component block
+        let componentBlock = {
+            "id": `r:novo.graphics::${componentId}`,
+            "spec": "r:novo.graphics::Component",
+            "componentId": `r:novo.graphics::${selectedLibraryItem}`,
+            "blockStyle": {
+                "componentPadding": {
+                    "startSpace": 250,
+                    "endSpace": 250
+                }
+            }
+        };
+    
+        // Find the edge to insert into
+        let edge = edgesList.filter(child => child.id.includes(selectedEdge))[0];
+        
+        // Handle insertion at a specific index
+        if (insertIndex !== null) {            
+
+            // Make a copy of the components array
+            const components = [...edge.components];
+            
+            // const arrayLength = components.length;
+            // insertIndex = Math.max(0, arrayLength - insertIndex);
+            
+            // Ensure the index is within bounds
+            if (insertIndex < 0) {
+                // If negative, insert at the beginning
+                insertIndex = 0;
+            } else if (insertIndex > components.length) {
+                // If too large, insert at the end
+                insertIndex = components.length;
+            }
+            
+            // Insert the component at the specified index
+            components.splice(insertIndex, 0, `r:novo.graphics::${componentId}`);
+            edge.components = components;
+        } else {
+            // Default behavior: append to the end
+            edge.components.push(`r:novo.graphics::${componentId}`);
+        }
+    
+        // Construct the new xeto object
+        let newXeto = [
+            ...group,
+            ...edgesList,
+            ...componentsList,
+            componentBlock
+        ];
+    
+        console.log("insertComponent componentBlock:", componentBlock);
+        console.log("insertComponent edge after:", newXeto);
+    
+        return newXeto;
+    }
+
+    deleteComponent(xeto, selectedComponent) {
+        let group = xeto.filter(child => child.spec.includes('Group'));
+        let edgesList = xeto.filter(child => child.spec.includes('Edge'));
+        let componentsList = xeto.filter(child => child.spec.includes('Component'));
+
+        console.log("deleteComponent edgesList:", edgesList);   
+        
+        for(const i in edgesList) {
+            if(edgesList[i].components.length === 0) {
+                alert("Xeto with an edge having 0 components is disallowed.");
+                return xeto;
+            }
+        }
+
+        for(const i in edgesList) {
+            let newEdgeComponents = [];
+            for(const j in edgesList[i].components) {
+                if(!edgesList[i].components[j].includes(selectedComponent)) {
+                    newEdgeComponents.push(edgesList[i].components[j]);
+                }
+            }
+
+            edgesList[i].components = newEdgeComponents;
+        }
+        
+        let newComponentsList = [];
+        for(const i in componentsList) {
+          if(!componentsList[i].id.includes(selectedComponent)) {
+            newComponentsList.push(componentsList[i]);
+          }
+        }        
+        
+        console.log("deleteComponent componentsList:", newComponentsList);
+        console.log("deleteComponent edgesList:", edgesList);
+
+        let newXeto = [
+          ...group,
+          ...edgesList,
+          ...newComponentsList
+        ];
+
+        console.log("deleteComponent newXeto:", newXeto);
+
+        return newXeto;
+    }
+
+    shiftComponent(xetoData, componentId, shiftOffset, shiftWrap) {
+        // Get shift parameters (could be added to your UI)
+        const offset = shiftOffset * -1 || -1; // Default to 1 if not set
+        const wrap = shiftWrap !== false; // Default to true if not set
+
+        function getEdgeContainingComponent(xetoData, componentId) {
+            for (const item of xetoData) {
+              if (item.spec && item.spec.includes('Edge') && item.components) {
+                if (item.components.some(comp => comp.includes(componentId))) {
+                  return item;
+                }
+              }
+            }
+            return null;
+        }
+        
+        // Find which edge contains this component
+        const edge = getEdgeContainingComponent(xetoData, componentId);
+        
+        if (!edge) {
+          console.error(`shiftComponent No edge contains component ${componentId}`);
+          return;
+        }
+        
+        // Find the index of the component in the edge
+        const index = edge.components.findIndex(comp => comp.includes(componentId));
+        
+        if (index === -1) {
+          console.error(`shiftComponent Component ${componentId} not found in edge`);
+          return;
+        }
+        
+        // Create a copy of the components array
+        const components = [...edge.components];
+        
+        // Get the component to shift
+        const component = components[index];
+        
+        // Remove the component from its original position
+        components.splice(index, 1);
+        
+        // Calculate the new position
+        let newIndex;
+        
+        if (wrap) {
+          // With wrapping - modulo arithmetic handles wrapping automatically
+          newIndex = (index + offset) % (components.length + 1);
+          // Handle negative wrapping
+          if (newIndex < 0) {
+            newIndex += (components.length + 1);
+          }
+        } else {
+          // Without wrapping - clamp to array boundaries
+          newIndex = Math.min(Math.max(index + offset, 0), components.length);
+        }
+        
+        // Insert the component at the new position
+        components.splice(newIndex, 0, component);
+        
+        // Update the edge's components
+        edge.components = components;
+
+        console.log(`shiftComponent Shifted component ${componentId} from position ${index} to ${newIndex}`);
+    }
+
     /**
      * Converts a Konva Layer to an embedded SVG in a PDF with customizable options.
      * @param {Konva.Layer} layer - The Konva Layer

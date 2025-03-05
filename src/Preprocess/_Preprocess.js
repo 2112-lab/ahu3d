@@ -32,6 +32,13 @@ class Preprocess {
         //     alert("Xeto contains a closed loop.");
         // }
 
+        for(const i in xetoDictionary.ductsList) {
+            if(xetoDictionary.ductsList[i].components.length === 0) {
+                alert("Xeto with an edge having 0 components is disallowed.");
+                return false;
+            }
+        }
+
         if(!isValid || !isValid2) {
             return false;
         }
