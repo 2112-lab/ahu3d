@@ -1,0 +1,54 @@
+name: Build and Publish
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+   
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+   
+    - name: Install dependencies
+      run: npm ci
+   
+    - name: Build
+      run: npm run build
+   
+    # Publish to npm
+    - name: Setup Node.js for npm
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        registry-url: 'https://registry.npmjs.org'
+   
+    - name: Publish to npm
+      run: npm publish --access public
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+   
+    # Publish to GitHub Packages
+    - name: Setup Node.js for GitHub Packages
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        registry-url: 'https://npm.pkg.github.com'
+        scope: '@${{ github.repository_owner }}'
+   
+    - name: Update package.json for GitHub Packages
+      run: |
+        # Extract the repository name
+        REPO_NAME=$(echo $GITHUB_REPOSITORY | cut -d '/' -f 2)
+        # Update package.json name to include the scope for GitHub Packages
+        npm pkg set name="@${{ github.repository_owner }}/${REPO_NAME}"
+   
+    - name: Publish to GitHub Packages
+      run: npm publish
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

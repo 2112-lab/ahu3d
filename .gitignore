@@ -2,7 +2,6 @@
 
 node_modules
 .nuxt
-package-lock.json
 static/sw.js
 config3d_domains
 *.patch
