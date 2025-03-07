@@ -11,6 +11,8 @@ playwright-output/output.txt
 
 config
 
+dist/*
+
 dev/nuxt/ahu3d-api
 dev/nuxt/ahu3d-app
 dev/nuxt/ahu3d-editor
