@@ -1,6 +1,6 @@
 {
   "name": "@2112-lab/ahu3d",
-  "version": "1.0.170",
+  "version": "1.0.171",
   "description": "",
   "main": "dist/bundle.js",
   "files": [
