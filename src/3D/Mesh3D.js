@@ -108,6 +108,7 @@ export default class Mesh3D {
     const controllerMaterial = new THREE.MeshStandardMaterial({ color: sharedData.primaryColor });
     const controllerMesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
     controllerMesh.position.set(controllerPosition.x, controllerPosition.y, controllerPosition.z);
+    controllerMesh.name = "controller";
     sharedData.sceneHelper.addToScene(controllerMesh);
 
     ahuObject['3d'].controllers.meshes['Controller-0'] = controllerMesh;
@@ -153,7 +154,7 @@ export default class Mesh3D {
         // You could store a reference to the attribute for this sphere if needed
         sphere.userData.attributeKey = Object.keys(attributes)[i];
         sphere.userData.attributeType = attributeType; // "input" or "output"
-        
+        sphere.name = "controllerOrb";
         sharedData.sceneHelper.addToScene(sphere);
     }
     

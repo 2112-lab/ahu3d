@@ -372,15 +372,13 @@ class Scene3D {
                 if(mesh.parent.name === "hvac") {
                     mesh = mesh.parent;
                 }
-                console.log("mesh:", mesh);
+                console.log("onMeshClick mesh:", mesh);
 
-                if(mesh.userData.component.isComponent) {
-                    this.selectedMesh = mesh;
-                    if(this.tooltipEnabled) {
-                        this.addBoundingBox();
-                        this.showTooltip();
-                    }
-                }            
+                this.selectedMesh = mesh;
+                if(this.tooltipEnabled) {
+                    this.addBoundingBox();
+                    this.showTooltip();
+                }           
             } 
             else if (this.tooltipParent && this.tooltipObject) {
                 this.tooltipParent.remove(this.tooltipObject);
@@ -617,7 +615,8 @@ class Scene3D {
             child.name.includes('arrow') || 
             child.name.includes('text') ||
             child.name.includes('joint') ||
-            child.name.includes('duct')
+            child.name.includes('duct') ||
+            child.name.includes('controller')
         );
         sceneIndicators.forEach((child) => {
           this.scene.remove(child);
