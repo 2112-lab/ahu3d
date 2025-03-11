@@ -23,4 +23,6 @@ export const sharedData = {
     originDefault: {x: 0, y: 0, z: 0},
     arrowDimensions: {x: 750, y: 200, z: 200},
     ahuObject: {},
+    controllers: [],
+    ahuBoundingBox: {},
 };

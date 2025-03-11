@@ -477,6 +477,38 @@ class Ahu3DAPI {
         return this.library;
     } 
 
+    async loadControllers(controllerConfigs) {
+        // Mark library load as initiated
+        this.libraryLoadInitiated = true;
+    
+        // Initialize storage for loaded files
+        const files = {};
+        const controllerList = controllerConfigs.controllerList;
+        const assetsPath = controllerConfigs.assetsPath;
+    
+        // Create promises for loading each controller's assets
+        const requests = controllerList.map(async (controllerName) => {
+            const jsonPath = `${assetsPath}${controllerName}/${controllerName}.json`;
+    
+            try {
+                // Load and store controllers's JSON data
+                const jsonResponse = await axios.get(jsonPath);
+                files[controllerName] = jsonResponse.data;
+            } catch (error) {
+                console.error(`Failed to load ${controllerName} controller:`, error);
+            }
+        });
+    
+        // Wait for all controllers to load
+        await Promise.all(requests);
+    
+        // Store loaded library and share through global state
+        this.controllers = files;
+        sharedData.controllers = files;
+    
+        return this.controllers;
+    } 
+
     /**
      * Processes and renders AHU data in specified output mode.
      * Ensures library is loaded before processing XETO data.
