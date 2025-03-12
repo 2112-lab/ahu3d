@@ -116,8 +116,8 @@ export default class Mesh3D {
 
     console.log("setControllers controllerSettings:", controllerSettings);
 
-    this.positionSpheres(controllerMesh, controllerSettings, false, "input"); // For inputs
     this.positionSpheres(controllerMesh, controllerSettings, true, "output"); // For outputs
+    this.positionSpheres(controllerMesh, controllerSettings, false, "input"); // For inputs
 
   }
 

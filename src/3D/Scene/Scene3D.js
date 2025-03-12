@@ -438,70 +438,27 @@ class Scene3D {
         // Initialize attributes object
         let attributes = {};
         
-        // Collect attributeKeys from children
+        // Collect attributeType from children
         if (this.selectedMesh.children && this.selectedMesh.children.length > 0) {
             // Iterate through all children
             this.selectedMesh.children.forEach(child => {
-                // Check if the child has userData with an attributeKey
-                if (child.userData && child.userData.attributeKey) {
+                // Check if the child has userData with an attributeType
+                if (child.userData && child.userData.attributeType) {
                     // Generate a random value for demonstration (replace with actual values if available)
                     const randomValue = Math.floor(Math.random() * 21);
                     
                     // Determine if this is an input or output based on your criteria
                     // For example, you might want to check child.userData.type or some other property
-                    // Here I'm using a simple check on the attributeKey name
-                    const isInput = child.userData.attributeKey.toLowerCase().includes('input');
+                    // Here I'm using a simple check on the attributeType name
+                    const isInput = child.userData.attributeType.toLowerCase().includes('input');
                     
                     // Store the attribute with its value and reference to the mesh
-                    attributes[child.userData.attributeKey] = {
+                    attributes[child.userData.attributeType] = {
                         value: randomValue,
                         isInput: isInput,
                         meshReference: child  // Store reference to the actual mesh
                     };
-                }
-            });
-        }
-        
-        // If no children with attributeKeys were found, fallback to the original behavior
-        if (Object.keys(attributes).length === 0) {
-            console.log("No children with attributeKeys found, using fallback values");
-            
-            // Generate random integers for inputs (between 0 and 20)
-            for(let i = 0; i < 4; i++) {
-                const randomValue = Math.floor(Math.random() * 21);
-                attributes[`input-${i}`] = {
-                    value: randomValue,
-                    isInput: true
-                };
-            }
-            
-            // Generate random integers for outputs (between 0 and 20)
-            for(let i = 0; i < 4; i++) {
-                const randomValue = Math.floor(Math.random() * 21);
-                attributes[`output-${i}`] = {
-                    value: randomValue,
-                    isInput: false
-                };
-            }
-        }
-        
-        // Store original colors to revert to when not hovering
-        const originalColors = new Map();
-        
-        // Create a map to store the relationship between attribute keys and child meshes
-        const attributeToMesh = new Map();
-        
-        // Populate the map with attributeKey to child mesh relationships
-        if (this.selectedMesh.children && this.selectedMesh.children.length > 0) {
-            this.selectedMesh.children.forEach(child => {
-                if (child.userData && child.userData.attributeKey) {
-                    attributeToMesh.set(child.userData.attributeKey, child);
-                    
-                    // Store the original color if the child has material
-                    if (child.material) {
-                        // Create a deep copy of the current color to restore later
-                        originalColors.set(child, child.material.color.clone());
-                    }
+                    console.log("showControllerTooltip child.userData.attributeType:", child.userData.attributeType);
                 }
             });
         }
@@ -511,9 +468,6 @@ class Scene3D {
             // Create a new row
             const rowElement = document.createElement('div');
             rowElement.className = 'tooltip-row';
-            
-            // Find the corresponding mesh for this attribute key
-            const correspondingMesh = attributeToMesh.get(key);
             
             // Add hover events to the row
             rowElement.addEventListener('mouseenter', () => {
@@ -551,7 +505,7 @@ class Scene3D {
             keyElement.textContent = `${key}:`;
             
             // Check if this is an input row
-            if (data.isInput) {
+            if (!data.isInput) {
                 // Create controls container for input rows (with buttons)
                 const controlsElement = document.createElement('div');
                 controlsElement.className = 'tooltip-controls';
@@ -637,20 +591,6 @@ class Scene3D {
         tooltipElement.style.position = 'absolute';
         tooltipElement.style.left = `${(0) + (tooltipWidth / 1.35)}px`;
         tooltipElement.style.pointerEvents = 'auto'; // Changed to auto to enable button clicks
-        
-        // Clean up function to restore all original colors when the tooltip is removed
-        const cleanupHighlights = () => {
-            originalColors.forEach((color, mesh) => {
-                if (mesh && mesh.material) {
-                    mesh.material.color.copy(color);
-                    mesh.material.needsUpdate = true;
-                }
-            });
-            originalColors.clear();
-        };
-        
-        // Add the cleanup function to the tooltip element for later reference
-        tooltipElement.cleanupHighlights = cleanupHighlights;
     
         // Add the tooltip as a CSS2DObject
         const label = new CSS2DObject(tooltipElement);
@@ -662,21 +602,21 @@ class Scene3D {
         this.tooltipObject = label;
     }
 
-    updateControllerValues(attributeKey, newValue) {
-        console.log(`Updating ${attributeKey} with new value: ${newValue}`);
+    updateControllerValues(attributeType, newValue) {
+        console.log(`Updating ${attributeType} with new value: ${newValue}`);
         
         // Update any dependent outputs or visuals
         // This could involve re-calculating other values based on inputs
         
         // Example: update all output values if an input changes
-        if (attributeKey.toLowerCase().includes('input')) {
+        if (attributeType.toLowerCase().includes('input')) {
             // Re-calculate outputs based on inputs
             this.recalculateOutputs();
         }
         
         // Trigger any needed scene updates
         if (this.onControllerUpdate) {
-            this.onControllerUpdate(attributeKey, newValue);
+            this.onControllerUpdate(attributeType, newValue);
         }
     }
     
