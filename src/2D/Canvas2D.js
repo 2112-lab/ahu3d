@@ -6,6 +6,8 @@ export default class Canvas2D {
   createLayer(ahuObject) {
     this.ahuObject = ahuObject;
 
+    console.log("createLayer ahuObject:", ahuObject);
+
     const layer = new Konva.Layer();
 
     // Create the AHU shapes and add to the layer
@@ -90,15 +92,6 @@ export default class Canvas2D {
       const lines = this.createDuct(duct.position.x, duct.position.z * -1, width, height, konvaOptions, activeWalls);
       lines.forEach(line => layer.add(line));
   
-      // Create a group for the components inside the duct
-      // const componentGroup = new Konva.Group({
-      //   x: duct.position.x,
-      //   y: duct.position.z * -1,
-      //   rotation: duct.rotation.y, // Rotate only the components, not the duct
-      //   offsetX: 0, // No offset applied here
-      //   offsetY: 0,
-      // });
-  
       // Render components if they are associated with the duct
       if (this.ahuObject.associations.ducts[ductKey].components) {
         for (const i in this.ahuObject.associations.ducts[ductKey].components) {
@@ -117,7 +110,7 @@ export default class Canvas2D {
           this.renderComponentSvg(layer, relativePosition, componentSvg, duct);
         }
       }
-
+  
       // Handle ends (such as inserts or caps) attached to ducts
       if(this.ahuObject.associations.ducts[ductKey].ends) {
         for(const endKey in this.ahuObject.associations.ducts[ductKey].ends) {
@@ -126,19 +119,121 @@ export default class Canvas2D {
           console.log("ahuToLayer drawEnd starting:", this.ahuObject, endKey);
           this.drawEnd(layer, end, endKey, konvaOptions);
         }
-      }  
-
-      // Add the component group to the layer for independent rotation
-      // layer.add(componentGroup);
+      }
     }
   
     // Create 2D joints and add them to the layer
     for (const jointKey in this.ahuObject.resources.joints) {
       this.create2DJoint(layer, this.ahuObject.resources.joints[jointKey], jointKey);
     }
-
+  
+    // Draw controllers if they exist in the resources
+    if (this.ahuObject.resources.controllers) {
+      this.drawControllers(layer);
+    }
+  
     // Render additional helper elements (arrows, labels, etc.)
     this.renderHelpers(layer);
+  }
+
+  /**
+   * Draws controllers to the given layer in the canvas.
+   * This method handles rendering the controller boxes and their input/output ports.
+   * @param {Konva.Layer} layer - The layer to which the controllers should be drawn.
+   */
+  drawControllers(layer) {
+    // Iterate over all controllers in the AHU object and render them
+    for (const controllerId in this.ahuObject.resources.controllers) {
+      const controller = this.ahuObject.resources.controllers[controllerId];
+      
+      // Draw the main controller box
+      this.drawControllerBox(layer, controller);
+      
+      // Draw the input/output ports (spheres)
+      this.drawControllerPorts(layer, controller);
+    }
+  }
+
+  /**
+   * Draws the main controller box to the layer.
+   * @param {Konva.Layer} layer - The layer to add the controller box to.
+   * @param {Object} controller - The controller object containing position and dimension data.
+   */
+  drawControllerBox(layer, controller) {
+    const { x, z } = controller.calculatedPosition;
+    const { x: width, z: height } = controller.dimensions;
+    
+    // Create controller box as a rectangle
+    const controllerBox = new Konva.Rect({
+      x: x,
+      y: z * -1, // Convert to canvas coordinate system (flip z)
+      width: width,
+      height: height,
+      offsetX: width / 2, // Center the box at its position
+      offsetY: height / 2,
+      stroke: 'white',
+      strokeWidth: 10,
+      fill: '#333333', // Dark background for the controller
+      cornerRadius: 15, // Slightly rounded corners
+    });
+    
+    // Add elements to the layer
+    layer.add(controllerBox);
+  }
+
+  /**
+   * Draws the controller ports (input/output spheres) to the layer.
+   * @param {Konva.Layer} layer - The layer to add the controller ports to.
+   * @param {Object} controller - The controller object containing port position data.
+   */
+  drawControllerPorts(layer, controller) {
+    const baseX = controller.calculatedPosition.x;
+    const baseZ = controller.calculatedPosition.z;
+    const portRadius = 40; // Size of the port circles
+    
+    // Draw input ports (spheres)
+    if (controller.spherePositions.inputs) {
+      controller.spherePositions.inputs.forEach((port, index) => {
+        // Calculate absolute position
+        const portX = baseX + port.position.x;
+        const portY = (baseZ + port.position.z) * -1; // Convert to canvas coordinate system (flip z)
+        
+        // Create port circle
+        const portCircle = new Konva.Circle({
+          x: portX,
+          y: portY,
+          radius: portRadius,
+          // fill: '#4CAF50', // Green for inputs
+          stroke: 'white',
+          strokeWidth: 10
+        });
+        
+        // Add port elements to the layer
+        layer.add(portCircle);
+      });
+    }
+    
+    // Draw output ports (spheres)
+    if (controller.spherePositions.outputs) {
+      controller.spherePositions.outputs.forEach((port, index) => {
+        // Calculate absolute position
+        const portX = baseX + port.position.x;
+        const portY = (baseZ + port.position.z) * -1; // Convert to canvas coordinate system (flip z)
+        
+        // Create port circle
+        const portCircle = new Konva.Circle({
+          x: portX,
+          y: portY,
+          radius: portRadius,
+          // fill: '#2196F3', // Blue for outputs
+          stroke: 'white',
+          strokeWidth: 10
+        });
+        
+        // Add port elements to the layer
+        layer.add(portCircle);
+      });
+    }
   }
 
   /**

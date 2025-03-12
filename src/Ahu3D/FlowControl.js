@@ -448,19 +448,13 @@ export default class FlowControl {
         // Create duct end geometry
         this.Ends.createEnds(this.ahuObject);
 
+        // Calculate and Store the AHU's bounding box
+        sharedData.ahuBoundingBox = this.Ahu.calculateBoundingBox(this.ahuObject.resources.ducts);
+
         // Position and orient helper elements (arrows, labels)
         this.transformHelpers();
 
-        setControllers(this.ahuObject);   
-
-        const ductsAndEnds = {
-            ...this.ahuObject.resources.ducts
-        }
-
-        console.log("setControllers ductsAndEnds:", ductsAndEnds);
-
-        sharedData.ahuBoundingBox = this.Ahu.calculateBoundingBox(this.ahuObject.resources.ducts);
-        console.log("setControllers boundingBox:", sharedData.ahuBoundingBox);
+        setControllers(this.ahuObject);           
     }    
 
     

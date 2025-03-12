@@ -59,135 +59,119 @@ export default class Mesh3D {
    * @returns {Array} An array of rendered meshes.
    */
   async render3D(ahuObject) {
-    console.log("render3D started:", ahuObject);
-    let renderedAssembly = [];
+      console.log("render3D started:", ahuObject);
+      let renderedAssembly = [];
 
-    // Clone and position meshes asynchronously for each duct in the AHU assembly
-    for (const ductId in ahuObject.resources.ducts) {
-        const duct = ahuObject.resources.ducts[ductId];
-        const ductInstance = this.createDuct(duct, ductId);
-        ahuObject["3d"].ducts.meshes[ductId] = ductInstance;
+      // Clone and position meshes asynchronously for each duct in the AHU assembly
+      for (const ductId in ahuObject.resources.ducts) {
+          const duct = ahuObject.resources.ducts[ductId];
+          const ductInstance = this.createDuct(duct, ductId);
+          ahuObject["3d"].ducts.meshes[ductId] = ductInstance;
 
-        let componentMeshes = [];
-        for(const i in ahuObject.associations.ducts[ductId].components) {
-          const componentId = ahuObject.associations.ducts[ductId].components[i];
-          console.log("render3D componentId:", componentId);
-          const componentMesh = await this.cloneAndTransformComponent(componentId, ahuObject, ductId);
-          ahuObject["3d"].components.meshes[componentId] = componentMesh;
-          componentMeshes.push(componentMesh);
-        }
-        this.rotateComponentsWithDuct(ductInstance, componentMeshes, duct.rotation.y);
+          let componentMeshes = [];
+          for(const i in ahuObject.associations.ducts[ductId].components) {
+            const componentId = ahuObject.associations.ducts[ductId].components[i];
+            console.log("render3D componentId:", componentId);
+            const componentMesh = await this.cloneAndTransformComponent(componentId, ahuObject, ductId);
+            ahuObject["3d"].components.meshes[componentId] = componentMesh;
+            componentMeshes.push(componentMesh);
+          }
+          this.rotateComponentsWithDuct(ductInstance, componentMeshes, duct.rotation.y);
 
-        this.renderProxies(ahuObject.resources.joints);
-        this.renderJointVertexHelpers(ahuObject.resources.joints);
+          this.renderProxies(ahuObject.resources.joints);
+          this.renderJointVertexHelpers(ahuObject.resources.joints);
 
-        this.renderJoints(ahuObject["3d"]);
-    }
+          this.renderJoints(ahuObject["3d"]);
+      }
 
-    console.log("render3D renderJoints finished:", ahuObject);
-    this.renderEnds(ahuObject);
+      console.log("setControllers ahuObject:", Object.keys(ahuObject.resources.controllers));
+      this.renderEnds(ahuObject);
+      console.log("setControllers renderEnds finished");
+      this.renderHelpers(ahuObject);
+      console.log("setControllers renderHelpers finished");
+      this.renderControllers(ahuObject);
+      console.log("setControllers renderControllers finished");
 
-    this.renderHelpers(ahuObject);
-
-    // this.renderControllers(ahuObject);
-
-    const wireframeBox = this.createBoundingBoxWireframe(sharedData.ahuBoundingBox);
-    // sharedData.sceneHelper.addToScene(wireframeBox);
-
-    const controllerSettings = ahuObject.resources.controllers['Controller-0'];
-
-    // Calculate cube position based on settings
-    const controllerPosition = this.calculateCubePosition(controllerSettings, sharedData.ahuBoundingBox);
-    
-    // Create cube
-    const controllerGeometry = new THREE.BoxGeometry(
-        controllerSettings.dimensions.x,
-        controllerSettings.dimensions.y,
-        controllerSettings.dimensions.z
-    );
-    const controllerMaterial = new THREE.MeshStandardMaterial({ color: sharedData.primaryColor });
-    const controllerMesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
-    controllerMesh.position.set(controllerPosition.x, controllerPosition.y, controllerPosition.z);
-    controllerMesh.name = "controller";
-    controllerMesh.userData = controllerSettings;
-    sharedData.sceneHelper.addToScene(controllerMesh);
-
-    ahuObject['3d'].controllers.meshes['Controller-0'] = controllerMesh;
-
-    console.log("setControllers controllerSettings:", controllerSettings);
-
-    this.positionSpheres(controllerMesh, controllerSettings, true, "output"); // For outputs
-    this.positionSpheres(controllerMesh, controllerSettings, false, "input"); // For inputs
-
+      const wireframeBox = this.createBoundingBoxWireframe(sharedData.ahuBoundingBox);
+      // sharedData.sceneHelper.addToScene(wireframeBox);
   }
 
-  positionSpheres(controllerMesh, controllerSettings, isOutput, attributeType) {    
-    const totalSpheres = Math.floor(controllerSettings.ports / 2);
-    const startX = -controllerSettings.dimensions.x / 2 + 64;
-    const endX = controllerSettings.dimensions.x / 2 - 64;
+  // New method that consolidates controller rendering
+  renderControllers(ahuObject) {
+      console.log("renderControllers started");
+      // Render each controller
+      for (const controllerId in ahuObject.resources.controllers) {
+          const controllerSettings = ahuObject.resources.controllers[controllerId];
+          
+          // Create controller mesh using precomputed dimensions
+          const controllerGeometry = new THREE.BoxGeometry(
+              controllerSettings.dimensions.x,
+              controllerSettings.dimensions.y,
+              controllerSettings.dimensions.z
+          );
+          
+          const controllerMaterial = new THREE.MeshStandardMaterial({ 
+              color: sharedData.primaryColor 
+          });
+          
+          const controllerMesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
+          
+          // Position using precomputed values
+          const position = controllerSettings.calculatedPosition;
+          controllerMesh.position.set(position.x, position.y, position.z);
+          
+          controllerMesh.name = "controller";
+          controllerMesh.userData = controllerSettings;
+          sharedData.sceneHelper.addToScene(controllerMesh);
+          
+          // Store reference to mesh
+          ahuObject['3d'].controllers.meshes[controllerId] = controllerMesh;
+          
+          // Add input and output spheres
+          this.addControllerSpheres(controllerMesh, controllerSettings);
+      }
+  }
+
+  // Adding spheres to a controller
+  addControllerSpheres(controllerMesh, controllerSettings) {
+    console.log("addControllerSpheres controllerSettings:", controllerSettings);
+    const sphereGeometry = new THREE.SphereGeometry(64, 32, 16);
     
-    // Calculate z position based on whether it's input or output
-    const zPosition = isOutput
-        ? -controllerSettings.dimensions.z / 2 - 64 // Output position
-        : controllerSettings.dimensions.z / 2 + 64; // Input position
-    
-    // Calculate spacing between spheres
-    const spacing = (endX - startX) / (totalSpheres - 1 || 1); // Handle case of 1 sphere
-    
-    // Create and position each sphere
-    for(let i = 0; i < totalSpheres; i++) {
-        const geometry = new THREE.SphereGeometry(64, 32, 16);
-        const material = new THREE.MeshStandardMaterial({ color: 0xffffff });
-        const sphere = new THREE.Mesh(geometry, material);
+    // Add output spheres
+    controllerSettings.spherePositions.outputs.forEach(sphere => {
+        // Create a NEW material instance for each sphere
+        const uniqueSphereMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
+        const sphereMesh = new THREE.Mesh(sphereGeometry, uniqueSphereMaterial);
         
-        // Position on x-axis with equal spacing - positions are now relative to parent
-        sphere.position.set(
-            startX + (i * spacing), // Distribute along x-axis
-            0,  // Local y position (relative to parent)
-            zPosition // Use calculated z position based on input/output
-        );
-        
-        // Store reference to the attribute for this sphere
-        sphere.userData = {
+        // Position sphere using precomputed coordinates
+        const pos = sphere.position;
+        sphereMesh.position.set(pos.x, pos.y, pos.z);          
+        sphereMesh.userData = {
           ...controllerSettings,
-          "attributeType": attributeType,
-          "attributeType": `${attributeType}-${i}`
+          "attributeType": JSON.parse(JSON.stringify(sphere.attributeId))
         }
-        sphere.name = "controllerOrb";
         
-        // Add as child to controllerMesh instead of to the scene
-        controllerMesh.add(sphere);
-    }
-  }
-
-  calculateCubePosition(controllerSettings, boundingBox) {
-    const position = { x: 0, y: 0, z: 0 };
-    const halfCubeWidth = controllerSettings.dimensions.x / 2;
-    const halfCubeHeight = controllerSettings.dimensions.z / 2;
+        sphereMesh.name = "controllerOrb";
+        controllerMesh.add(sphereMesh);
+    });
     
-    // X position (left-right)
-    if (controllerSettings.position.x === "center") {
-      position.x = boundingBox.center.x;
-    } else if (controllerSettings.position.x === "left") {
-      position.x = boundingBox.min.x - halfCubeWidth - controllerSettings.padding.x;
-    } else if (controllerSettings.position.x === "right") {
-      position.x = boundingBox.max.x + halfCubeWidth + controllerSettings.padding.x;
-    }
-    
-    // Y position (fixed to center of component height)
-    position.y = boundingBox.center.y;
-    
-    // Z position (top-bottom) - note that in Three.js, positive Z is coming out of the screen,
-    // but in your settings Z appears to be vertical (top-bottom)
-    if (controllerSettings.position.z === "bottom") {
-      position.z = boundingBox.min.z - halfCubeHeight - controllerSettings.padding.z;
-    } else if (controllerSettings.position.z === "top") {
-      position.z = boundingBox.max.z + halfCubeHeight + controllerSettings.padding.z;
-    } else if (controllerSettings.position.z === "center") {
-      position.z = boundingBox.center.z;
-    }
-    
-    return position;
+    // Add input spheres
+    controllerSettings.spherePositions.inputs.forEach(sphere => {
+        // Create a NEW material instance for each sphere
+        const uniqueSphereMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
+        const sphereMesh = new THREE.Mesh(sphereGeometry, uniqueSphereMaterial);
+        
+        // Position sphere using precomputed coordinates
+        const pos = sphere.position;
+        sphereMesh.position.set(pos.x, pos.y, pos.z);
+        sphereMesh.userData = {
+          ...controllerSettings,
+          "attributeType": JSON.parse(JSON.stringify(sphere.attributeId))
+        }
+        
+        sphereMesh.name = "controllerOrb";
+        controllerMesh.add(sphereMesh);
+    });
   }
 
   createBoundingBoxWireframe(boundingBox) {
@@ -220,24 +204,6 @@ export default class Mesh3D {
     wireframeMesh.position.copy(center);
     
     return wireframeMesh;
-  }
-
-  renderControllers(ahuObject) {
-    console.log("renderControllers started:", ahuObject);
-
-    for (const controllerId in ahuObject.resources.controllers) {
-        const controllerResource = ahuObject.resources.controllers[controllerId];
-
-        console.log("renderControllers controllerResource:", controllerResource);
-
-        const geometry = new THREE.BoxGeometry(700, 700, 700, 10, 10, 10);
-        const material = new THREE.MeshStandardMaterial({ color: sharedData.primaryColor });
-        const controllerMesh = new THREE.Mesh(geometry, material);
-
-        // controllerMesh.position.copy(controllerResource.position);
-        sharedData.sceneHelper.addToScene(controllerMesh);
-        ahuObject["3d"].controllers.meshes[controllerId] = controllerMesh; // Store it in the 3d object
-    }
   }
 
   /**
