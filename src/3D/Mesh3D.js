@@ -109,6 +109,7 @@ export default class Mesh3D {
     const controllerMesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
     controllerMesh.position.set(controllerPosition.x, controllerPosition.y, controllerPosition.z);
     controllerMesh.name = "controller";
+    controllerMesh.userData = controllerSettings;
     sharedData.sceneHelper.addToScene(controllerMesh);
 
     ahuObject['3d'].controllers.meshes['Controller-0'] = controllerMesh;
@@ -120,20 +121,15 @@ export default class Mesh3D {
 
   }
 
-  positionSpheres(controllerMesh, controllerSettings, isOutput, attributeType) {
-    // Get the attributes based on whether we're handling inputs or outputs
-    const attributes = isOutput 
-        ? controllerSettings.attributes.outputs 
-        : controllerSettings.attributes.inputs;
-    
-    const totalSpheres = Object.keys(attributes).length;
-    const startX = controllerMesh.position.x - (controllerSettings.dimensions.x / 2) + 64;
-    const endX = controllerMesh.position.x + (controllerSettings.dimensions.x / 2) - 64;
+  positionSpheres(controllerMesh, controllerSettings, isOutput, attributeType) {    
+    const totalSpheres = Math.floor(controllerSettings.ports / 2);
+    const startX = -controllerSettings.dimensions.x / 2 + 64;
+    const endX = controllerSettings.dimensions.x / 2 - 64;
     
     // Calculate z position based on whether it's input or output
     const zPosition = isOutput
-        ? (controllerMesh.position.z - controllerSettings.dimensions.z / 2) - 150 // Output position
-        : (controllerMesh.position.z + controllerSettings.dimensions.z / 2) + 150; // Input position (your original code)
+        ? -controllerSettings.dimensions.z / 2 - 64 // Output position
+        : controllerSettings.dimensions.z / 2 + 64; // Input position
     
     // Calculate spacing between spheres
     const spacing = (endX - startX) / (totalSpheres - 1 || 1); // Handle case of 1 sphere
@@ -144,21 +140,24 @@ export default class Mesh3D {
         const material = new THREE.MeshStandardMaterial({ color: 0xffffff });
         const sphere = new THREE.Mesh(geometry, material);
         
-        // Position on x-axis with equal spacing
+        // Position on x-axis with equal spacing - positions are now relative to parent
         sphere.position.set(
             startX + (i * spacing), // Distribute along x-axis
-            controllerMesh.position.y,  // Keep original y position
+            0,  // Local y position (relative to parent)
             zPosition // Use calculated z position based on input/output
         );
         
-        // You could store a reference to the attribute for this sphere if needed
-        sphere.userData.attributeKey = Object.keys(attributes)[i];
-        sphere.userData.attributeType = attributeType; // "input" or "output"
+        // Store reference to the attribute for this sphere
+        sphere.userData = {
+          ...controllerSettings,
+          "attributeType": attributeType,
+          "attributeType": `${attributeType}-${i}`
+        }
         sphere.name = "controllerOrb";
-        sharedData.sceneHelper.addToScene(sphere);
+        
+        // Add as child to controllerMesh instead of to the scene
+        controllerMesh.add(sphere);
     }
-    
-    return; // Could return the created spheres if needed
   }
 
   calculateCubePosition(controllerSettings, boundingBox) {

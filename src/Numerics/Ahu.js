@@ -7,82 +7,104 @@
 export default class Ahu {
 
     /**
-     * Translates each assembly segment along the x and z axes.
-     * 
-     * @param {Array} assemblySegments - An array of assembly segment objects to be translated.
+     * Calculate a bounding box for a collection of edges
+     * @param {Object} edges - Object containing edge data with position, rotation, and dimensions
+     * @returns {Object} Bounding box with min and max points
      */
-    translate(assemblySegments) {
-        for (const segment of assemblySegments) {
-            // Translate the segment along the x-axis by half the assembly width minus 50 units.
-            this.translateAssemblySegment(segment.segment, 'x', (this.assemblyDimensions.width / 2) - 50);
-
-            // Translate the segment along the z-axis by the assembly height plus 200 units.
-            this.translateAssemblySegment(segment.segment, 'z', this.assemblyDimensions.height + 200);
+    calculateBoundingBox(edges) {
+        // Initialize min and max values to the first vertex we process
+        let minX = Infinity;
+        let minY = Infinity;
+        let minZ = Infinity;
+        let maxX = -Infinity;
+        let maxY = -Infinity;
+        let maxZ = -Infinity;
+        
+        // Process each edge
+        for (const edgeId in edges) {
+            const edge = edges[edgeId];
+            const { position, rotation, dimensions } = edge;
+        
+            // Calculate the 8 corners of this edge's bounding box
+            const corners = this.calculateRotatedCorners(position, rotation, dimensions);
+        
+            // Update min and max values based on the corners
+            for (const corner of corners) {
+            minX = Math.min(minX, corner.x);
+            minY = Math.min(minY, corner.y);
+            minZ = Math.min(minZ, corner.z);
+            maxX = Math.max(maxX, corner.x);
+            maxY = Math.max(maxY, corner.y);
+            maxZ = Math.max(maxZ, corner.z);
+            }
         }
+        
+        return {
+            min: { x: minX, y: minY, z: minZ },
+            max: { x: maxX, y: maxY, z: maxZ },
+            center: {
+            x: (minX + maxX) / 2,
+            y: (minY + maxY) / 2,
+            z: (minZ + maxZ) / 2
+            },
+            dimensions: {
+            x: maxX - minX,
+            y: maxY - minY,
+            z: maxZ - minZ
+            }
+        };
     }
-
+        
     /**
-     * Calculates and returns the dimensions (width and height) of the entire assembly.
-     * This is determined by evaluating the positions and sizes of the segments.
-     * 
-     * @returns {Object} An object containing the calculated width and height of the assembly.
+     * Calculate the 8 corners of a rotated box
+     * @param {Object} position - Position of the box center {x, y, z}
+     * @param {Object} rotation - Rotation in degrees {x, y, z}
+     * @param {Object} dimensions - Dimensions of the box {x, y, z}
+     * @returns {Array} Array of 8 corner points
      */
-    getAssemblyDimensions() {
-        // Filter assembly segments to find those in the last row.
-        let lastRow = this.assemblySegments.filter(child => 
-            this.getRow(child.xetoDuct.graphicLocation.end) === this.getRow(this.assemblyGridBounds.end)
-        );
-
-        // Initialize z-position tracking variables.
-        let z = this.assemblySegments[0].segment.duct.userData.component.object.position.z;
-        let minZPos = z;
-        let lowestSegment = this.assemblySegments[0];
-
-        // Iterate over each segment to find the lowest one based on its z-position.
-        for (const segment of this.assemblySegments) {
-            z = segment.segment.duct.userData.component.object.position.z;
-            if (z < minZPos) {
-                minZPos = z;
-                lowestSegment = segment;
-            }
-        }
-
-        let minZ = 0;
-
-        // Determine the minimum z-position based on the segment's graphic location.
-        if (lowestSegment.xetoDuct.graphicLocation.start[0] === lowestSegment.xetoDuct.graphicLocation.end[0]) {
-            minZ = minZPos - (lowestSegment.segment.duct.userData.component.object.boundingBox.dimensions.x / 2);
-        } else if (this.getRow(lowestSegment.xetoDuct.graphicLocation.start) === this.getRow(lowestSegment.xetoDuct.graphicLocation.end)) {
-            minZ = minZPos - 530;
-        }
-
-        // Calculate the total height of the assembly.
-        const calcHeight = minZ * -1;
-
-        // Initialize min and max x-position tracking variables for the last row.
-        let minX = 0;
-        let maxX = 0;
-        let x = 0;
-
-        // Iterate over the segments in the last row to determine the minimum x-position.
-        for (const lastRowSegment of lastRow) {
-            x = lastRowSegment.segment.duct.userData.component.object.position.x 
-                - (lastRowSegment.segment.duct.userData.component.object.boundingBox.dimensions.x / 2);
-            if (x < minX) {
-                minX = x;
-            }
-        }
-
-        // Iterate again to determine the maximum x-position.
-        for (const lastRowSegment of lastRow) {
-            x = lastRowSegment.segment.duct.userData.component.object.position.x 
-                + (lastRowSegment.segment.duct.userData.component.object.boundingBox.dimensions.x / 2);
-            if (x > maxX) {
-                maxX = x;
-            }
-        }
-
-        // Return the calculated width and height of the assembly.
-        return { width: (0 - maxX - minX), height: calcHeight };
+    calculateRotatedCorners(position, rotation, dimensions) {
+        // Calculate half-dimensions
+        const halfWidth = dimensions.x / 2;
+        const halfHeight = dimensions.y / 2;
+        const halfDepth = dimensions.z / 2;
+        
+        // Define the 8 corners of the box (before rotation)
+        const corners = [
+            { x: -halfWidth, y: -halfHeight, z: -halfDepth },
+            { x: halfWidth, y: -halfHeight, z: -halfDepth },
+            { x: halfWidth, y: halfHeight, z: -halfDepth },
+            { x: -halfWidth, y: halfHeight, z: -halfDepth },
+            { x: -halfWidth, y: -halfHeight, z: halfDepth },
+            { x: halfWidth, y: -halfHeight, z: halfDepth },
+            { x: halfWidth, y: halfHeight, z: halfDepth },
+            { x: -halfWidth, y: halfHeight, z: halfDepth }
+        ];
+        
+        // Convert rotation from degrees to radians
+        const rotX = rotation.x * Math.PI / 180;
+        const rotY = rotation.y * Math.PI / 180;
+        const rotZ = rotation.z * Math.PI / 180;
+        
+        // Apply rotation and translation to each corner
+        return corners.map(corner => {
+            // Apply rotation around X axis
+            const y1 = corner.y * Math.cos(rotX) - corner.z * Math.sin(rotX);
+            const z1 = corner.y * Math.sin(rotX) + corner.z * Math.cos(rotX);
+        
+            // Apply rotation around Y axis
+            const x2 = corner.x * Math.cos(rotY) + z1 * Math.sin(rotY);
+            const z2 = -corner.x * Math.sin(rotY) + z1 * Math.cos(rotY);
+        
+            // Apply rotation around Z axis
+            const x3 = x2 * Math.cos(rotZ) - y1 * Math.sin(rotZ);
+            const y3 = x2 * Math.sin(rotZ) + y1 * Math.cos(rotZ);
+        
+            // Apply translation
+            return {
+            x: x3 + position.x,
+            y: y3 + position.y,
+            z: z2 + position.z
+            };
+        });
     }
 }

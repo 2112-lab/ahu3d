@@ -25,8 +25,10 @@ import Geometry_3D_Joints_T from "../3D/Geometry/Joints/Geometry_3D_Joints_T.js"
 import Geometry_3D_Joints_L from "../3D/Geometry/Joints/Geometry_3D_Joints_L.js";
 import Geometry_3D_Joints_Colinear from "../3D/Geometry/Joints/Geometry_3D_Joints_Colinear.js";
 import Ends from "../Numerics/Ends.js";
+import Ahu from "../Numerics/Ahu.js";
 import Canvas2D from "../2D/Canvas2D.js";
 import { calculateJointCenter } from "../3D/Geometry/Joints/Geometry_3D_Joints_Utils.js";
+import { setControllers } from "../Numerics/Controllers.js";
 
 export default class FlowControl {
     /**
@@ -45,6 +47,10 @@ export default class FlowControl {
         this.Geometry_3D_Joints_L = new Geometry_3D_Joints_L();
         this.Geometry_3D_Joints_Colinear = new Geometry_3D_Joints_Colinear();
         this.Canvas2D = new Canvas2D();
+
+        this.Ahu = new Ahu();
+        this.Ends = new Ends();
+        this.Ducts = null;
     }
 
     /**
@@ -439,14 +445,13 @@ export default class FlowControl {
             }
         }
 
-        // Initialize and create duct end geometry
-        this.Ends = new Ends();
+        // Create duct end geometry
         this.Ends.createEnds(this.ahuObject);
 
         // Position and orient helper elements (arrows, labels)
         this.transformHelpers();
 
-        this.setControllers();   
+        setControllers(this.ahuObject);   
 
         const ductsAndEnds = {
             ...this.ahuObject.resources.ducts
@@ -454,127 +459,11 @@ export default class FlowControl {
 
         console.log("setControllers ductsAndEnds:", ductsAndEnds);
 
-        sharedData.ahuBoundingBox = this.calculateBoundingBox(ductsAndEnds);
+        sharedData.ahuBoundingBox = this.Ahu.calculateBoundingBox(this.ahuObject.resources.ducts);
         console.log("setControllers boundingBox:", sharedData.ahuBoundingBox);
-    }
+    }    
 
-    /**
-     * Calculate a bounding box for a collection of edges
-     * @param {Object} edges - Object containing edge data with position, rotation, and dimensions
-     * @returns {Object} Bounding box with min and max points
-     */
-    calculateBoundingBox(edges) {
-        // Initialize min and max values to the first vertex we process
-        let minX = Infinity;
-        let minY = Infinity;
-        let minZ = Infinity;
-        let maxX = -Infinity;
-        let maxY = -Infinity;
-        let maxZ = -Infinity;
-      
-        // Process each edge
-        for (const edgeId in edges) {
-          const edge = edges[edgeId];
-          const { position, rotation, dimensions } = edge;
-      
-          // Calculate the 8 corners of this edge's bounding box
-          const corners = this.calculateRotatedCorners(position, rotation, dimensions);
-      
-          // Update min and max values based on the corners
-          for (const corner of corners) {
-            minX = Math.min(minX, corner.x);
-            minY = Math.min(minY, corner.y);
-            minZ = Math.min(minZ, corner.z);
-            maxX = Math.max(maxX, corner.x);
-            maxY = Math.max(maxY, corner.y);
-            maxZ = Math.max(maxZ, corner.z);
-          }
-        }
-      
-        return {
-          min: { x: minX, y: minY, z: minZ },
-          max: { x: maxX, y: maxY, z: maxZ },
-          center: {
-            x: (minX + maxX) / 2,
-            y: (minY + maxY) / 2,
-            z: (minZ + maxZ) / 2
-          },
-          dimensions: {
-            x: maxX - minX,
-            y: maxY - minY,
-            z: maxZ - minZ
-          }
-        };
-      }
-      
-    /**
-     * Calculate the 8 corners of a rotated box
-     * @param {Object} position - Position of the box center {x, y, z}
-     * @param {Object} rotation - Rotation in degrees {x, y, z}
-     * @param {Object} dimensions - Dimensions of the box {x, y, z}
-     * @returns {Array} Array of 8 corner points
-     */
-    calculateRotatedCorners(position, rotation, dimensions) {
-        // Calculate half-dimensions
-        const halfWidth = dimensions.x / 2;
-        const halfHeight = dimensions.y / 2;
-        const halfDepth = dimensions.z / 2;
-      
-        // Define the 8 corners of the box (before rotation)
-        const corners = [
-          { x: -halfWidth, y: -halfHeight, z: -halfDepth },
-          { x: halfWidth, y: -halfHeight, z: -halfDepth },
-          { x: halfWidth, y: halfHeight, z: -halfDepth },
-          { x: -halfWidth, y: halfHeight, z: -halfDepth },
-          { x: -halfWidth, y: -halfHeight, z: halfDepth },
-          { x: halfWidth, y: -halfHeight, z: halfDepth },
-          { x: halfWidth, y: halfHeight, z: halfDepth },
-          { x: -halfWidth, y: halfHeight, z: halfDepth }
-        ];
-      
-        // Convert rotation from degrees to radians
-        const rotX = rotation.x * Math.PI / 180;
-        const rotY = rotation.y * Math.PI / 180;
-        const rotZ = rotation.z * Math.PI / 180;
-      
-        // Apply rotation and translation to each corner
-        return corners.map(corner => {
-          // Apply rotation around X axis
-          const y1 = corner.y * Math.cos(rotX) - corner.z * Math.sin(rotX);
-          const z1 = corner.y * Math.sin(rotX) + corner.z * Math.cos(rotX);
-      
-          // Apply rotation around Y axis
-          const x2 = corner.x * Math.cos(rotY) + z1 * Math.sin(rotY);
-          const z2 = -corner.x * Math.sin(rotY) + z1 * Math.cos(rotY);
-      
-          // Apply rotation around Z axis
-          const x3 = x2 * Math.cos(rotZ) - y1 * Math.sin(rotZ);
-          const y3 = x2 * Math.sin(rotZ) + y1 * Math.cos(rotZ);
-      
-          // Apply translation
-          return {
-            x: x3 + position.x,
-            y: y3 + position.y,
-            z: z2 + position.z
-          };
-        });
-    }
-
-    setControllers() {
-        console.log("setControllers started:", this.ahuObject);
-        const controllers = this.ahuObject.xetoDictionary.ahuGroup.blockStyle.controllers;
-        for(const i in controllers) {
-            this.ahuObject.resources.controllers[`Controller-${i}`] = controllers[i];
-            const asset = controllers[i].asset;
-            console.log("setControllers asset:", asset);
-            this.ahuObject.resources.controllers[`Controller-${i}`] = {
-                ...this.ahuObject.resources.controllers[`Controller-${i}`],
-                "attributes": sharedData.controllers[asset].attributes
-            }
-        }
-
-        console.log("setControllers controllers:", this.ahuObject.resources.controllers);
-    }
+    
 
     /**
      * Positions and orients helper elements (arrows and labels) relative to ducts.

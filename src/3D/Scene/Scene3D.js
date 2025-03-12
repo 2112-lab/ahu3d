@@ -16,7 +16,8 @@ import Lights from './Lights3D.js';
 import Cameras from './Cameras3D.js';
 import Materials from './Materials3D.js';
 
-import tooltipTemplate from '../../assets/tooltip.html';
+import componentTemplate from '../../assets/tooltips/component.html';
+import controllerTemplate from '../../assets/tooltips/controller.html';
 
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
@@ -40,7 +41,8 @@ class Scene3D {
         this.tooltipEnabled = this.moduleConfigs.ui.showTooltip;
         this.grid = null;
         this.ahuComponents = [];
-        this.tooltipTemplate = tooltipTemplate; // Store the imported HTML template
+        this.componentTemplate = componentTemplate;
+        this.controllerTemplate = controllerTemplate;
         this.init();
     }
 
@@ -364,41 +366,371 @@ class Scene3D {
             this.raycaster.setFromCamera(this.mouseVector, this.cameras.primary);
         
             const hvacIntersects = this.raycaster.intersectObjects(
-                this.scene.children.filter(child => child.name === 'hvac' && child.visible)
+                this.scene.children.filter(child => child.name === 'hvac' && child.visible || child.name.includes('controller') && child.visible )
             );
 
-            if (hvacIntersects.length > 0) {
-                let mesh = hvacIntersects[0].object.parent;
-                if(mesh.parent.name === "hvac") {
-                    mesh = mesh.parent;
-                }
-                console.log("onMeshClick mesh:", mesh);
+            console.log("onMeshClick hvacIntersects:", hvacIntersects);
 
-                this.selectedMesh = mesh;
-                if(this.tooltipEnabled) {
-                    this.addBoundingBox();
-                    this.showTooltip();
-                }           
+            if (hvacIntersects.length > 0) {
+                let mesh = null;
+
+                if(hvacIntersects[0].object.parent.name === "hvac"){
+                    mesh = hvacIntersects[0].object.parent;
+                    console.log("onMeshClick mesh:", mesh);
+
+                    this.selectedMesh = mesh;
+                    if(this.tooltipEnabled) {
+                        this.addBoundingBox();
+                        this.showComponentTooltip();
+                    } 
+                }
+                else if(hvacIntersects[0].object.name.includes('controller')) {
+                    mesh = hvacIntersects[0].object;
+
+                    if(mesh.name.includes('controllerOrb')) {
+                        mesh = mesh.parent;
+                    }
+
+                    console.log("onMeshClick mesh:", mesh);
+
+                    this.selectedMesh = mesh;
+                    if(this.tooltipEnabled) {
+                        this.showControllerTooltip();
+                    } 
+                }
+                else {
+                    this.clearTooltip();
+                }
+                          
             } 
-            else if (this.tooltipParent && this.tooltipObject) {
-                this.tooltipParent.remove(this.tooltipObject);
-                this.tooltipParent = null;
-                this.tooltipObject = null;
+            else {
+                this.clearTooltip();
             }
         }
     }
+
+    clearTooltip() {
+        if (this.tooltipParent && this.tooltipObject) {
+            this.tooltipParent.remove(this.tooltipObject);
+            this.tooltipParent = null;
+            this.tooltipObject = null;
+        }
+    }
+
+    showControllerTooltip() {
+        console.log("showControllerTooltip started");
+        console.log("showControllerTooltip this.selectedMesh:", this.selectedMesh);
     
-    showTooltip() {
+        // Clone the loaded template
+        const tooltipDiv = document.createElement('div');
+        tooltipDiv.innerHTML = this.controllerTemplate.trim(); // Use the imported template
+        const tooltipElement = tooltipDiv.firstElementChild;
+    
+        // Update the tooltip header
+        tooltipElement.querySelector('.tooltip-header').textContent = `${this.selectedMesh.userData.type}-1`;
+    
+        // Get the tooltip body to append rows to
+        const tooltipBody = tooltipElement.querySelector('.tooltip-body');
+        
+        // Clear any existing rows
+        tooltipBody.innerHTML = '';
+        
+        // Initialize attributes object
+        let attributes = {};
+        
+        // Collect attributeKeys from children
+        if (this.selectedMesh.children && this.selectedMesh.children.length > 0) {
+            // Iterate through all children
+            this.selectedMesh.children.forEach(child => {
+                // Check if the child has userData with an attributeKey
+                if (child.userData && child.userData.attributeKey) {
+                    // Generate a random value for demonstration (replace with actual values if available)
+                    const randomValue = Math.floor(Math.random() * 21);
+                    
+                    // Determine if this is an input or output based on your criteria
+                    // For example, you might want to check child.userData.type or some other property
+                    // Here I'm using a simple check on the attributeKey name
+                    const isInput = child.userData.attributeKey.toLowerCase().includes('input');
+                    
+                    // Store the attribute with its value and reference to the mesh
+                    attributes[child.userData.attributeKey] = {
+                        value: randomValue,
+                        isInput: isInput,
+                        meshReference: child  // Store reference to the actual mesh
+                    };
+                }
+            });
+        }
+        
+        // If no children with attributeKeys were found, fallback to the original behavior
+        if (Object.keys(attributes).length === 0) {
+            console.log("No children with attributeKeys found, using fallback values");
+            
+            // Generate random integers for inputs (between 0 and 20)
+            for(let i = 0; i < 4; i++) {
+                const randomValue = Math.floor(Math.random() * 21);
+                attributes[`input-${i}`] = {
+                    value: randomValue,
+                    isInput: true
+                };
+            }
+            
+            // Generate random integers for outputs (between 0 and 20)
+            for(let i = 0; i < 4; i++) {
+                const randomValue = Math.floor(Math.random() * 21);
+                attributes[`output-${i}`] = {
+                    value: randomValue,
+                    isInput: false
+                };
+            }
+        }
+        
+        // Store original colors to revert to when not hovering
+        const originalColors = new Map();
+        
+        // Create a map to store the relationship between attribute keys and child meshes
+        const attributeToMesh = new Map();
+        
+        // Populate the map with attributeKey to child mesh relationships
+        if (this.selectedMesh.children && this.selectedMesh.children.length > 0) {
+            this.selectedMesh.children.forEach(child => {
+                if (child.userData && child.userData.attributeKey) {
+                    attributeToMesh.set(child.userData.attributeKey, child);
+                    
+                    // Store the original color if the child has material
+                    if (child.material) {
+                        // Create a deep copy of the current color to restore later
+                        originalColors.set(child, child.material.color.clone());
+                    }
+                }
+            });
+        }
+        
+        // Create a row for each attribute
+        Object.entries(attributes).forEach(([key, data]) => {
+            // Create a new row
+            const rowElement = document.createElement('div');
+            rowElement.className = 'tooltip-row';
+            
+            // Find the corresponding mesh for this attribute key
+            const correspondingMesh = attributeToMesh.get(key);
+            
+            // Add hover events to the row
+            rowElement.addEventListener('mouseenter', () => {
+                console.log(`showControllerTooltip Hovering over ${key}`);
+                rowElement.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
+
+                for(const child of this.selectedMesh.children) {
+                    if(child.isMesh) {
+                        if(child.userData.attributeType == key) {
+                            child.material.color.set(0xff9900);
+                            child.material.needsUpdate = true;
+                        }
+                    }
+                }
+                
+            });
+            
+            rowElement.addEventListener('mouseleave', () => {
+                console.log(`Mouse left ${key} row`);
+                rowElement.style.backgroundColor = 'transparent';
+                
+                for(const child of this.selectedMesh.children) {
+                    if(child.isMesh) {
+                        if(child.userData.attributeType == key) {
+                            child.material.color.set(0xffffff);
+                            child.material.needsUpdate = true;
+                        }
+                    }
+                }
+            });
+            
+            // Create key element
+            const keyElement = document.createElement('div');
+            keyElement.className = 'tooltip-key';
+            keyElement.textContent = `${key}:`;
+            
+            // Check if this is an input row
+            if (data.isInput) {
+                // Create controls container for input rows (with buttons)
+                const controlsElement = document.createElement('div');
+                controlsElement.className = 'tooltip-controls';
+                
+                // Create minus button
+                const minusButton = document.createElement('button');
+                minusButton.className = 'tooltip-minus';
+                minusButton.textContent = '-';
+                minusButton.addEventListener('click', () => {
+                    console.log(`Decrease value for ${key}`);
+                    
+                    // Decrease the value in the data object (with a minimum of 0)
+                    data.value = Math.max(0, data.value - 1);
+                    
+                    // Update the displayed value
+                    valueElement.textContent = data.value;
+                    
+                    // If there's a mesh reference, update any visual representation
+                    if (data.meshReference && data.meshReference.userData) {
+                        // Update the mesh userData value if needed
+                        data.meshReference.userData.value = data.value;
+                        
+                        // Trigger any required updates (e.g., material updates, re-calculations)
+                        this.updateControllerValues(key, data.value);
+                    }
+                });
+                
+                // Create value element
+                const valueElement = document.createElement('div');
+                valueElement.className = 'tooltip-value';
+                valueElement.textContent = data.value;
+                
+                // Create plus button
+                const plusButton = document.createElement('button');
+                plusButton.className = 'tooltip-plus';
+                plusButton.textContent = '+';
+                plusButton.addEventListener('click', () => {
+                    console.log(`Increase value for ${key}`);
+                    
+                    // Increase the value (add an upper limit if needed)
+                    const maxValue = 100; // Example maximum value
+                    data.value = Math.min(maxValue, data.value + 1);
+                    
+                    // Update the displayed value
+                    valueElement.textContent = data.value;
+                    
+                    // If there's a mesh reference, update any visual representation
+                    if (data.meshReference && data.meshReference.userData) {
+                        // Update the mesh userData value if needed
+                        data.meshReference.userData.value = data.value;
+                        
+                        // Trigger any required updates (e.g., material updates, re-calculations)
+                        this.updateControllerValues(key, data.value);
+                    }
+                });
+                
+                // Assemble the controls
+                controlsElement.appendChild(minusButton);
+                controlsElement.appendChild(valueElement);
+                controlsElement.appendChild(plusButton);
+                
+                // Assemble the row
+                rowElement.appendChild(keyElement);
+                rowElement.appendChild(controlsElement);
+            } else {
+                // For output rows, just display the value without buttons
+                const valueElement = document.createElement('div');
+                valueElement.className = 'tooltip-value';
+                valueElement.textContent = data.value;
+                
+                // Assemble the row
+                rowElement.appendChild(keyElement);
+                rowElement.appendChild(valueElement);
+            }
+            
+            // Add the row to the tooltip body
+            tooltipBody.appendChild(rowElement);
+        });
+    
+        const tooltipWidth = 150;
+    
+        // Set the position of the tooltip using CSS
+        tooltipElement.style.position = 'absolute';
+        tooltipElement.style.left = `${(0) + (tooltipWidth / 1.35)}px`;
+        tooltipElement.style.pointerEvents = 'auto'; // Changed to auto to enable button clicks
+        
+        // Clean up function to restore all original colors when the tooltip is removed
+        const cleanupHighlights = () => {
+            originalColors.forEach((color, mesh) => {
+                if (mesh && mesh.material) {
+                    mesh.material.color.copy(color);
+                    mesh.material.needsUpdate = true;
+                }
+            });
+            originalColors.clear();
+        };
+        
+        // Add the cleanup function to the tooltip element for later reference
+        tooltipElement.cleanupHighlights = cleanupHighlights;
+    
+        // Add the tooltip as a CSS2DObject
+        const label = new CSS2DObject(tooltipElement);
+    
+        // Add the label to the mesh
+        this.selectedMesh.add(label);
+    
+        this.tooltipParent = this.selectedMesh;
+        this.tooltipObject = label;
+    }
+
+    updateControllerValues(attributeKey, newValue) {
+        console.log(`Updating ${attributeKey} with new value: ${newValue}`);
+        
+        // Update any dependent outputs or visuals
+        // This could involve re-calculating other values based on inputs
+        
+        // Example: update all output values if an input changes
+        if (attributeKey.toLowerCase().includes('input')) {
+            // Re-calculate outputs based on inputs
+            this.recalculateOutputs();
+        }
+        
+        // Trigger any needed scene updates
+        if (this.onControllerUpdate) {
+            this.onControllerUpdate(attributeKey, newValue);
+        }
+    }
+    
+    // Example method to recalculate outputs based on inputs
+    recalculateOutputs() {
+        // Get all current input values
+        const inputValues = {};
+        Object.entries(attributes).forEach(([key, data]) => {
+            if (data.isInput) {
+                inputValues[key] = data.value;
+            }
+        });
+        
+        // Calculate new output values based on inputs
+        // This is where you would implement your specific logic
+        Object.entries(attributes).forEach(([key, data]) => {
+            if (!data.isInput) {
+                // Example: set output to sum of inputs (replace with your logic)
+                const newValue = Object.values(inputValues).reduce((sum, val) => sum + val, 0);
+                
+                // Update the output value
+                data.value = newValue;
+                
+                // Find and update the displayed value in the tooltip
+                const outputRows = tooltipBody.querySelectorAll('.tooltip-row');
+                outputRows.forEach(row => {
+                    const keyElement = row.querySelector('.tooltip-key');
+                    if (keyElement && keyElement.textContent === `${key}:`) {
+                        const valueElement = row.querySelector('.tooltip-value');
+                        if (valueElement) {
+                            valueElement.textContent = newValue;
+                        }
+                    }
+                });
+                
+                // Update the mesh reference if available
+                if (data.meshReference) {
+                    data.meshReference.userData.value = newValue;
+                }
+            }
+        });
+    }
+    
+    showComponentTooltip() {
         const meshComponentData = this.selectedMesh.userData.component;
         const meshAttributes = meshComponentData.attributes;
     
         // Clone the loaded template
         const tooltipDiv = document.createElement('div');
-        tooltipDiv.innerHTML = this.tooltipTemplate.trim(); // Use the imported template
+        tooltipDiv.innerHTML = this.componentTemplate.trim(); // Use the imported template
         const tooltipElement = tooltipDiv.firstElementChild;
 
-        console.log("showTooltip this.selectedMesh:", this.selectedMesh);
-        console.log("showTooltip meshComponentData:", meshComponentData);
+        console.log("showComponentTooltip this.selectedMesh:", this.selectedMesh);
+        console.log("showComponentTooltip meshComponentData:", meshComponentData);
     
         // Update the tooltip content
         tooltipElement.querySelector('.tooltip-header').textContent = this.selectedMesh.userData.name.split("::")[1] || this.selectedMesh.userData.name;
@@ -453,7 +785,7 @@ class Scene3D {
     updateTooltip() {
         if (this.tooltipParent && this.tooltipObject) {
             this.tooltipParent.remove(this.tooltipObject);
-            this.showTooltip();
+            this.showComponentTooltip();
         }        
     }    
 

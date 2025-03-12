@@ -6,13 +6,10 @@
  * and the overall duct network topology.
  */
 
-import * as THREE from 'three';
 import {
-    getSegmentDirection, 
     getDuctDirection, 
     seperateByDirections, 
-    translateDuct, 
-    orientDuct,
+    translateDuct
 } from "./Basic.js";
 import { sharedData } from "../Ahu3D/globals.js";
 import Joints from "./Joints.js";

@@ -1,40 +1,3 @@
-import * as THREE from 'three';
-
-/**
- * @function getSegmentDirection
- * @description Determines the direction of a segment based on its start and end positions and assigns a relative position to the queried segment.
- * @param {Object} queriedSegment - The segment object containing xetoDuct data.
- * @param {String} key - The key representing the starting point of the segment.
- */
-export function getSegmentDirection(queriedSegment, key) {
-    let joiningLocation; // The joining location based on the segment's graphic location and the provided key.
-    let secondaryLocation; // The other end of the segment relative to the joining location.
-
-    // Determine which point is the joining location and which is the secondary location.
-    if (queriedSegment.xetoDuct.graphicLocation.start === key) {
-        joiningLocation = queriedSegment.xetoDuct.graphicLocation.start;
-        secondaryLocation = queriedSegment.xetoDuct.graphicLocation.end;
-    } else {
-        joiningLocation = queriedSegment.xetoDuct.graphicLocation.end;
-        secondaryLocation = queriedSegment.xetoDuct.graphicLocation.start;
-    }
-
-    let relativePosition = "none"; // Default relative position.
-
-    // Determine the relative position of the secondary location compared to the joining location.
-    if (secondaryLocation[0] < joiningLocation[0]) {
-        relativePosition = "left";
-    } else if (secondaryLocation[0] > joiningLocation[0]) {
-        relativePosition = "right";
-    } else if (secondaryLocation[1] > joiningLocation[1]) {
-        relativePosition = "down";
-    } else if (secondaryLocation[1] < joiningLocation[1]) {
-        relativePosition = "up";
-    }
-
-    queriedSegment.relativePosition = relativePosition; // Assign the determined relative position to the queried segment.
-}
-
 /**
  * @function getDuctDirection
  * @description Determines the relative direction of a duct based on its start and end graphic locations.
@@ -101,21 +64,4 @@ export function seperateByDirections(intersectSegments, adjacentSegment, current
  */
 export function translateDuct(duct, translationKey, translationValue) {
     duct.position[translationKey] += translationValue; // Apply the translation to the specified axis.
-}
-
-/**
- * @function orientDuct
- * @description Sets the rotation of a duct based on its orientation.
- * @param {Object} duct - The duct object to be oriented.
- * @param {String} orientation - The desired orientation of the duct (e.g., 'north', 'south', 'west').
- */
-export function orientDuct(duct, orientation) {
-    // Set the rotation of the duct based on the provided orientation.
-    if (orientation === 'north') {
-        duct.rotation.y = -90;
-    } else if (orientation === 'south') {
-        duct.rotation.y = 90;
-    } else if (orientation === 'west') {
-        duct.rotation.y = 180;
-    }
 }
