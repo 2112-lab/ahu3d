@@ -10,6 +10,11 @@ export default class Canvas2D {
 
     const layer = new Konva.Layer();
 
+    this.jointCenter = {
+      x: 0,
+      z: 0,
+    };
+
     // Create the AHU shapes and add to the layer
     this.ahuToLayer(layer);
 
@@ -526,8 +531,8 @@ export default class Canvas2D {
    * @param {string} jointKey - The key identifying the joint in the AHU structure.
    * @returns {Object} - The calculated center of the joint, with x and z coordinates.
    */
-  calculate2DJointCenter(joint, jointKey) {
-    console.log("calculate2DJointCenter joint:", joint, this.ahuObject);
+  calculatejointcenter(joint, jointKey) {
+    console.log("calculatejointcenter joint:", joint, this.ahuObject);
 
     let jointCenter = {
         x: 0,
@@ -546,8 +551,26 @@ export default class Canvas2D {
         }
     }
 
-    // Optionally, you could visualize the joint center as a point (e.g., using a circle or marker)
-    // Example: this.renderPoint(layer, jointCenter);
+    const offset = 250;
+
+    if(this.jointKeys.length == 2) {
+      if(joint.up && joint.left) {
+        jointCenter.x += -offset;
+        jointCenter.z += offset;
+      }
+      else if(joint.up && joint.right) {
+        jointCenter.x += offset;
+        jointCenter.z += offset;
+      }
+      else if(joint.down && joint.right) {
+        jointCenter.x += offset;
+        jointCenter.z += -offset;
+      }
+      else if(joint.down && joint.left) {
+        jointCenter.x += -offset;
+        jointCenter.z += -offset;
+      }
+    }    
 
     return jointCenter;  // Return the calculated joint center
   }
@@ -615,6 +638,28 @@ export default class Canvas2D {
   }
 
   /**
+   * Draws a small circle at the joint center position to visualize it.
+   * @param {Konva.Layer} layer - The layer to add the circle to.
+   * @param {Object} center - The center point with x and z coordinates.
+   * @param {string} color - The color of the circle (default: "red").
+   * @param {number} radius - The radius of the circle (default: 50).
+   */
+  drawJointCenter(layer, center, color = "red", radius = 50) {
+    // Create a circle at the joint center
+    const centerCircle = new Konva.Circle({
+      x: center.x,
+      y: center.z * -1, // Convert z to canvas y-coordinate (flipped)
+      radius: radius,
+      fill: color,
+      stroke: 'white',
+      strokeWidth: 5,
+    });
+    
+    // Add the circle to the layer
+    layer.add(centerCircle);
+  }
+
+  /**
    * Creates a 2D representation of a joint and adds it to the layer.
    * @param {Konva.Layer} layer - The layer to add the joint representation to.
    * @param {Object} joint - The joint object to render.
@@ -629,9 +674,12 @@ export default class Canvas2D {
 
     this.jointKeys = Object.keys(joint);
 
-    const jointCenter = this.calculate2DJointCenter(joint, jointKey);
+    this.jointCenter = this.calculatejointcenter(joint, jointKey);
 
-    console.log("create2DJoint jointCenter:", jointCenter);
+    console.log("create2DJoint jointCenter:", this.jointCenter);
+
+    // Draw a circle at the joint center for visualization
+    // this.drawJointCenter(layer, this.jointCenter);
 
     // Determine how to draw the joint based on its configuration (up/down/left/right)
     if(this.jointKeys.length == 2) {
@@ -644,7 +692,7 @@ export default class Canvas2D {
           point1 = joint.right.proxy2.position;
           point2 = joint.up.proxy1.position;
           midPoint = joint.up.proxyMedian.position;
-          this.createJointCorner(layer, point1, point2, midPoint, 90);
+          this.createJointCorner(layer, point1, point2, midPoint, "outwards");
         }
         else if(joint.up && joint.left) {
           point1 = joint.left.proxy1.position;
@@ -655,13 +703,13 @@ export default class Canvas2D {
           point1 = joint.left.proxy2.position;
           point2 = joint.up.proxy2.position;
           midPoint = joint.left.proxyMedian.position;
-          this.createJointCorner(layer, point1, point2, midPoint, 360);
+          this.createJointCorner(layer, point1, point2, midPoint, "outwards");
         }
         else if(joint.down && joint.right) {
           point1 = joint.right.proxy1.position;
           point2 = joint.down.proxy1.position;
           midPoint = joint.right.proxyMedian.position;
-          this.createJointCorner(layer, point1, point2, midPoint, 180);
+          this.createJointCorner(layer, point1, point2, midPoint, "outwards");
 
           point1 = joint.right.proxy2.position;
           point2 = joint.down.proxy2.position;
@@ -669,6 +717,7 @@ export default class Canvas2D {
           this.createJointCorner(layer, point1, point2, midPoint);
         }
         else if(joint.down && joint.left) {
+
           point1 = joint.left.proxy2.position;
           point2 = joint.down.proxy1.position;
           midPoint = joint.left.proxyMedian.position;
@@ -677,7 +726,7 @@ export default class Canvas2D {
           point1 = joint.left.proxy1.position;
           point2 = joint.down.proxy2.position;
           midPoint = joint.down.proxyMedian.position;
-          this.createJointCorner(layer, point1, point2, midPoint, -90);
+          this.createJointCorner(layer, point1, point2, midPoint, "outwards");
         }
         else if(joint.up && joint.down) {
           point1 = joint.up.proxy1.position;
@@ -712,9 +761,7 @@ export default class Canvas2D {
             midPoint = point2;
           }
 
-          const angle = joint.up.ductDimensions.y < joint.down.ductDimensions.y ? -90 : 360;
-
-          this.createJointCorner(layer, point1, point2, midPoint, angle);
+          this.createJointCorner(layer, point1, point2, midPoint, "outwards");
 
           point1 = joint.down.proxy1.position;
           point2 = joint.left.proxy2.position;
@@ -744,9 +791,7 @@ export default class Canvas2D {
             midPoint = point2;
           }
 
-          const angle = joint.up.ductDimensions.y < joint.down.ductDimensions.y ? 180 : 180;
-
-          this.createJointCorner(layer, point1, point2, midPoint, angle);
+          this.createJointCorner(layer, point1, point2, midPoint, "outwards");
         }
         else if(!joint.up) {
           point1 = joint.right.proxy2.position;
@@ -766,9 +811,7 @@ export default class Canvas2D {
             midPoint = point2;
           }
 
-          const angle = joint.left.ductDimensions.y < joint.right.ductDimensions.y ? 180 : 180;
-
-          this.createJointCorner(layer, point1, point2, midPoint, angle);
+          this.createJointCorner(layer, point1, point2, midPoint, "outwards");
         }
         else if(!joint.down) {
           point1 = joint.up.proxy2.position;
@@ -783,9 +826,7 @@ export default class Canvas2D {
             midPoint = point2;
           }
 
-          const angle = joint.left.ductDimensions.y < joint.right.ductDimensions.y ? 90 : 90;
-
-          this.createJointCorner(layer, point1, point2, midPoint, angle);
+          this.createJointCorner(layer, point1, point2, midPoint, "outwards");
 
           point1 = joint.left.proxy1.position;
           point2 = joint.up.proxy1.position;
@@ -816,242 +857,232 @@ export default class Canvas2D {
     }      
   }
 
-  /**
-   * Creates a corner for the joint and adds it to the layer.
-   * @param {Konva.Layer} layer - The layer to add the joint corner to.
-   * @param {Object} point1 - The first point of the joint corner.
-   * @param {Object} point2 - The second point of the joint corner.
-   * @param {Object} midPoint - The midpoint for the joint corner.
-   * @param {number} rotationOverride - Optional rotation override for the corner.
-   */
-  createJointCorner(layer, point1, point2, midPoint, rotationOverride = null) {
-
-    let isColinear = false;
-
-    // Check if the x values of any of the points are within 30 units of each other
-    if (Math.abs(point1.x - point2.x) <= 30 && Math.abs(point1.x - midPoint.x) <= 30 && Math.abs(point2.x - midPoint.x) <= 30) {
-        console.log("x values of points are within 30 units of each other");
-        isColinear = true;
-    }
-
-    // Check if the z values of any of the points are within 30 units of each other
-    if (Math.abs(point1.z - point2.z) <= 30 && Math.abs(point1.z - midPoint.z) <= 30 && Math.abs(point2.z - midPoint.z) <= 30) {
-        console.log("z values of points are within 30 units of each other");
-        isColinear = true;
-    }
-
-    if(sharedData.jointStyle == "arc" && isColinear == false) {
-      this.createJointArc(layer, point1, point2, midPoint, rotationOverride);
-    }
-    else {
-      const points = [
-        point1.x, point1.z * -1,
-        midPoint.x, midPoint.z * -1,
-        point2.x, point2.z * -1
-      ];
-
-      const jointLine = new Konva.Line({
-          points: points,
-          stroke: 'white',
-          lineCap: 'round',
-          lineJoin: 'round',
-          strokeWidth: 30,
-      });
-
-      layer.add(jointLine);
-    }
+/**
+ * Determines if two points have approximately equal x and z distances.
+ * This can be used to identify diagonal movements that should have arcs.
+ * 
+ * @param {Object} point1 - First point with x and z properties.
+ * @param {Object} point2 - Second point with x and z properties.
+ * @param {number} threshold - Ratio threshold to consider distances approximately equal.
+ * @returns {boolean} True if x and z distances are approximately equal, false otherwise.
+ */
+haveEqualXZDistances(point1, point2, threshold = 0.2) {
+  // Calculate the absolute distances in x and z directions
+  const xDistance = Math.abs(point1.x - point2.x);
+  const zDistance = Math.abs(point1.z - point2.z);
+  
+  // Avoid division by zero
+  if (xDistance === 0 || zDistance === 0) {
+    return false; // One dimension has no movement, so they're not equal
   }
+  
+  // Calculate the ratio between the two distances
+  const ratio = Math.max(xDistance, zDistance) / Math.min(xDistance, zDistance);
+  
+  // If the ratio is close to 1, the distances are approximately equal
+  return Math.abs(ratio - 1) <= threshold;
+}
 
-  /**
-   * Creates an arc for the joint and adds it to the layer.
-   * @param {Konva.Layer} layer - The layer to add the joint arc to.
-   * @param {Object} point1 - The first point of the joint arc.
-   * @param {Object} point2 - The second point of the joint arc.
-   * @param {Object} midPoint - The midpoint for the joint arc.
-   * @param {number} rotationOverride - Optional rotation override for the arc.
-   */
-  createJointArc(layer, point1, point2, midPoint, rotationOverride = null) {
-    console.log("createJointArc started");
+/**
+ * Modified version of arePointsColinear that considers both colinearity and equal distances.
+ * @param {Object} point1 - First point with x and z properties.
+ * @param {Object} point2 - Second point with x and z properties.
+ * @param {number} colinearThreshold - Distance threshold to consider points aligned.
+ * @param {number} equalDistanceThreshold - Ratio threshold for equal distances.
+ * @returns {Object} An object with isColinear and hasEqualDistances properties.
+ */
+analyzePointRelationship(point1, point2, colinearThreshold = 30, equalDistanceThreshold = 0.2) {
+  // Check for colinearity (aligned on X or Z axis)
+  const alignedOnX = Math.abs(point1.x - point2.x) <= colinearThreshold;
+  const alignedOnZ = Math.abs(point1.z - point2.z) <= colinearThreshold;
+  const isColinear = alignedOnX || alignedOnZ;
+  
+  // Check for equal distances in X and Z
+  const hasEqualDistances = this.haveEqualXZDistances(point1, point2, equalDistanceThreshold);
+  
+  return {
+    isColinear,
+    hasEqualDistances,
+    alignedOnX,
+    alignedOnZ
+  };
+}
 
-    // Convert z to match Konva's coordinate system
-    const p1 = { x: point1.x, y: point1.z };
-    const p2 = { x: point2.x, y: point2.z };
-    const mid = { x: midPoint.x, y: midPoint.z };
-
-    const cornerDistance = Math.min( Math.abs(p1.x - p2.x), Math.abs(p1.y - p2.y) );
-
-    const wt = 30;
-    const halfWT = wt / 2;
-    const radius = cornerDistance + halfWT; // Arc radius
-
-    let rotation = 0;
-    let cx = mid.x;
-    let cy = mid.y;
-    let isSet = false;
-
-    let linePoints = [
-      p1.x, p1.y * -1,
-      mid.x, mid.y * -1,
-    ];
-
-    if(sharedData.jointDirection == "outwards") {
-      if (p1.x < p2.x && p1.y > p2.y) {
-        rotation = -90;
-        cx = mid.x;
-        cy = mid.y - radius;
-        isSet = true;
-        if(!(mid.x != p2.x && mid.y != p2.y)) {
-          cx = mid.x - radius;
-          cy = mid.y;
-        }
-      }
-      else if (p1.x > p2.x && p1.y > p2.y) {
-        rotation = 0;
-        cx = mid.x - radius;
-        cy = mid.y;
-        isSet = true;
-        if(!(mid.x != p2.x && mid.y != p2.y)) {
-          cx = mid.x;
-          cy = mid.y + radius;
-        }
-      }
-      else if (p1.x > p2.x && p1.y < p2.y) {
-        rotation = 90;
-        cx = mid.x + radius;
-        cy = mid.y;
-        isSet = true;
-        if(!(mid.x != p1.x && mid.y != p1.y)) {
-          cx = mid.x;
-          cy = mid.y + radius;
-        }
-      }
-      else {
-        rotation = 180;
-        cx = mid.x;
-        cy = mid.y - radius;
-        isSet = true;
-        if(!(mid.x != p1.x && mid.y != p1.y)) {
-          cx = mid.x + radius;
-          cy = mid.y;
-        }
-      }
-    }
-    else if(sharedData.jointDirection == "inwards") {
-      if (p1.x < p2.x && p1.y > p2.y) {
-        rotation = 90;
-        cx = mid.x + radius;
-        cy = mid.y + halfWT;
-        isSet = true;
-        if(!(mid.x != p2.x && mid.y != p2.y)) {
-          cx = mid.x + halfWT;
-          cy = mid.y + radius;
-        }
-      }
-      else if (p1.x > p2.x && p1.y > p2.y) {
-        rotation = 180;
-        cx = mid.x + halfWT;
-        cy = mid.y - radius;
-        isSet = true;
-        if(!(mid.x != p2.x && mid.y != p2.y)) {
-          cx = mid.x + radius;
-          cy = mid.y - halfWT;
-        }
-      }
-      else if (p1.x > p2.x && p1.y < p2.y) {
-        rotation = -90;
-        cx = mid.x - halfWT;
-        cy = mid.y - radius;
-        isSet = true;
-        if(!(mid.x != p1.x && mid.y != p1.y)) {
-          cx = mid.x - radius;
-          cy = mid.y - halfWT;
-        }
-      }
-      else {
-        rotation = 0;
-        cx = mid.x - radius;
-        cy = mid.y + halfWT;
-        isSet = true;
-        if(!(mid.x != p1.x && mid.y != p1.y)) {
-          cx = mid.x - halfWT;
-          cy = mid.y + radius;
-        }
-      }
-    }
-
-    if((mid.x != p1.x && mid.y != p1.y)) {
-      linePoints = [
-        mid.x, mid.y * -1,
-        p2.x, p2.y * -1,
-      ]
-    }
-
-    if(rotationOverride) {
-      rotation = rotationOverride;
-      if(rotationOverride == 90) {
-        if(sharedData.jointDirection == "inwards") {
-          cx += (radius + halfWT) * 1;
-          cy += (radius + halfWT) * 1;
-        }
-      }
-      else if(rotationOverride == -90) {
-        if(sharedData.jointDirection == "inwards") {
-          cx += (radius + halfWT) * -1;
-          cy += (radius + halfWT) * -1;
-        }
-      }
-      else if(rotationOverride == 0) {
-        if(sharedData.jointDirection == "inwards") {
-          cx += (radius + halfWT) * 1;
-          cy += (radius + halfWT) * -1;
-        }
-      }
-      else if(rotationOverride == 180) {
-        if(sharedData.jointDirection == "outwards") {
-          // cx += (radius + halfWT) * 1;
-          // cy += (radius + halfWT) * -1;
-        }
-        else if(sharedData.jointDirection == "inwards") {
-          cx += (radius + halfWT) * 1;
-          cy += (radius + halfWT) * -1;
-        }
-      }
-      else if(rotationOverride == 360) {
-        if(sharedData.jointDirection == "outwards") {
-          cx += (radius) * 0;
-          cy += (radius + halfWT) * 0;
-        }
-        else if(sharedData.jointDirection == "inwards") {
-          cx += (radius + halfWT) * -1;
-          cy += (radius + halfWT) * 1;
-        }
-      }
-    }
-
-    if(isSet){
-      const jointArc = new Konva.Arc({
-        x: cx,
-        y: cy * -1,  // Flip y to match Konva's coordinate system
-        innerRadius: radius,
-        outerRadius: radius,
-        angle: 90,
-        rotation: rotation,
-        stroke: 'white',
-        strokeWidth: 30,
-      });
-      layer.add(jointArc);
-
-      const jointLine = new Konva.Line({
-        points: linePoints,
-        stroke: 'white',
-        lineCap: 'round',
-        lineJoin: 'round',
-        strokeWidth: 30,
-      });
-
-      layer.add(jointLine);
-    }
+/**
+ * Creates a corner for the joint and adds it to the layer.
+ * Now supports overriding the arc direction for specific corners.
+ * 
+ * @param {Konva.Layer} layer - The layer to add the joint corner to.
+ * @param {Object} point1 - The first point of the joint corner.
+ * @param {Object} point2 - The second point of the joint corner.
+ * @param {Object} midPoint - The midpoint for the joint corner.
+ * @param {string} [arcDirectionOverride] - Optional override for arc direction ("inwards", "outwards", or null to use default)
+ */
+createJointCorner(layer, point1, point2, midPoint, arcDirectionOverride = null) {
+  // Store the original direction from sharedData
+  const originalDirection = sharedData.jointDirection;
+  
+  // If an override is provided, temporarily set the direction
+  if (arcDirectionOverride !== null) {
+    sharedData.jointDirection = arcDirectionOverride;
   }
+  
+  // Analyze relationships between points
+  const p1ToP2 = this.analyzePointRelationship(point1, point2);
+  const p1ToMid = this.analyzePointRelationship(point1, midPoint);
+  const p2ToMid = this.analyzePointRelationship(point2, midPoint);
+  
+  // Draw straight lines for colinear points
+  if (p1ToP2.isColinear) {
+    this.drawStraightLine(layer, point1, point2);
+  }
+  
+  if (p1ToMid.isColinear) {
+    this.drawStraightLine(layer, point1, midPoint);
+  }
+  
+  if (p2ToMid.isColinear) {
+    this.drawStraightLine(layer, point2, midPoint);
+  }
+  
+  // Draw arcs for points with equal x-z distances (diagonal movement)
+  if (p1ToP2.hasEqualDistances) {
+    this.createJointArc(layer, point1, point2, midPoint);
+  }
+  
+  if (p1ToMid.hasEqualDistances) {
+    this.createJointArc(layer, point1, midPoint, point2);
+  }
+  
+  if (p2ToMid.hasEqualDistances) {
+    this.createJointArc(layer, midPoint, point2, point1);
+  }
+  
+  // Restore the original direction if an override was applied
+  if (arcDirectionOverride !== null) {
+    sharedData.jointDirection = originalDirection;
+  }
+}
+
+/**
+ * Helper method to draw a straight line between two points.
+ * 
+ * @param {Konva.Layer} layer - The layer to add the line to.
+ * @param {Object} point1 - The first point with x and z properties.
+ * @param {Object} point2 - The second point with x and z properties.
+ */
+drawStraightLine(layer, point1, point2) {
+  const points = [
+    point1.x, point1.z * -1,
+    point2.x, point2.z * -1
+  ];
+
+  const jointLine = new Konva.Line({
+    points: points,
+    stroke: 'white',
+    lineCap: 'round',
+    lineJoin: 'round',
+    strokeWidth: 30,
+  });
+
+  layer.add(jointLine);
+}
+
+/**
+ * Creates an arc for the joint and adds it to the layer.
+ * This improved version creates a smooth curve between the two non-colinear points,
+ * with direction based on sharedData.jointDirection and jointCenter.
+ * 
+ * @param {Konva.Layer} layer - The layer to add the joint arc to.
+ * @param {Object} startPoint - The starting point of the joint arc.
+ * @param {Object} endPoint - The ending point of the joint arc.
+ * @param {Object} controlPoint - A control point to help determine the curve.
+ */
+createJointArc(layer, startPoint, endPoint, controlPoint) {
+  // Convert points to canvas coordinates
+  const x1 = startPoint.x;
+  const y1 = startPoint.z * -1;
+  const x2 = endPoint.x;
+  const y2 = endPoint.z * -1;
+  
+  // Calculate the midpoint between the two points
+  const midX = (x1 + x2) / 2;
+  const midY = (y1 + y2) / 2;
+  
+  // Calculate the distance between the two points
+  const distance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+  
+  // Calculate the normalized perpendicular vector
+  let perpX = -(y2 - y1);
+  let perpY = x2 - x1;
+  const perpLength = Math.sqrt(perpX * perpX + perpY * perpY);
+  perpX = perpX / perpLength;
+  perpY = perpY / perpLength;
+
+  // Get the direction preference from sharedData
+  const curveDirection = sharedData.jointDirection || "outwards"; // Default to "outwards" if not specified
+  
+  // Calculate vector from midpoint to jointCenter (if available)
+  let vecToJointCenterX = 0;
+  let vecToJointCenterY = 0;
+  
+  if (this.jointCenter) {
+    vecToJointCenterX = this.jointCenter.x - midX;
+    vecToJointCenterY = (this.jointCenter.z * -1) - midY;
+  } else {
+    // Fallback to using controlPoint if jointCenter isn't available
+    vecToJointCenterX = controlPoint.x - midX;
+    vecToJointCenterY = (controlPoint.z * -1) - midY;
+  }
+  
+  // Normalize the vector to jointCenter
+  const vecLength = Math.sqrt(vecToJointCenterX * vecToJointCenterX + vecToJointCenterY * vecToJointCenterY);
+  if (vecLength > 0) {
+    vecToJointCenterX /= vecLength;
+    vecToJointCenterY /= vecLength;
+  }
+  
+  // Dot product to determine if jointCenter and perpendicular vector are on same side
+  const dotProduct = vecToJointCenterX * perpX + vecToJointCenterY * perpY;
+  
+  // Set curvature factor based on dotProduct and curveDirection
+  let curveFactor;
+  if (curveDirection === "inwards") {
+    // For inwards direction, make the arc curve toward the joint center
+    curveFactor = dotProduct > 0 ? 0.3 : -0.3;
+  } else { // "outwards" or default
+    // For outwards direction, make the arc curve away from the joint center
+    curveFactor = dotProduct > 0 ? -0.3 : 0.3;
+  }
+  
+  // Calculate the control point for the quadratic curve
+  const cpX = midX + perpX * distance * curveFactor;
+  const cpY = midY + perpY * distance * curveFactor;
+  
+  // Use Konva.Path for a smooth curved line
+  const pathData = `M ${x1} ${y1} Q ${cpX} ${cpY} ${x2} ${y2}`;
+  
+  const jointPath = new Konva.Path({
+    data: pathData,
+    stroke: 'white',
+    strokeWidth: 30,
+    lineCap: 'round',
+  });
+  
+  layer.add(jointPath);
+  
+  // Debug visualization if needed
+  if (sharedData.debug) {
+    // Add a small circle at the control point for debugging
+    const debugCircle = new Konva.Circle({
+      x: cpX,
+      y: cpY,
+      radius: 10,
+      fill: 'red',
+    });
+    layer.add(debugCircle);
+  }
+}
 
   /**
    * Draws a frame around all shapes in the layer, considering the size of the content and adding padding.

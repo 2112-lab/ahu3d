@@ -13,12 +13,10 @@ import { sharedData } from "../../../Ahu3D/globals.js";
  */
 export function calculateJointCenter(jointKey) {
     console.log("calculateJointCenter started");
-
     let jointCenter = {
         x: 0,
         z: 0,
     };
-
     // Iterate through all ducts associated with the joint
     for (const ductKey of sharedData.ahuObject.associations.joints[jointKey].ducts) {
         const duct = sharedData.ahuObject.resources.ducts[ductKey];
@@ -29,8 +27,29 @@ export function calculateJointCenter(jointKey) {
             jointCenter.z = duct.position.z;
         }
     }
-
     sharedData.jointCenter = jointCenter;
+    
+    // ===== JOINT CENTER HELPER VISUALIZATION =====
+    // Comment out this block when not needed
+    // {
+    //     // Create a cube geometry - small size for precision
+    //     const geometry = new THREE.BoxGeometry(50, 50, 50);
+        
+    //     // Red material with some transparency
+    //     const material = new THREE.MeshBasicMaterial({ 
+    //         color: 0xff0000,
+    //         transparent: true,
+    //         opacity: 0.8
+    //     });
+        
+    //     // Create and position the cube
+    //     const cube = new THREE.Mesh(geometry, material);
+    //     cube.position.set(jointCenter.x, 0, jointCenter.z);
+        
+    //     // Add to scene
+    //     sharedData.sceneHelper.addToScene(cube);
+    // }
+    // ===== END HELPER VISUALIZATION =====
 }
 
 /**
