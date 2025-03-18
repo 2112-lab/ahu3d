@@ -11,7 +11,7 @@ import { sharedData } from "../../../Ahu3D/globals.js";
  * @param {string} jointKey - The key identifying the joint.
  * @param {Object} ahuObject - The AHU object containing the joint and duct information.
  */
-export function calculateJointCenter(jointKey) {
+export function calculateJointCenter(joint, jointKey) {
     console.log("calculateJointCenter started");
     let jointCenter = {
         x: 0,
@@ -27,6 +27,30 @@ export function calculateJointCenter(jointKey) {
             jointCenter.z = duct.position.z;
         }
     }
+
+    const offset = 100;
+
+    const jointKeys = Object.keys(joint);
+
+    if(jointKeys.length == 2) {
+      if(joint.up && joint.left) {
+        jointCenter.x += -offset;
+        jointCenter.z += offset;
+      }
+      else if(joint.up && joint.right) {
+        jointCenter.x += offset;
+        jointCenter.z += offset;
+      }
+      else if(joint.down && joint.right) {
+        jointCenter.x += offset;
+        jointCenter.z += -offset;
+      }
+      else if(joint.down && joint.left) {
+        jointCenter.x += -offset;
+        jointCenter.z += -offset;
+      }
+    }
+
     sharedData.jointCenter = jointCenter;
     
     // ===== JOINT CENTER HELPER VISUALIZATION =====

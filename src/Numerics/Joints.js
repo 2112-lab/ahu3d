@@ -521,7 +521,7 @@ export default class Joints {
                         upProxies.ductDimensions.y
                     );
 
-                    medianOffset += sharedData.jointPadding;
+                    medianOffset += sharedData.jointPadding + 15;
 
                     if(rightProxies.ductDimensions.y < upProxies.ductDimensions.y) {
                         upProxies.proxyMedian.position.x += medianOffset;
@@ -558,7 +558,7 @@ export default class Joints {
                         downProxies.ductDimensions.y
                     );
 
-                    medianOffset += sharedData.jointPadding;
+                    medianOffset += sharedData.jointPadding + 15;
 
                     if(rightProxies.ductDimensions.y < downProxies.ductDimensions.y) {
                         rightProxies.proxyMedian.position.x += medianOffset;
@@ -593,7 +593,7 @@ export default class Joints {
                         upProxies.ductDimensions.y
                     );
 
-                    medianOffset += sharedData.jointPadding;
+                    medianOffset += sharedData.jointPadding + 15;
 
                     if(leftProxies.ductDimensions.y > upProxies.ductDimensions.y) {
                         leftProxies.proxyMedian.position.z += medianOffset;
@@ -628,7 +628,7 @@ export default class Joints {
                         downProxies.ductDimensions.y
                     );
 
-                    medianOffset += sharedData.jointPadding;
+                    medianOffset += sharedData.jointPadding + 15;
 
                     if(leftProxies.ductDimensions.y > downProxies.ductDimensions.y) {
                         downProxies.proxyMedian.position.z -= medianOffset;
@@ -1035,7 +1035,7 @@ export default class Joints {
                         upProxies.ductDimensions.y
                     );
 
-                    medianOffset += sharedData.jointPadding;
+                    medianOffset += sharedData.jointPadding + 15;
 
                     if(rightProxies.ductDimensions.y < upProxies.ductDimensions.y) {
                         upProxies.proxyMedian.position.x += medianOffset;
@@ -1069,7 +1069,7 @@ export default class Joints {
                         downProxies.ductDimensions.y
                     );
 
-                    medianOffset += sharedData.jointPadding;
+                    medianOffset += sharedData.jointPadding + 15;
 
                     if(rightProxies.ductDimensions.y < downProxies.ductDimensions.y) {
                         rightProxies.proxyMedian.position.x += medianOffset;
@@ -1104,7 +1104,7 @@ export default class Joints {
                         upProxies.ductDimensions.y
                     );
 
-                    medianOffset += sharedData.jointPadding;
+                    medianOffset += sharedData.jointPadding + 15;
 
                     if(leftProxies.ductDimensions.y < upProxies.ductDimensions.y) {
                         leftProxies.proxyMedian.position.x -= medianOffset;
@@ -1138,7 +1138,7 @@ export default class Joints {
                         downProxies.ductDimensions.y
                     );
 
-                    medianOffset += sharedData.jointPadding;
+                    medianOffset += sharedData.jointPadding + 15;
 
                     if(leftProxies.ductDimensions.y > downProxies.ductDimensions.y) {
                         downProxies.proxyMedian.position.z -= medianOffset;

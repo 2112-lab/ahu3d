@@ -422,20 +422,20 @@ export default class FlowControl {
                     jointGeometry = this.Geometry_3D_Joints_Colinear.createParallelJoint(joint, pairDirection);
                 }
                 else {
-                    calculateJointCenter(jointKey);
+                    calculateJointCenter(joint, jointKey);
                     jointGeometry = this.Geometry_3D_Joints_L.createLJoint(joint);
                 }
             }
 
             // Handle three-duct T-joints
             if(jointKeys.length == 3) {
-                calculateJointCenter(jointKey);
+                calculateJointCenter(joint, jointKey);
                 jointGeometry = this.Geometry_3D_Joints_T.createTJoint(joint);
             }
 
             // Handle four-duct cross joints
             if(jointKeys.length == 4) {
-                calculateJointCenter(jointKey);
+                calculateJointCenter(joint, jointKey);
                 jointGeometry = this.Geometry_3D_Joints_Cross.createCrossJoint(joint);
             }         
 

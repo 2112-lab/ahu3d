@@ -37,20 +37,21 @@
  * @license Limited Temporary Demo License - Expires 2025/01/01
  */
 
-import * as THREE from 'three';
-import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
-import axios from 'axios';
-import Preprocess from "../Preprocess/_Preprocess.js"
-import Assets3D from "../3D/Assets3D.js"
-import Mesh3D from "../3D/Mesh3D.js"
-import FlowControl from "./FlowControl.js"
-import { sharedData } from './globals.js';
-import wildcardSvg from '../assets/2D-Wildcard.svg';
+import * as THREE from "three";
+import { OutlinePass } from "three/examples/jsm/postprocessing/OutlinePass.js";
+import axios from "axios";
+import Preprocess from "../Preprocess/_Preprocess.js";
+import Assets3D from "../3D/Assets3D.js";
+import Mesh3D from "../3D/Mesh3D.js";
+import FlowControl from "./FlowControl.js";
+import { sharedData } from "./globals.js";
+import wildcardSvg from "../assets/2D-Wildcard.svg";
 import { Context } from "svgcanvas";
 import jsPDF from "jspdf";
 import "svg2pdf.js";
+import { CableSystem } from "./CableSystem.js";
 
-class Ahu3DAPI {
+class Ahu3DAPI extends CableSystem {
     /**
      * Creates an instance of the AHU3D API.
      * Initializes core components and state management.
@@ -58,6 +59,7 @@ class Ahu3DAPI {
      * @param {Object} ahu3DInstance - Instance of the main AHU3D application
      */
     constructor(ahu3DInstance) {
+        super();
         // Store reference to main AHU3D instance
         this.ahu3D = ahu3DInstance;     
         // Track library loading state
