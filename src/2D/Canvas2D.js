@@ -1222,35 +1222,46 @@ createJointArc(layer, startPoint, endPoint, controlPoint) {
    * @param {HTMLElement} container - The DOM element containing the canvas, used to track resizing.
    */
   setCanvasEvents(layer, stage, container) {
+    // Set default cursor style
+    stage.container().style.cursor = 'grab';
+    
+    // Set up mouse down event (when user starts dragging)
+    stage.on('mousedown touchstart', () => {
+      stage.container().style.cursor = 'grabbing';
+    });
+    
+    // Set up mouse up event (when user releases the drag)
+    stage.on('mouseup touchend', () => {
+      stage.container().style.cursor = 'grab';
+    });
+    
     // Set up the wheel event for zooming
     this.setKonvaWheel(stage);
-
+  
     // Function to resize the stage dynamically when the container size changes
     const resizeStage = () => {
-        const newWidth = container.offsetWidth;
-        const newHeight = container.offsetHeight;
-
-        // Update the stage size to match the container's new dimensions
-        stage.width(newWidth);
-        stage.height(newHeight);
-
-        // Reset layer scale and position before refitting
-        layer.scale({ x: 1, y: 1 });
-        layer.position({ x: 0, y: 0 });
-
-        // Call the fitLayerToFrame function to adjust the content correctly
-        this.fitLayerToFrame(layer, newWidth, newHeight, 0.90);
-
-        // Redraw the layer after applying transformations
-        // layer.draw();
+      // Your existing resize code
+      const newWidth = container.offsetWidth;
+      const newHeight = container.offsetHeight;
+      
+      // Update the stage size to match the container's new dimensions
+      stage.width(newWidth);
+      stage.height(newHeight);
+      
+      // Reset layer scale and position before refitting
+      layer.scale({ x: 1, y: 1 });
+      layer.position({ x: 0, y: 0 });
+      
+      // Call the fitLayerToFrame function to adjust the content correctly
+      this.fitLayerToFrame(layer, newWidth, newHeight, 0.90);
     };
-
+  
     // Listen for window resize events to trigger resizing of the stage
     window.addEventListener('resize', resizeStage);
-
+  
     // Alternatively, use ResizeObserver for more efficient handling of resize events
     const resizeObserver = new ResizeObserver(() => {
-        resizeStage();
+      resizeStage();
     });
     resizeObserver.observe(container);
   }
