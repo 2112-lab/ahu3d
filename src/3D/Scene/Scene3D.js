@@ -43,6 +43,9 @@ class Scene3D {
         this.ahuComponents = [];
         this.componentTemplate = componentTemplate;
         this.controllerTemplate = controllerTemplate;
+
+        this.zoomThreshold = 6.8;
+
         this.init();
     }
 
@@ -794,7 +797,56 @@ class Scene3D {
         if (this.base) {
             this.controls.target.set(0, 0, this.base.configs.height);
         }
+
+        this.controls.addEventListener('change', () => {
+            this.checkZoomThresholds();
+        });
     }
+
+    checkZoomThresholds() {
+        // Calculate current zoom level (camera distance from target)
+        const cameraPosition = this.cameras.primary.position.clone();
+        const targetPosition = this.controls.target.clone();
+        const distance = cameraPosition.distanceTo(targetPosition);
+        
+        // Determine current state
+        let currentState = null;
+        
+        if (distance < this.zoomThreshold) {
+            currentState = 'too_close';
+
+            this.toggleCables(true);
+        } 
+        else if (distance > this.zoomThreshold) {
+            currentState = 'too_far';
+
+            this.toggleCables(false);
+        } 
+        
+        
+        // Only alert if the state has changed
+        if (currentState !== this.lastZoomAlertState) {
+            this.lastZoomAlertState = currentState;
+            
+            // Alert based on the state
+            if (currentState === 'too_close') {
+                console.warn('checkZoomThresholds: You are zoomed in too close!');
+            } 
+            else if (currentState === 'too_far') {
+                console.warn('checkZoomThresholds: You are zoomed out too far!');
+            } 
+        }
+    }
+
+    toggleCables(show = true) {
+        this.scene.traverse((object) => {
+            if (object.isObject3D && object.name.includes('-Wire') && object.name.includes('Fan-0') || object.name.includes('FanHorizontal-0')) {
+                object.visible = show;
+            }
+        });
+    }
+
+    showCables() {}
 
     fitAssemblyIntoView() {
         const camera = this.cameras.primary;

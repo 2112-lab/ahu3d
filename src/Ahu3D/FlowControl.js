@@ -20,6 +20,7 @@
 import { sharedData } from "./globals.js";
 import Ducts from "../Numerics/Ducts.js";
 import Mesh3D from "../3D/Mesh3D.js";
+import Wiring3D from "../3D/Wiring3D.js";
 import Geometry_3D_Joints_Cross from "../3D/Geometry/Joints/Geometry_3D_Joints_Cross.js";
 import Geometry_3D_Joints_T from "../3D/Geometry/Joints/Geometry_3D_Joints_T.js";
 import Geometry_3D_Joints_L from "../3D/Geometry/Joints/Geometry_3D_Joints_L.js";
@@ -388,7 +389,7 @@ export default class FlowControl {
     async render2D() {
         // Render to secondary and primary Konva containers
         this.Canvas2D.drawToViewport(this.ahuObject["2d"].layers.secondary, "secondaryKonvaContainer");
-        this.Canvas2D.drawToViewport(this.ahuObject["2d"].layers.primary, "primaryKonvaContainer");        
+        this.Canvas2D.drawToViewport(this.ahuObject["2d"].layers.primary, "primaryKonvaContainer");
     }
 
     /**
@@ -645,6 +646,9 @@ export default class FlowControl {
     async render3D() {
         // Render the 3D scene
         await this.Mesh3D.render3D(this.ahuObject);
+
+        this.Wiring3D = new Wiring3D(this.ahuObject);
+
         // Adjust camera to fit entire assembly in view
         sharedData.sceneHelper.fitAssemblyIntoView();
     }
