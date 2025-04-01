@@ -44,7 +44,8 @@ class Scene3D {
         this.componentTemplate = componentTemplate;
         this.controllerTemplate = controllerTemplate;
 
-        this.zoomThreshold = 6.8;
+        this.zoom2Threshold = 12;
+        this.zoom1Threshold = 20;
 
         this.init();
     }
@@ -812,15 +813,26 @@ class Scene3D {
         // Determine current state
         let currentState = null;
         
-        if (distance < this.zoomThreshold) {
-            currentState = 'too_close';
+        if (distance <= this.zoom2Threshold) {
+            currentState = 'zoom 3';
 
-            this.toggleCables(true);
+            this.toggleWiring('Panel', false);
+            this.toggleWiring('Cable', false);
+            this.toggleWiring('Wire', true);
         } 
-        else if (distance > this.zoomThreshold) {
-            currentState = 'too_far';
+        else if (distance > this.zoom2Threshold && distance < this.zoom1Threshold) {
+            currentState = 'zoom 2';
 
-            this.toggleCables(false);
+            this.toggleWiring('Panel', false);
+            this.toggleWiring('Cable', true);
+            this.toggleWiring('Wire', false);
+        } 
+        else if (distance >= this.zoom1Threshold) {
+            currentState = 'zoom 1';
+
+            this.toggleWiring('Panel', true);
+            this.toggleWiring('Cable', false);
+            this.toggleWiring('Wire', false);
         } 
         
         
@@ -828,19 +840,13 @@ class Scene3D {
         if (currentState !== this.lastZoomAlertState) {
             this.lastZoomAlertState = currentState;
             
-            // Alert based on the state
-            if (currentState === 'too_close') {
-                console.warn('checkZoomThresholds: You are zoomed in too close!');
-            } 
-            else if (currentState === 'too_far') {
-                console.warn('checkZoomThresholds: You are zoomed out too far!');
-            } 
+            console.warn('checkZoomThresholds:', currentState);
         }
     }
 
-    toggleCables(show = true) {
+    toggleWiring(type = 'Cable', show = true) {
         this.scene.traverse((object) => {
-            if (object.isObject3D && object.name.includes('-Wire') && object.name.includes('Fan-0') || object.name.includes('FanHorizontal-0')) {
+            if (object.isObject3D && object.name.includes(type)) {
                 object.visible = show;
             }
         });
