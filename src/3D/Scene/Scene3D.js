@@ -835,12 +835,19 @@ class Scene3D {
             this.toggleWiring('Wire', false);
         } 
         
-        
         // Only alert if the state has changed
         if (currentState !== this.lastZoomAlertState) {
             this.lastZoomAlertState = currentState;
             
             console.warn('checkZoomThresholds:', currentState);
+        }
+
+        return
+
+        if(process.env.NODE_ENV === "development") {
+            this.toggleWiring('Panel', false);
+            this.toggleWiring('Cable', true);
+            this.toggleWiring('Wire', false);
         }
     }
 

@@ -1,5 +1,6 @@
 import { sharedData } from "../Ahu3D/globals.js";
 import * as THREE from 'three';
+import { TubePath } from 'three-tube-path';
 
 export default class Wiring3D {
   constructor(ahuObject) {   
@@ -118,13 +119,15 @@ export default class Wiring3D {
 
     this.terminals = {};
 
-    this.calculateTerminalPanelPosition(
+    this.calculatePanelPosition(
       this.panelSettings
     ); 
 
     this.initTerminals();
 
     this.initPanel();
+
+    this.initPanelCable();
 
     this.createCables();
     
@@ -231,13 +234,21 @@ export default class Wiring3D {
     // Store reference to the frame for later use if needed
     this.terminalPanelFrame = frameGroup;
 
-    // this.panelSettings.position.x = this.ahuObject['3d'].components.meshes['r:novo.graphics::FanPropeller-1'].position.x;
+  }
 
+  initPanelCable() {
+    console.log("initPanelCable started:", this.ahuObject);
     const panel = {
       position: this.panelSettings.position
     }
 
+    const closestCenterMesh = this.findCenterMesh(this.ahuObject['3d'].ducts.meshes);
+
+    console.log("initPanelCable closestCenterMesh:", closestCenterMesh);
+
     const component = this.ahuObject['3d'].components.meshes['r:novo.graphics::FanPropeller-1'];
+
+    const centerMeshBackwallYPos = closestCenterMesh.mesh.position.y + this.ahuObject.resources.ducts[closestCenterMesh.key].dimensions.y / 2;
 
     const travelDepth = 1000;
 
@@ -259,28 +270,28 @@ export default class Wiring3D {
       ),
       new THREE.Vector3(
         panel.position.x,
-        component.position.y + travelDepth,
-        component.position.z
+        centerMeshBackwallYPos + travelDepth,
+        closestCenterMesh.mesh.position.z
       ),
       new THREE.Vector3(
         panel.position.x,
-        component.position.y + travelDepth,
-        component.position.z
+        centerMeshBackwallYPos + travelDepth,
+        closestCenterMesh.mesh.position.z
       ),
       new THREE.Vector3(
-        component.position.x,
-        component.position.y + travelDepth,
-        component.position.z
+        closestCenterMesh.mesh.position.x,
+        centerMeshBackwallYPos + travelDepth,
+        closestCenterMesh.mesh.position.z
       ),
       new THREE.Vector3(
-        component.position.x,
-        component.position.y + travelDepth,
-        component.position.z
+        closestCenterMesh.mesh.position.x,
+        centerMeshBackwallYPos + travelDepth,
+        closestCenterMesh.mesh.position.z
       ),
       new THREE.Vector3(
-        component.position.x,
-        component.position.y,
-        component.position.z
+        closestCenterMesh.mesh.position.x,
+        centerMeshBackwallYPos,
+        closestCenterMesh.mesh.position.z
       ),
     ];
 
@@ -305,14 +316,59 @@ export default class Wiring3D {
     });
 
     const tube = new THREE.Mesh(tubeGeometry, tubeMaterial);
-    tube.name = `Wiring-Panel`;
+    tube.name = `Panel-Line`;
 
     tube.visible = false;
 
     sharedData.sceneHelper.addToScene(tube);
   }
 
-  calculateTerminalPanelPosition(panelSettings) {   
+  findCenterMesh(meshDictionary) {
+    // If dictionary is empty, return null
+    if (Object.keys(meshDictionary).length === 0) {
+      return null;
+    }
+  
+    // First, calculate the average (center) position of all meshes
+    let totalX = 0;
+    let totalZ = 0;
+    let count = 0;
+  
+    for (const key in meshDictionary) {
+      const mesh = meshDictionary[key];
+      totalX += mesh.position.x;
+      totalZ += mesh.position.z;
+      count++;
+    }
+  
+    const centerX = totalX / count;
+    const centerZ = totalZ / count;
+  
+    // Find the mesh closest to this center position
+    let closestMesh = null;
+    let closestDistance = Infinity;
+  
+    for (const key in meshDictionary) {
+      const mesh = meshDictionary[key];
+      const distance = Math.sqrt(
+        Math.pow(mesh.position.x - centerX, 2) + 
+        Math.pow(mesh.position.z - centerZ, 2)
+      );
+  
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestMesh = {
+          key: key,
+          mesh: mesh,
+          distance: distance
+        };
+      }
+    }
+  
+    return closestMesh;
+  }
+
+  calculatePanelPosition(panelSettings) {   
     const boundingBox = sharedData.ahuBoundingBox;
 
     const position = { x: 0, y: 0, z: 0 };
@@ -405,77 +461,86 @@ export default class Wiring3D {
 
     for(const cable of this.wiringData.cables) {
 
-      let component = null;
+      let terminal = null;
 
       if(componentIDs.includes(cable.idTag)) {
-        component = {
+        terminal = {
           id: cable.idTag,
           position: this.terminals[cable.idTag].position
         }
       }
 
-      if(component == null) {
+      if(terminal == null) {
         alert(`Cable idTag '${cable.idTag}' not found in the AHU.`)
         return
       }
 
-      console.log("createCables component:", component);
-      const points = [
+      console.log("createCables terminal:", terminal);
+      const points = [];
+
+      points.push(
         new THREE.Vector3(
-          component.position.x,
-          component.position.y,
-          component.position.z,
-        ),
+          terminal.position.x,
+          terminal.position.y,
+          terminal.position.z,
+        )
+      );
+
+      points.push(
         new THREE.Vector3(
-          component.position.x,
-          component.position.y + travelDepth,
-          component.position.z,
-        ),
+          terminal.position.x,
+          terminal.position.y + travelDepth,
+          terminal.position.z,
+        )
+      );
+
+      points.push(
         new THREE.Vector3(
-          component.position.x,
-          component.position.y + travelDepth,
-          component.position.z,
-        ),
+          terminal.position.x,
+          this.ahuObject['3d'].components.meshes[terminal.id].position.y + travelDepth,
+          this.ahuObject['3d'].components.meshes[terminal.id].position.z
+        )
+      );
+
+      if(Math.abs(terminal.position.x - this.ahuObject['3d'].components.meshes[terminal.id].position.x) > 1) {
+        points.push(
+          new THREE.Vector3(
+            this.ahuObject['3d'].components.meshes[terminal.id].position.x,
+            this.ahuObject['3d'].components.meshes[terminal.id].position.y + travelDepth,
+            this.ahuObject['3d'].components.meshes[terminal.id].position.z
+          )
+        );
+      }
+
+      points.push(
         new THREE.Vector3(
-          component.position.x,
-          this.ahuObject['3d'].components.meshes[component.id].position.y + travelDepth,
-          this.ahuObject['3d'].components.meshes[component.id].position.z
-        ),
-        new THREE.Vector3(
-          component.position.x,
-          this.ahuObject['3d'].components.meshes[component.id].position.y + travelDepth,
-          this.ahuObject['3d'].components.meshes[component.id].position.z
-        ),
-        new THREE.Vector3(
-          this.ahuObject['3d'].components.meshes[component.id].position.x,
-          this.ahuObject['3d'].components.meshes[component.id].position.y + travelDepth,
-          this.ahuObject['3d'].components.meshes[component.id].position.z
-        ),
-        new THREE.Vector3(
-          this.ahuObject['3d'].components.meshes[component.id].position.x,
-          this.ahuObject['3d'].components.meshes[component.id].position.y + travelDepth,
-          this.ahuObject['3d'].components.meshes[component.id].position.z
-        ),
-        new THREE.Vector3(
-          this.ahuObject['3d'].components.meshes[component.id].position.x,
-          this.ahuObject['3d'].components.meshes[component.id].position.y,
-          this.ahuObject['3d'].components.meshes[component.id].position.z
-        ),
-      ];
+          this.ahuObject['3d'].components.meshes[terminal.id].position.x,
+          this.ahuObject['3d'].components.meshes[terminal.id].position.y,
+          this.ahuObject['3d'].components.meshes[terminal.id].position.z
+        )
+      );
   
       console.log("createCables points:", points);
   
       const curve = new THREE.CatmullRomCurve3(points);
   
       console.log("createCables curve:", curve);
-  
-      const tubeGeometry = new THREE.TubeGeometry(
-        curve,       // The curve to follow
-        128,          // Number of segments (higher = smoother)
-        64,           // Radius of the tube
-        8,           // Number of sides (higher = more circular)
-        false        // Closed or not (true = connect ends)
+
+      const tubeGeometry = new TubePath(
+        curve, 
+        TubePath.pathToUMapping(curve, 5, 2), 
+        64, 
+        8, 
+        false
       );
+  
+      // const tubeGeometry = new THREE.TubeGeometry(
+      //   curve,       // The curve to follow
+      //   128,          // Number of segments (higher = smoother)
+      //   64,           // Radius of the tube
+      //   8,           // Number of sides (higher = more circular)
+      //   false        // Closed or not (true = connect ends)
+      // );
   
       const tubeMaterial = new THREE.MeshStandardMaterial({
         color: 0xffffff,
@@ -484,7 +549,7 @@ export default class Wiring3D {
       });
   
       const tube = new THREE.Mesh(tubeGeometry, tubeMaterial);
-      tube.name = `${component.id}-Cable`;
+      tube.name = `${terminal.id}-Cable`;
 
       tube.visible = false;
   
@@ -515,50 +580,59 @@ export default class Wiring3D {
   }
 
   createWires(cable, points) {
-    let wires = [];
-
-    const pointUpdateIndex = [1, 2, 3, 4, 5, 6];
-
-    const wireDirection = points[0].x < points[7].x ? 1 : -1;
-
-    for(const i in cable.wires) {
-      // Convert i to a number since it's likely a string from "for in" loop
+    const wires = [];
+    
+    // Determine wire direction based on start and end points
+    const wireDirection = points[0].x < points[points.length - 1].x ? 1 : -1;
+    
+    // Create individual wires for each wire in the cable
+    for (const i in cable.wires) {
       const index = parseInt(i);
+      
+      // Calculate offset for this wire to position it alongside the cable
+      // Alternating positive/negative offsets based on index to spread wires evenly
       const offsetFactor = Math.ceil(index/2) * (index % 2 === 0 ? -1 : 1);
+      const offset = 65 * offsetFactor; // Reduced offset value for more realistic bundling
       
       // Create a deep copy of the points array for this wire
       const wirePoints = points.map(point => point.clone());
-
-      const offset = 86 * offsetFactor;
-      for(const j of pointUpdateIndex) {
-        wirePoints[j].y += offset;
-      }    
       
-      // Create curve using the modified points for this specific wire
+      // Apply offset to each point (except start and end points)
+      for (let j = 1; j < wirePoints.length - 1; j++) {
+        wirePoints[j].y += offset;
+      }
+      
+      // Create curve using the modified points
       const curve = new THREE.CatmullRomCurve3(wirePoints);
-      const tubeGeometry = new THREE.TubeGeometry(
-        curve,
-        128,
-        32,
-        8,
-        false
+      
+      // Use TubePath instead of TubeGeometry
+      const tubeGeometry = new TubePath(
+        curve, 
+        TubePath.pathToUMapping(curve, 5, 2), // Same parameters as in createCables
+        32, // Slightly smaller radius than main cable
+        8,  // Same sides
+        false // Not closed
       );
       
+      // Create material with appropriate wire color
       const tubeMaterial = new THREE.MeshStandardMaterial({
         color: this.getWireColor(cable.wires[i].color),
         metalness: 0.3,
         roughness: 0.5
       });
       
+      // Create mesh
       const tube = new THREE.Mesh(tubeGeometry, tubeMaterial);
-      tube.position.x += 86 * offsetFactor * wireDirection;
-
-      tube.name = `${cable.idTag}-Wire-${index}`
-
+      tube.position.x += offset * wireDirection;
+      
+      // Name the wire for easy reference
+      tube.name = `${cable.id}-${cable.wires[i].id}`;
+      
+      // Add to scene and store reference
       sharedData.sceneHelper.addToScene(tube);
       wires.push(tube);
     }
-
+    
     return wires;
   }
 }
