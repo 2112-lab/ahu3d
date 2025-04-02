@@ -266,26 +266,6 @@ export default class Wiring3D {
       new THREE.Vector3(
         panel.position.x,
         panel.position.y + travelDepth,
-        panel.position.z,
-      ),
-      new THREE.Vector3(
-        panel.position.x,
-        centerMeshBackwallYPos + travelDepth,
-        closestCenterMesh.mesh.position.z
-      ),
-      new THREE.Vector3(
-        panel.position.x,
-        centerMeshBackwallYPos + travelDepth,
-        closestCenterMesh.mesh.position.z
-      ),
-      new THREE.Vector3(
-        closestCenterMesh.mesh.position.x,
-        centerMeshBackwallYPos + travelDepth,
-        closestCenterMesh.mesh.position.z
-      ),
-      new THREE.Vector3(
-        closestCenterMesh.mesh.position.x,
-        centerMeshBackwallYPos + travelDepth,
         closestCenterMesh.mesh.position.z
       ),
       new THREE.Vector3(
@@ -301,13 +281,21 @@ export default class Wiring3D {
 
     console.log("createCables curve:", curve);
 
-    const tubeGeometry = new THREE.TubeGeometry(
-      curve,       // The curve to follow
-      128,          // Number of segments (higher = smoother)
-      64,           // Radius of the tube
-      8,           // Number of sides (higher = more circular)
-      false        // Closed or not (true = connect ends)
+    const tubeGeometry = new TubePath(
+      curve, 
+      TubePath.pathToUMapping(curve, 5, 2), 
+      128, 
+      8, 
+      false
     );
+
+    // const tubeGeometry = new THREE.TubeGeometry(
+    //   curve,       // The curve to follow
+    //   128,          // Number of segments (higher = smoother)
+    //   64,           // Radius of the tube
+    //   8,           // Number of sides (higher = more circular)
+    //   false        // Closed or not (true = connect ends)
+    // );
 
     const tubeMaterial = new THREE.MeshStandardMaterial({
       color: 0xffffff,
