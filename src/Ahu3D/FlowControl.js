@@ -20,7 +20,7 @@
 import { sharedData } from "./globals.js";
 import Ducts from "../Numerics/Ducts.js";
 import Mesh3D from "../3D/Mesh3D.js";
-import Wiring3D from "../3D/Wiring3D.js";
+import Panel from "../Wiring3D/Panel.js";
 import Geometry_3D_Joints_Cross from "../3D/Geometry/Joints/Geometry_3D_Joints_Cross.js";
 import Geometry_3D_Joints_T from "../3D/Geometry/Joints/Geometry_3D_Joints_T.js";
 import Geometry_3D_Joints_L from "../3D/Geometry/Joints/Geometry_3D_Joints_L.js";
@@ -647,7 +647,96 @@ export default class FlowControl {
         // Render the 3D scene
         await this.Mesh3D.render3D(this.ahuObject);
 
-        this.Wiring3D = new Wiring3D(this.ahuObject);
+        const wiringData = {
+            cables: [
+                {
+                    id: "SCHP2-CS",
+                    label: "Current Switch Cable",
+                    equipment: "Switch",
+                    idTag: "r:novo.graphics::FanHorizontal-0",
+                    pointName: "Damper-1 Curr. Switch",
+                    markers: "SCHP2-CS",
+                    wires: [
+                        {
+                            id: "SCHP2-CS-Wire-1",
+                            fieldWiring: "Purple",
+                            panelWiringId: "I1-10B",
+                            color: "Purple",
+                            size: "18-2"
+                        },
+                        {
+                            id: "SCHP2-CS-Wire-2",
+                            fieldWiring: "Red",
+                            panelWiringId: "I1-10A",
+                            color: "Red",
+                            size: "18-2"
+                        }
+                    ]
+                },
+                {
+                    id: "SCHP1-CS",
+                    label: "Current Switch Cable",
+                    equipment: "Switch",
+                    idTag: "r:novo.graphics::FanPropeller-1",
+                    pointName: "Fan-1 Curr. Switch",
+                    markers: "SCHP1-CS",
+                    wires: [
+                        {
+                            id: "SCHP1-CS-Wire-2",
+                            fieldWiring: "Orange",
+                            panelWiringId: "I1-9A",
+                            color: "Orange",
+                            size: "18-2"
+                        }
+                    ]
+                },
+                {
+                    id: "AHU2-TEMP",
+                    label: "Temperature Sensor",
+                    equipment: "Thermometer",
+                    idTag: "r:novo.graphics::Fan-0",
+                    pointName: "Fan-3 Supply Temp",
+                    markers: "AHU2-TEMP",
+                    wires: [
+                        {
+                            id: "SCHP1-CS-Wire-1",
+                            fieldWiring: "Yellow",
+                            panelWiringId: "I1-9B",
+                            color: "Blue",
+                            size: "18-2"
+                        },
+                        {
+                            id: "SCHP1-CS-Wire-2",
+                            fieldWiring: "Orange",
+                            panelWiringId: "I1-9A",
+                            color: "Green",
+                            size: "18-2"
+                        },
+                        {
+                            id: "SCHP1-CS-Wire-2",
+                            fieldWiring: "Orange",
+                            panelWiringId: "I1-9A",
+                            color: "Brown",
+                            size: "18-2"
+                        }
+                    ]
+                },
+            ],
+        };
+
+        const portNum = 4;
+        const rowNum = 1;
+        const labels = ["I1-9A", "I1-9B", "I1-10A", "I1-10B"];
+        const labelOrientation = "horizontal";
+
+        const panel = new Panel(
+            portNum, 
+            rowNum, 
+            labels, 
+            labelOrientation, 
+            this.ahuObject, 
+            wiringData
+        );
 
         // Adjust camera to fit entire assembly in view
         sharedData.sceneHelper.fitAssemblyIntoView();

@@ -2,87 +2,17 @@ import { sharedData } from "../Ahu3D/globals.js";
 import * as THREE from 'three';
 import { TubePath } from 'three-tube-path';
 
-export default class Wiring3D {
-  constructor(ahuObject) {   
+export default class Panel {
+  constructor(portNum = 0, rowNum = 1, labels = [], labelOrientation = "horizontal", ahuObject = {}, wiringData = {}) {   
+
+    portNum = 4;
+    rowNum = 1;
+    labels = ["I1-9A", "I1-9B", "I1-10A", "I1-10B"];
+    labelOrientation = "horizontal";
     
     this.ahuObject = ahuObject;
 
-    this.wiringData = {
-      cables: [
-        {
-          id: "SCHP2-CS",
-          label: "Current Switch Cable",
-          equipment: "Switch",
-          idTag: "r:novo.graphics::FanHorizontal-0",
-          pointName: "Damper-1 Curr. Switch",
-          markers: "SCHP2-CS",
-          wires: [
-            {
-              id: "SCHP2-CS-Wire-1",
-              fieldWiring: "Purple",
-              panelWiringId: "I1-10B",
-              color: "Purple",
-              size: "18-2"
-            },
-            {
-              id: "SCHP2-CS-Wire-2",
-              fieldWiring: "Red",
-              panelWiringId: "I1-10A",
-              color: "Red",
-              size: "18-2"
-            }
-          ]
-        },
-        {
-          id: "SCHP1-CS",
-          label: "Current Switch Cable",
-          equipment: "Switch",
-          idTag: "r:novo.graphics::FanPropeller-1",
-          pointName: "Fan-1 Curr. Switch",
-          markers: "SCHP1-CS",
-          wires: [
-            {
-              id: "SCHP1-CS-Wire-2",
-              fieldWiring: "Orange",
-              panelWiringId: "I1-9A",
-              color: "Orange",
-              size: "18-2"
-            }
-          ]
-        },
-        {
-          id: "AHU2-TEMP",
-          label: "Temperature Sensor",
-          equipment: "Thermometer",
-          idTag: "r:novo.graphics::Fan-0",
-          pointName: "Fan-3 Supply Temp",
-          markers: "AHU2-TEMP",
-          wires: [
-            {
-              id: "SCHP1-CS-Wire-1",
-              fieldWiring: "Yellow",
-              panelWiringId: "I1-9B",
-              color: "Blue",
-              size: "18-2"
-            },
-            {
-              id: "SCHP1-CS-Wire-2",
-              fieldWiring: "Orange",
-              panelWiringId: "I1-9A",
-              color: "Green",
-              size: "18-2"
-            },
-            {
-              id: "SCHP1-CS-Wire-2",
-              fieldWiring: "Orange",
-              panelWiringId: "I1-9A",
-              color: "Brown",
-              size: "18-2"
-            }
-          ]
-        },
-      ],
-    };
+    this.wiringData = wiringData;
 
     this.panelSettings = {
       position: {
@@ -121,14 +51,13 @@ export default class Wiring3D {
 
     const closestCenterDuct = this.findCenterDuct(this.ahuObject['3d'].ducts.meshes);
 
-    this.calculatePanelPosition(closestCenterDuct); 
+    this.panelSettings.position = this.calculatePanelPosition("duct", closestCenterDuct); 
 
     this.initTerminals();
 
     this.initPanel(closestCenterDuct);
 
-    this.initPanelCable(closestCenterDuct);
-
+    this.initPanelPipe(closestCenterDuct);
     this.createCables();
   }
 
@@ -177,37 +106,22 @@ export default class Wiring3D {
     return closestMesh;
   }
 
-  calculatePanelPosition(closestCenterDuct) {   
+  calculatePanelPosition(alignmentMode = "duct", duct = null) {   
     const boundingBox = sharedData.ahuBoundingBox;
 
     const position = { x: 0, y: 0, z: 0 };
-    const halfCubeWidth = this.panelSettings.dimensions.x / 2;
-    const halfCubeHeight = this.panelSettings.dimensions.z / 2;
+    const halfPanelHeight = this.panelSettings.dimensions.z / 2;
     
-    // X position (left-right)
-    if (this.panelSettings.position.x === "center") {
-        position.x = boundingBox.center.x;
-    } else if (this.panelSettings.position.x === "left") {
-        position.x = boundingBox.min.x - halfCubeWidth - this.panelSettings.padding.x;
-    } else if (this.panelSettings.position.x === "right") {
-        position.x = boundingBox.max.x + halfCubeWidth + this.panelSettings.padding.x;
+    if (alignmentMode.toLowerCase() === "duct" && duct !== null) {
+      position.x = duct.mesh.position.x;
     }
-    
-    // Y position (fixed to center of component height)
+    else {
+      position.x = boundingBox.center.x;
+    }    
     position.y = boundingBox.center.y;
-    
-    // Z position (top-bottom)
-    if (this.panelSettings.position.z === "bottom") {
-        position.z = boundingBox.min.z - halfCubeHeight - this.panelSettings.padding.z;
-    } else if (this.panelSettings.position.z === "top") {
-        position.z = boundingBox.max.z + halfCubeHeight + this.panelSettings.padding.z;
-    } else if (this.panelSettings.position.z === "center") {
-        position.z = boundingBox.center.z;
-    }
+    position.z = boundingBox.min.z - halfPanelHeight - this.panelSettings.padding.z;
 
-    this.panelSettings.position = position;
-
-    this.panelSettings.position.x = closestCenterDuct.mesh.position.x
+    return position;
   }
 
   initTerminals() {
@@ -239,6 +153,8 @@ export default class Wiring3D {
       terminalMesh.position.x += (dimensions.x + padding.x) * i;
 
       this.terminalWidthSpan += dimensions.x + padding.x;
+
+      terminalMesh.name = `Panel-Terminal`;
 
       sharedData.sceneHelper.addToScene(terminalMesh);  
 
@@ -345,6 +261,8 @@ export default class Wiring3D {
     frameGroup.add(leftWall);
     frameGroup.add(rightWall);
     frameGroup.add(backWallMesh);
+
+    frameGroup.name = `Panel-Tray`;
     
     // Add the complete frame to the scene
     sharedData.sceneHelper.addToScene(frameGroup);
@@ -354,8 +272,8 @@ export default class Wiring3D {
 
   }
 
-  initPanelCable(closestCenterMesh) {
-    console.log("initPanelCable started:", this.ahuObject);
+  initPanelPipe(closestCenterMesh) {
+    console.log("initPanelPipe started:", this.ahuObject);
     const panel = {
       position: this.panelSettings.position
     }    
@@ -412,7 +330,7 @@ export default class Wiring3D {
     });
 
     const tube = new THREE.Mesh(tubeGeometry, tubeMaterial);
-    tube.name = `Panel-Line`;
+    tube.name = `Panel-Pipe`;
 
     tube.visible = false;
 
@@ -516,7 +434,7 @@ export default class Wiring3D {
       });
   
       const tube = new THREE.Mesh(tubeGeometry, tubeMaterial);
-      tube.name = `${terminal.id}-Cable`;
+      tube.name = `${terminal.id}-Panel-Cable`;
 
       tube.visible = false;
   
@@ -576,7 +494,7 @@ export default class Wiring3D {
       tube.position.x += offset * wireDirection;
       
       // Name the wire for easy reference
-      tube.name = `${cable.id}-${cable.wires[i].id}`;
+      tube.name = `${cable.id}-${cable.wires[i].id}-Panel-Wire`;
       
       // Add to scene and store reference
       sharedData.sceneHelper.addToScene(tube);

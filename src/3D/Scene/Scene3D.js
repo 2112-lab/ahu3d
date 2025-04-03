@@ -18,6 +18,7 @@ import Materials from './Materials3D.js';
 
 import componentTemplate from '../../assets/tooltips/component.html';
 import controllerTemplate from '../../assets/tooltips/controller.html';
+import infoPanelTemplate from '../../assets/tooltips/infoPanel.html';
 
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
@@ -43,6 +44,39 @@ class Scene3D {
         this.ahuComponents = [];
         this.componentTemplate = componentTemplate;
         this.controllerTemplate = controllerTemplate;
+        
+        this.infoPanel = null;
+        this.infoPanelObject = null;
+        this.infoPanelTemplate = infoPanelTemplate;
+        this.currentZoomDistance = 0;
+
+        this.LODs = {
+            "AHU": {
+                state: "LOD 0 / AHU - No Terminal",
+                range: [40, Infinity],
+                show: [],
+                unshow: ["Panel-Tray", "Panel-Terminal", "Panel-Pipe", "Cable", "Wire"]
+            },
+            "Pipe": {
+                state: "LOD 1 / Pipe - Single Pipe",
+                range: [20, 40],
+                show: ["Panel-Tray", "Panel-Terminal", "Panel-Pipe"],
+                unshow: ["Cable", "Wire"]
+            },
+            "Cable": {
+                state: "LOD 2 / Cable - Multiple Cables",
+                range: [12, 20],
+                show: ["Panel-Tray", "Panel-Terminal", "Cable"],
+                unshow: ["Panel-Pipe", "Wire"]
+            },
+            "Wire": {
+                state: "LOD 3 / Wire - Multiple Wires",
+                range: [0, 12],
+                type: "Wire",
+                show: ["Panel-Tray", "Panel-Terminal", "Wire"],
+                unshow: ["Panel-Pipe", "Cable"]
+            }
+        }        
 
         this.zoom2Threshold = 12;
         this.zoom1Threshold = 20;
@@ -164,6 +198,8 @@ class Scene3D {
         const updateInterval = 40; // Units in ms
 
         this.cacheAnimationTargets();
+
+        this.createDomInfoPanel();
         
         this.animate()
 
@@ -809,54 +845,104 @@ class Scene3D {
         const cameraPosition = this.cameras.primary.position.clone();
         const targetPosition = this.controls.target.clone();
         const distance = cameraPosition.distanceTo(targetPosition);
-        
-        // Determine current state
-        let currentState = null;
-        
-        if (distance <= this.zoom2Threshold) {
-            currentState = 'zoom 3';
 
-            this.toggleWiring('Panel', false);
-            this.toggleWiring('Cable', false);
-            this.toggleWiring('Wire', true);
-        } 
-        else if (distance > this.zoom2Threshold && distance < this.zoom1Threshold) {
-            currentState = 'zoom 2';
+        this.currentZoomDistance = distance;
 
-            this.toggleWiring('Panel', false);
-            this.toggleWiring('Cable', true);
-            this.toggleWiring('Wire', false);
-        } 
-        else if (distance >= this.zoom1Threshold) {
-            currentState = 'zoom 1';
-
-            this.toggleWiring('Panel', true);
-            this.toggleWiring('Cable', false);
-            this.toggleWiring('Wire', false);
-        } 
-        
-        // Only alert if the state has changed
-        if (currentState !== this.lastZoomAlertState) {
-            this.lastZoomAlertState = currentState;
+        // Check each LOD
+        for(const key in this.LODs) {
+            const lod = this.LODs[key];
+            // Fix for Wire LOD that's missing range[1]
+            const maxRange = lod.range[1] !== undefined ? lod.range[1] : Infinity;
             
-            console.warn('checkZoomThresholds:', currentState);
-        }
-
-        return
-
-        if(process.env.NODE_ENV === "development") {
-            this.toggleWiring('Panel', false);
-            this.toggleWiring('Cable', true);
-            this.toggleWiring('Wire', false);
+            if(distance >= lod.range[0] && distance < maxRange) {
+                // Update LOD state if needed
+                if (lod.state !== this.currentLODState) {
+                    this.currentLODState = lod.state;
+                    this.toggleWiring(lod);
+                }
+                
+                // Always update the info panel with current values
+                this.updateDomInfoPanel(lod.state, distance);
+                break; // Only apply one LOD change per check
+            }
         }
     }
 
-    toggleWiring(type = 'Cable', show = true) {
+    toggleWiring(LOD) {
+        console.log("toggleWiring started:", LOD);
         this.scene.traverse((object) => {
-            if (object.isObject3D && object.name.includes(type)) {
-                object.visible = show;
+            if (object.isObject3D) {
+                // Handle show items
+                for(const showItem of LOD.show) {
+                    if (object.name.includes(showItem)) {
+                        object.visible = true;
+                    }
+                }
+                
+                // Handle unshow items
+                if (LOD.unshow) {
+                    for(const unshowItem of LOD.unshow) {
+                        if (object.name.includes(unshowItem)) {
+                            object.visible = false;
+                        }
+                    }
+                }
             }
         });
+    }
+    
+    createDomInfoPanel() {
+        // Remove any existing info panel
+        if (this.infoPanel) {
+            document.body.removeChild(this.infoPanel);
+            this.infoPanel = null;
+        }
+        
+        // Create the panel element
+        const panel = document.createElement('div');
+        panel.className = 'scene-info-panel';
+        panel.style.position = 'absolute';
+        panel.style.right = '400px';
+        panel.style.bottom = '275px';
+        panel.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+        panel.style.color = 'white';
+        panel.style.padding = '8px 12px';
+        panel.style.borderRadius = '4px';
+        panel.style.fontFamily = 'Arial, sans-serif';
+        panel.style.fontSize = '12px';
+        panel.style.pointerEvents = 'none';
+        panel.style.zIndex = '1000';
+        panel.style.width = '220px';
+        panel.style.boxShadow = '0 2px 5px rgba(0, 0, 0, 0.2)';
+        panel.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+        
+        // Create the content structure
+        panel.innerHTML = `
+            <div class="info-panel-content">
+                <div><span id="lod-level">-</span></div>
+                <div><strong>Zoom Distance:</strong> <span id="zoom-distance">-</span></div>
+            </div>
+        `;
+        
+        // Add the panel to the DOM
+        document.body.appendChild(panel);
+        
+        // Store reference
+        this.infoPanel = panel;
+        
+        // Initialize with default values
+        this.updateDomInfoPanel("Unknown", 0);
+    }
+    
+    // 2. Method to update the panel content
+    updateDomInfoPanel(lodLevel, zoomDistance) {
+        if (!this.infoPanel) return;
+        
+        const lodElement = this.infoPanel.querySelector('#lod-level');
+        const zoomElement = this.infoPanel.querySelector('#zoom-distance');
+        
+        if (lodElement) lodElement.textContent = lodLevel;
+        if (zoomElement) zoomElement.textContent = zoomDistance.toFixed(2);
     }
 
     showCables() {}
@@ -973,6 +1059,11 @@ class Scene3D {
     dispose() {
         console.log("Disposing Scene...");
         this.isDisposed = true; // Stop the animation loop
+
+        if (this.infoPanel && document.body.contains(this.infoPanel)) {
+            document.body.removeChild(this.infoPanel);
+            this.infoPanel = null;
+        }
     
         if (this.onMouseDownHandler) {
             window.removeEventListener('mousedown', this.onMouseDownHandler);

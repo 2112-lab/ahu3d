@@ -1,0 +1,41 @@
+<!-- infoPanel.html -->
+<div class="info-panel">
+    <style>
+        .info-panel {
+            position: absolute;
+            left: 10px;
+            bottom: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: #ffffff;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 1000;
+            width: 180px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .info-panel-content {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .info-panel-content div {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .info-panel-content strong {
+            margin-right: 8px;
+            color: #9ecaff;
+        }
+    </style>
+    <div class="info-panel-content">
+        <div><strong>LOD Level:</strong> <span id="lod-level">-</span></div>
+        <div><strong>Zoom Distance:</strong> <span id="zoom-distance">-</span></div>
+    </div>
+</div>
