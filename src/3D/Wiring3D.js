@@ -119,17 +119,135 @@ export default class Wiring3D {
 
     this.terminals = {};
 
-    this.calculatePanelPosition(
-      this.panelSettings
-    ); 
+    const closestCenterDuct = this.findCenterDuct(this.ahuObject['3d'].ducts.meshes);
+
+    this.calculatePanelPosition(closestCenterDuct); 
 
     this.initTerminals();
 
-    this.initPanel();
+    this.initPanel(closestCenterDuct);
 
-    this.initPanelCable();
+    this.initPanelCable(closestCenterDuct);
 
     this.createCables();
+  }
+
+  findCenterDuct(meshDictionary) {
+    // If dictionary is empty, return null
+    if (Object.keys(meshDictionary).length === 0) {
+      return null;
+    }
+  
+    // First, calculate the average (center) position of all meshes
+    let totalX = 0;
+    let totalZ = 0;
+    let count = 0;
+  
+    for (const key in meshDictionary) {
+      const mesh = meshDictionary[key];
+      totalX += mesh.position.x;
+      totalZ += mesh.position.z;
+      count++;
+    }
+  
+    const centerX = totalX / count;
+    const centerZ = totalZ / count;
+  
+    // Find the mesh closest to this center position
+    let closestMesh = null;
+    let closestDistance = Infinity;
+  
+    for (const key in meshDictionary) {
+      const mesh = meshDictionary[key];
+      const distance = Math.sqrt(
+        Math.pow(mesh.position.x - centerX, 2) + 
+        Math.pow(mesh.position.z - centerZ, 2)
+      );
+  
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestMesh = {
+          key: key,
+          mesh: mesh,
+          distance: distance
+        };
+      }
+    }
+  
+    return closestMesh;
+  }
+
+  calculatePanelPosition(closestCenterDuct) {   
+    const boundingBox = sharedData.ahuBoundingBox;
+
+    const position = { x: 0, y: 0, z: 0 };
+    const halfCubeWidth = this.panelSettings.dimensions.x / 2;
+    const halfCubeHeight = this.panelSettings.dimensions.z / 2;
+    
+    // X position (left-right)
+    if (this.panelSettings.position.x === "center") {
+        position.x = boundingBox.center.x;
+    } else if (this.panelSettings.position.x === "left") {
+        position.x = boundingBox.min.x - halfCubeWidth - this.panelSettings.padding.x;
+    } else if (this.panelSettings.position.x === "right") {
+        position.x = boundingBox.max.x + halfCubeWidth + this.panelSettings.padding.x;
+    }
+    
+    // Y position (fixed to center of component height)
+    position.y = boundingBox.center.y;
+    
+    // Z position (top-bottom)
+    if (this.panelSettings.position.z === "bottom") {
+        position.z = boundingBox.min.z - halfCubeHeight - this.panelSettings.padding.z;
+    } else if (this.panelSettings.position.z === "top") {
+        position.z = boundingBox.max.z + halfCubeHeight + this.panelSettings.padding.z;
+    } else if (this.panelSettings.position.z === "center") {
+        position.z = boundingBox.center.z;
+    }
+
+    this.panelSettings.position = position;
+
+    this.panelSettings.position.x = closestCenterDuct.mesh.position.x
+  }
+
+  initTerminals() {
+    let wireCount = 0;
+
+    const dimensions = this.terminalSettings.dimensions;
+    const padding = this.terminalSettings.padding;
+
+    this.terminalWidthSpan = padding.x;
+
+    this.terminalMeshes = [];
+
+    for(const i in this.wiringData.cables) {
+      wireCount += this.wiringData.cables[i].wires.length;
+
+      const terminalGeometry = new THREE.BoxGeometry(
+        dimensions.x, 
+        dimensions.y, 
+        dimensions.z, 
+      );
+      const terminalMesh = new THREE.Mesh(
+        terminalGeometry, 
+        new THREE.MeshStandardMaterial({
+          color: sharedData.primaryColor
+        })
+      );
+      terminalMesh.position.copy(this.panelSettings.position);
+
+      terminalMesh.position.x += (dimensions.x + padding.x) * i;
+
+      this.terminalWidthSpan += dimensions.x + padding.x;
+
+      sharedData.sceneHelper.addToScene(terminalMesh);  
+
+      this.terminals[this.wiringData.cables[i].idTag] = terminalMesh;
+    }
+
+    for(const key in this.terminals) {
+      this.terminals[key].position.x += -this.terminalWidthSpan / 2 + (dimensions.x/2 + padding.x);
+    }
     
   }
 
@@ -236,17 +354,11 @@ export default class Wiring3D {
 
   }
 
-  initPanelCable() {
+  initPanelCable(closestCenterMesh) {
     console.log("initPanelCable started:", this.ahuObject);
     const panel = {
       position: this.panelSettings.position
-    }
-
-    const closestCenterMesh = this.findCenterMesh(this.ahuObject['3d'].ducts.meshes);
-
-    console.log("initPanelCable closestCenterMesh:", closestCenterMesh);
-
-    const component = this.ahuObject['3d'].components.meshes['r:novo.graphics::FanPropeller-1'];
+    }    
 
     const centerMeshBackwallYPos = closestCenterMesh.mesh.position.y + this.ahuObject.resources.ducts[closestCenterMesh.key].dimensions.y / 2;
 
@@ -275,11 +387,7 @@ export default class Wiring3D {
       ),
     ];
 
-    console.log("createCables points:", points);
-
     const curve = new THREE.CatmullRomCurve3(points);
-
-    console.log("createCables curve:", curve);
 
     const tubeGeometry = new TubePath(
       curve, 
@@ -309,134 +417,7 @@ export default class Wiring3D {
     tube.visible = false;
 
     sharedData.sceneHelper.addToScene(tube);
-  }
-
-  findCenterMesh(meshDictionary) {
-    // If dictionary is empty, return null
-    if (Object.keys(meshDictionary).length === 0) {
-      return null;
-    }
-  
-    // First, calculate the average (center) position of all meshes
-    let totalX = 0;
-    let totalZ = 0;
-    let count = 0;
-  
-    for (const key in meshDictionary) {
-      const mesh = meshDictionary[key];
-      totalX += mesh.position.x;
-      totalZ += mesh.position.z;
-      count++;
-    }
-  
-    const centerX = totalX / count;
-    const centerZ = totalZ / count;
-  
-    // Find the mesh closest to this center position
-    let closestMesh = null;
-    let closestDistance = Infinity;
-  
-    for (const key in meshDictionary) {
-      const mesh = meshDictionary[key];
-      const distance = Math.sqrt(
-        Math.pow(mesh.position.x - centerX, 2) + 
-        Math.pow(mesh.position.z - centerZ, 2)
-      );
-  
-      if (distance < closestDistance) {
-        closestDistance = distance;
-        closestMesh = {
-          key: key,
-          mesh: mesh,
-          distance: distance
-        };
-      }
-    }
-  
-    return closestMesh;
-  }
-
-  calculatePanelPosition(panelSettings) {   
-    const boundingBox = sharedData.ahuBoundingBox;
-
-    const position = { x: 0, y: 0, z: 0 };
-    const halfCubeWidth = panelSettings.dimensions.x / 2;
-    const halfCubeHeight = panelSettings.dimensions.z / 2;
-    
-    // X position (left-right)
-    if (panelSettings.position.x === "center") {
-        position.x = boundingBox.center.x;
-    } else if (panelSettings.position.x === "left") {
-        position.x = boundingBox.min.x - halfCubeWidth - panelSettings.padding.x;
-    } else if (panelSettings.position.x === "right") {
-        position.x = boundingBox.max.x + halfCubeWidth + panelSettings.padding.x;
-    }
-    
-    // Y position (fixed to center of component height)
-    position.y = boundingBox.center.y;
-    
-    // Z position (top-bottom)
-    if (panelSettings.position.z === "bottom") {
-        position.z = boundingBox.min.z - halfCubeHeight - panelSettings.padding.z;
-    } else if (panelSettings.position.z === "top") {
-        position.z = boundingBox.max.z + halfCubeHeight + panelSettings.padding.z;
-    } else if (panelSettings.position.z === "center") {
-        position.z = boundingBox.center.z;
-    }
-
-    this.panelSettings.position = position;
-
-    this.findComponentClosestToMedian();
-  }
-
-  findComponentClosestToMedian() {
-    let foundPosition = { x: 0, y: 0, z: 0 };
-
-    // for(const i in this.ahuObject['3d'].components.meshes) {}
-
-    this.panelSettings.position.x = this.ahuObject['3d'].components.meshes['r:novo.graphics::FanPropeller-1'].position.x;
-  }
-
-  initTerminals() {
-    let wireCount = 0;
-
-    const dimensions = this.terminalSettings.dimensions;
-    const padding = this.terminalSettings.padding;
-
-    this.terminalWidthSpan = padding.x;
-
-    this.terminalMeshes = [];
-
-    for(const i in this.wiringData.cables) {
-      wireCount += this.wiringData.cables[i].wires.length;
-
-      const terminalGeometry = new THREE.BoxGeometry(
-        dimensions.x, 
-        dimensions.y, 
-        dimensions.z, 
-      );
-      const terminalMesh = new THREE.Mesh(
-        terminalGeometry, 
-        new THREE.MeshStandardMaterial({
-          color: sharedData.primaryColor
-        })
-      );
-      terminalMesh.position.copy(this.panelSettings.position);
-
-      terminalMesh.position.x += (dimensions.x + padding.x) * i;
-
-      this.terminalWidthSpan += dimensions.x + padding.x;
-
-      sharedData.sceneHelper.addToScene(terminalMesh);  
-
-      this.terminals[this.wiringData.cables[i].idTag] = terminalMesh;
-    }
-
-    for(const key in this.terminals) {
-      this.terminals[key].position.x += -this.terminalWidthSpan / 2 + (dimensions.x/2 + padding.x);
-    }
-    
-  }
+  }  
 
   createCables() {
     console.log("createCables started:", this.ahuObject);
@@ -444,8 +425,6 @@ export default class Wiring3D {
     const travelDepth = 1000;
 
     const componentIDs = Object.keys(this.ahuObject['3d'].components.meshes);
-
-    console.log("createCables this.terminals:", this.terminals);
 
     for(const cable of this.wiringData.cables) {
 
@@ -463,7 +442,11 @@ export default class Wiring3D {
         return
       }
 
-      console.log("createCables terminal:", terminal);
+      console.log("createCables terminal.id:", terminal.id);
+
+      const componentBackYPos = this.ahuObject['3d'].components.meshes[terminal.id].position.y + this.ahuObject.resources.components[terminal.id].dimensions.y / 2;
+      console.log("createCables componentBackYPos:", componentBackYPos);
+
       const points = [];
 
       points.push(
@@ -503,16 +486,12 @@ export default class Wiring3D {
       points.push(
         new THREE.Vector3(
           this.ahuObject['3d'].components.meshes[terminal.id].position.x,
-          this.ahuObject['3d'].components.meshes[terminal.id].position.y,
+          componentBackYPos,
           this.ahuObject['3d'].components.meshes[terminal.id].position.z
         )
       );
   
-      console.log("createCables points:", points);
-  
       const curve = new THREE.CatmullRomCurve3(points);
-  
-      console.log("createCables curve:", curve);
 
       const tubeGeometry = new TubePath(
         curve, 
@@ -548,23 +527,6 @@ export default class Wiring3D {
     }
 
     console.log("createCables finished");
-  }
-
-  getWireColor(colorName) {
-    const colorMap = {
-      'Red': 0xff0000,
-      'Green': 0x00ff00,
-      'Blue': 0x0000ff,
-      'Yellow': 0xffff00,
-      'Orange': 0xffa500,
-      'Purple': 0x800080,
-      'Black': 0x000000,
-      'White': 0xffffff,
-      'Grey': 0x808080,
-      'Brown': 0x8b4513
-    };
-    
-    return colorMap[colorName] || 0xcccccc; // Default to gray if color not found
   }
 
   createWires(cable, points) {
@@ -622,5 +584,22 @@ export default class Wiring3D {
     }
     
     return wires;
+  }
+
+  getWireColor(colorName) {
+    const colorMap = {
+      'Red': 0xff0000,
+      'Green': 0x00ff00,
+      'Blue': 0x0000ff,
+      'Yellow': 0xffff00,
+      'Orange': 0xffa500,
+      'Purple': 0x800080,
+      'Black': 0x000000,
+      'White': 0xffffff,
+      'Grey': 0x808080,
+      'Brown': 0x8b4513
+    };
+    
+    return colorMap[colorName] || 0xcccccc; // Default to gray if color not found
   }
 }
