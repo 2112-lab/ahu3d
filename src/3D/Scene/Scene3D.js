@@ -50,6 +50,16 @@ class Scene3D {
         this.infoPanelTemplate = infoPanelTemplate;
         this.currentZoomDistance = 0;
 
+        this.wireLabelRenderer = new CSS2DRenderer();
+        this.wireLabelRenderer.setSize(
+            this.moduleConfigs.scene.renderer.size.width, 
+            this.moduleConfigs.scene.renderer.size.height
+        );
+        this.wireLabelRenderer.domElement.style.position = 'absolute';
+        this.wireLabelRenderer.domElement.style.top = '0px';
+        this.wireLabelRenderer.domElement.style.pointerEvents = 'none';
+        document.body.appendChild(this.wireLabelRenderer.domElement);
+
         this.LODs = {
             "AHU": {
                 state: "LOD 0 / AHU - No Terminal",
@@ -226,6 +236,7 @@ class Scene3D {
 
         this.updateComposer();
         this.labelRenderer.render(this.scene, this.cameras.primary);
+        this.wireLabelRenderer.render(this.scene, this.cameras.primary);
         this.animateCachedTargets();
     }
 
@@ -1059,34 +1070,47 @@ class Scene3D {
     dispose() {
         console.log("Disposing Scene...");
         this.isDisposed = true; // Stop the animation loop
-
+        
         if (this.infoPanel && document.body.contains(this.infoPanel)) {
             document.body.removeChild(this.infoPanel);
             this.infoPanel = null;
         }
-    
+       
         if (this.onMouseDownHandler) {
             window.removeEventListener('mousedown', this.onMouseDownHandler);
             this.onMouseDownHandler = null; // Clear the reference to prevent memory leaks
         }
-    
+       
         if (this.renderer) {
             this.renderer.dispose();
         }
-    
+       
         if (this.labelRenderer) {
             document.body.removeChild(this.labelRenderer.domElement);
             this.labelRenderer = null;
         }
-    
+       
         this.scene.traverse((object) => {
-            if (object.geometry) object.geometry.dispose();
+            if (object.geometry) {
+                object.geometry.dispose();
+            }
+            
+            // Handle both single materials and material arrays
             if (object.material) {
-                if (object.material.map) object.material.map.dispose();
-                object.material.dispose();
+                if (Array.isArray(object.material)) {
+                    // Handle material arrays (like in your terminals)
+                    object.material.forEach(material => {
+                        if (material.map) material.map.dispose();
+                        material.dispose();
+                    });
+                } else {
+                    // Handle single materials
+                    if (object.material.map) object.material.map.dispose();
+                    object.material.dispose();
+                }
             }
         });
-    
+       
         this.scene.clear();
         this.scene = null;
         this.renderer = null;

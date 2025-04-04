@@ -3,12 +3,17 @@ import * as THREE from 'three';
 import { TubePath } from 'three-tube-path';
 
 export default class Panel {
-  constructor(portNum = 0, rowNum = 1, labels = [], labelOrientation = "horizontal", ahuObject = {}, wiringData = {}) {   
+  constructor(portNum = 0, rowNum = 1, labels = [], labelOrientation = "vertical", ahuObject = {}, wiringData = {}) {   
 
     portNum = 4;
     rowNum = 1;
     labels = ["I1-9A", "I1-9B", "I1-10A", "I1-10B"];
-    labelOrientation = "horizontal";
+    labelOrientation = "vertical";
+
+    this.portNum = portNum;
+    this.rowNum = rowNum;
+    this.labels = labels;
+    this.labelOrientation = labelOrientation;
     
     this.ahuObject = ahuObject;
 
@@ -21,7 +26,7 @@ export default class Panel {
       },
       dimensions: {
         x: 2000,
-        y: 100,
+        y: 40,
         z: 500
       },
       padding: {
@@ -36,8 +41,8 @@ export default class Panel {
     this.terminalSettings = {
       dimensions: {
         x: 500,
-        y: 10,
-        z: 300
+        y: 40,
+        z: 200
       },
       padding: {
         x: 100,
@@ -49,16 +54,138 @@ export default class Panel {
 
     this.terminals = {};
 
-    const closestCenterDuct = this.findCenterDuct(this.ahuObject['3d'].ducts.meshes);
+    this.closestCenterDuct = this.findCenterDuct(this.ahuObject['3d'].ducts.meshes);
 
-    this.panelSettings.position = this.calculatePanelPosition("duct", closestCenterDuct); 
+    this.panelSettings.position = this.calculatePanelPosition("duct"); 
 
     this.initTerminals();
 
-    this.initPanel(closestCenterDuct);
+    this.initPanel();
+  }
 
-    this.initPanelPipe(closestCenterDuct);
-    this.createCables();
+  createLabel(label) {
+    // Create front and back textures with text
+    const frontCanvas = document.createElement('canvas');
+    const frontContext = frontCanvas.getContext('2d');
+    frontCanvas.width = 512;
+    frontCanvas.height = 256;
+
+    // Fill background for front
+    frontContext.fillStyle = 'white';
+    frontContext.fillRect(0, 0, frontCanvas.width, frontCanvas.height);
+
+    // Setup front text rendering
+    frontContext.imageSmoothingEnabled = true;
+    frontContext.imageSmoothingQuality = 'high';
+    frontContext.font = 'bold 140px Arial, Helvetica, sans-serif';
+    frontContext.textAlign = 'center';
+    frontContext.textBaseline = 'middle';
+    frontContext.fillStyle = 'black';
+    frontContext.fillText(label, frontCanvas.width / 2, frontCanvas.height / 2);
+
+    // Create front texture
+    const frontTexture = new THREE.CanvasTexture(frontCanvas);
+    frontTexture.generateMipmaps = true;
+    frontTexture.minFilter = THREE.LinearMipMapLinearFilter;
+    frontTexture.magFilter = THREE.LinearFilter;
+    frontTexture.anisotropy = sharedData.sceneHelper.renderer.capabilities.getMaxAnisotropy();
+
+    // Create a properly oriented back texture
+    const backCanvas = document.createElement('canvas');
+    const backContext = backCanvas.getContext('2d');
+    backCanvas.width = 512;
+    backCanvas.height = 256;
+
+    // Fill background for back
+    backContext.fillStyle = 'white';
+    backContext.fillRect(0, 0, backCanvas.width, backCanvas.height);
+
+    // Setup back text rendering - apply rotation transformation
+    backContext.imageSmoothingEnabled = true;
+    backContext.imageSmoothingQuality = 'high';
+    backContext.font = 'bold 140px Arial, Helvetica, sans-serif';
+    backContext.textAlign = 'center';
+    backContext.textBaseline = 'middle';
+    backContext.fillStyle = 'black';
+    backContext.shadowColor = 'rgba(0, 0, 0, 0.3)';
+    backContext.shadowBlur = 4;
+    backContext.shadowOffsetX = 2;
+    backContext.shadowOffsetY = 2;
+
+    // Apply 180-degree rotation for the back side text
+    backContext.translate(backCanvas.width / 2, backCanvas.height / 2);
+    backContext.rotate(Math.PI);
+    backContext.fillText(label, 0, 0);
+    backContext.setTransform(1, 0, 0, 1, 0, 0); // Reset transformation
+    backContext.shadowColor = 'transparent';
+
+    // Create back texture
+    const backTexture = new THREE.CanvasTexture(backCanvas);
+    backTexture.generateMipmaps = true;
+    backTexture.minFilter = THREE.LinearMipMapLinearFilter;
+    backTexture.magFilter = THREE.LinearFilter;
+    backTexture.anisotropy = sharedData.sceneHelper.renderer.capabilities.getMaxAnisotropy();
+
+    // Create materials array for BoxGeometry with different textures for front and back
+    return [
+      new THREE.MeshStandardMaterial({ color: sharedData.primaryColor }), // right
+      new THREE.MeshStandardMaterial({ color: sharedData.primaryColor }), // left
+      new THREE.MeshStandardMaterial({ map: backTexture }), // top (front face)
+      new THREE.MeshStandardMaterial({ map: frontTexture }), // bottom (back face)
+      new THREE.MeshStandardMaterial({ color: sharedData.primaryColor }), // front
+      new THREE.MeshStandardMaterial({ color: sharedData.primaryColor })  // back
+    ];
+  }
+
+  initTerminals() {
+    const dimensions = this.terminalSettings.dimensions;
+    const padding = this.terminalSettings.padding;
+  
+    this.terminalWidthSpan = padding.x;
+    this.terminalMeshes = [];
+
+    if(this.labelOrientation === "vertical") {
+      this.terminalWidthSpan += (dimensions.z + padding.x) * this.portNum;
+    }
+    else {
+      this.terminalWidthSpan += (dimensions.x + padding.x) * this.portNum;
+    }    
+  
+    for(let i = 0; i < this.portNum; i++) {
+
+      const label = this.labels[i];
+
+      const boxLabel = this.createLabel(label);
+  
+      // Create terminal with the materials
+      const terminalGeometry = new THREE.BoxGeometry(
+        dimensions.x, 
+        dimensions.y, 
+        dimensions.z
+      );
+      
+      const terminalMesh = new THREE.Mesh(terminalGeometry, boxLabel);
+      terminalMesh.position.copy(this.panelSettings.position);
+      
+      // terminalMesh.position.y += (dimensions.y / 2);
+      
+
+      if(this.labelOrientation === "vertical") {
+        terminalMesh.rotation.y = Math.PI/2;
+        terminalMesh.position.x += (dimensions.z + padding.x) * i;
+        terminalMesh.position.x += -this.terminalWidthSpan / 2 + (dimensions.z/2 + padding.x);
+      }
+      else {
+        terminalMesh.position.x += (dimensions.x + padding.x) * i;
+        terminalMesh.position.x += -this.terminalWidthSpan / 2 + (dimensions.x/2 + padding.x);
+      }
+
+      terminalMesh.name = `Panel-Terminal-${label}`;
+      
+      sharedData.sceneHelper.addToScene(terminalMesh);  
+      this.terminals[label] = terminalMesh;
+    }
+    
   }
 
   findCenterDuct(meshDictionary) {
@@ -106,14 +233,14 @@ export default class Panel {
     return closestMesh;
   }
 
-  calculatePanelPosition(alignmentMode = "duct", duct = null) {   
+  calculatePanelPosition(alignmentMode = "duct") {   
     const boundingBox = sharedData.ahuBoundingBox;
 
     const position = { x: 0, y: 0, z: 0 };
     const halfPanelHeight = this.panelSettings.dimensions.z / 2;
     
-    if (alignmentMode.toLowerCase() === "duct" && duct !== null) {
-      position.x = duct.mesh.position.x;
+    if (alignmentMode.toLowerCase() === "duct" && this.closestCenterDuct !== null) {
+      position.x = this.closestCenterDuct.mesh.position.x;
     }
     else {
       position.x = boundingBox.center.x;
@@ -122,49 +249,6 @@ export default class Panel {
     position.z = boundingBox.min.z - halfPanelHeight - this.panelSettings.padding.z;
 
     return position;
-  }
-
-  initTerminals() {
-    let wireCount = 0;
-
-    const dimensions = this.terminalSettings.dimensions;
-    const padding = this.terminalSettings.padding;
-
-    this.terminalWidthSpan = padding.x;
-
-    this.terminalMeshes = [];
-
-    for(const i in this.wiringData.cables) {
-      wireCount += this.wiringData.cables[i].wires.length;
-
-      const terminalGeometry = new THREE.BoxGeometry(
-        dimensions.x, 
-        dimensions.y, 
-        dimensions.z, 
-      );
-      const terminalMesh = new THREE.Mesh(
-        terminalGeometry, 
-        new THREE.MeshStandardMaterial({
-          color: sharedData.primaryColor
-        })
-      );
-      terminalMesh.position.copy(this.panelSettings.position);
-
-      terminalMesh.position.x += (dimensions.x + padding.x) * i;
-
-      this.terminalWidthSpan += dimensions.x + padding.x;
-
-      terminalMesh.name = `Panel-Terminal`;
-
-      sharedData.sceneHelper.addToScene(terminalMesh);  
-
-      this.terminals[this.wiringData.cables[i].idTag] = terminalMesh;
-    }
-
-    for(const key in this.terminals) {
-      this.terminals[key].position.x += -this.terminalWidthSpan / 2 + (dimensions.x/2 + padding.x);
-    }
-    
   }
 
   initPanel() {
@@ -242,7 +326,7 @@ export default class Panel {
 
     const backWallGeometry = new THREE.BoxGeometry(
       width, 
-      backWallThickness, 
+      1, 
       height
     );
     const backWallMesh = new THREE.Mesh(
@@ -253,7 +337,7 @@ export default class Panel {
         opacity: this.panelSettings.opacity
       })
     );
-    backWallMesh.position.y += depth/2 - backWallThickness/2;
+    // backWallMesh.position.y += depth/2 - backWallThickness/2;
     
     // Add all parts to the group
     frameGroup.add(ceiling);
@@ -272,13 +356,13 @@ export default class Panel {
 
   }
 
-  initPanelPipe(closestCenterMesh) {
+  initPanelPipe() {
     console.log("initPanelPipe started:", this.ahuObject);
     const panel = {
       position: this.panelSettings.position
     }    
 
-    const centerMeshBackwallYPos = closestCenterMesh.mesh.position.y + this.ahuObject.resources.ducts[closestCenterMesh.key].dimensions.y / 2;
+    const centerMeshBackwallYPos = this.closestCenterDuct.mesh.position.y + this.ahuObject.resources.ducts[this.closestCenterDuct.key].dimensions.y / 2;
 
     const travelDepth = 1000;
 
@@ -296,12 +380,12 @@ export default class Panel {
       new THREE.Vector3(
         panel.position.x,
         panel.position.y + travelDepth,
-        closestCenterMesh.mesh.position.z
+        this.closestCenterDuct.mesh.position.z
       ),
       new THREE.Vector3(
-        closestCenterMesh.mesh.position.x,
+        this.closestCenterDuct.mesh.position.x,
         centerMeshBackwallYPos,
-        closestCenterMesh.mesh.position.z
+        this.closestCenterDuct.mesh.position.z
       ),
     ];
 

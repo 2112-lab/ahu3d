@@ -738,6 +738,9 @@ export default class FlowControl {
             wiringData
         );
 
+        panel.initPanelPipe();
+        // panel.createCables();
+
         // Adjust camera to fit entire assembly in view
         sharedData.sceneHelper.fitAssemblyIntoView();
     }
