@@ -65,25 +65,25 @@ class Scene3D {
                 state: "LOD 0 / AHU - No Terminal",
                 range: [40, Infinity],
                 show: [],
-                unshow: ["Panel-Tray", "Panel-Terminal", "Panel-Pipe", "Cable", "Wire"]
+                unshow: ["Panel-Tray", "Panel-Terminal", "Panel-Pipe", "Cable", "Wire", "Panel-Port"]
             },
             "Pipe": {
                 state: "LOD 1 / Pipe - Single Pipe",
                 range: [20, 40],
                 show: ["Panel-Tray", "Panel-Terminal", "Panel-Pipe"],
-                unshow: ["Cable", "Wire"]
+                unshow: ["Cable", "Wire", "Panel-Port"]
             },
             "Cable": {
                 state: "LOD 2 / Cable - Multiple Cables",
                 range: [12, 20],
-                show: ["Panel-Tray", "Panel-Terminal", "Cable"],
+                show: ["Panel-Tray", "Panel-Terminal", "Cable", "Panel-Port"],
                 unshow: ["Panel-Pipe", "Wire"]
             },
             "Wire": {
                 state: "LOD 3 / Wire - Multiple Wires",
                 range: [0, 12],
                 type: "Wire",
-                show: ["Panel-Tray", "Panel-Terminal", "Wire"],
+                show: ["Panel-Tray", "Panel-Terminal", "Wire", "Panel-Port"],
                 unshow: ["Panel-Pipe", "Cable"]
             }
         }        
