@@ -739,6 +739,10 @@ export default class FlowControl {
         );
 
         panel.initPanelPipe();
+        panel.connectPort("I1-9B");
+        panel.connectPort("I1-12B");
+        panel.connectPort("I2-11A");
+        panel.connectPort("I2-12B");
         // panel.createCables();
 
         // Adjust camera to fit entire assembly in view

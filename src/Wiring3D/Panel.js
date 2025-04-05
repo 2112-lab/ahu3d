@@ -5,9 +5,12 @@ import { TubePath } from 'three-tube-path';
 export default class Panel {
   constructor(portNum = 0, rowNum = 1, labels = [], labelOrientation = "vertical", ahuObject = {}, wiringData = {}) {   
 
-    portNum = 4;
-    rowNum = 1;
-    labels = ["I1-9A", "I1-9B", "I1-10A", "I1-10B"];
+    portNum = 24;
+    rowNum = 2;
+    labels = [
+      "I1-9A", "I1-9B", "I1-10A", "I1-10B", "I1-11A", "I1-11B", "I1-12A", "I1-12B", "I1-13A", "I1-13B", "I1-14A", "I1-14B", 
+      "I2-9A", "I2-9B", "I2-10A", "I2-10B", "I2-11A", "I2-11B", "I2-12A", "I2-12B", "I2-13A", "I2-13B", null, null
+    ];
     labelOrientation = "vertical";
 
     this.portNum = portNum;
@@ -34,7 +37,7 @@ export default class Panel {
         y: 0,
         z: 1000
       },
-      wallThickness: 10,
+      wallThickness: 15,
       opacity: 0.5
     }
 
@@ -45,9 +48,9 @@ export default class Panel {
         z: 200
       },
       padding: {
-        x: 100,
+        x: 20,
         y: 0,
-        z: 0
+        z: 160
       },
       opacity: 0.75
     }
@@ -60,7 +63,93 @@ export default class Panel {
 
     this.initTerminals();
 
-    this.initPanel();
+    this.addOrbs();
+
+    this.initPanelTrays();
+  }
+
+  addOrbs() {
+    // Store references to orbs
+    this.orbs = {};
+    
+    // Loop through all terminals
+    for (const terminalId in this.terminals) {
+      const terminal = this.terminals[terminalId];
+      if (!terminal || terminalId == "") continue;
+
+      const radius = 50;
+      
+      // Create orb geometry (small sphere)
+      const orbGeometry = new THREE.SphereGeometry(radius, 16, 16);
+      const orbMaterial = new THREE.MeshStandardMaterial({
+        color: 0xffffff,  // Blue color
+        emissive: 0x003366, // Slight glow
+        metalness: 0.3,
+        roughness: 0.2
+      });
+      
+      const orb = new THREE.Mesh(orbGeometry, orbMaterial);
+      
+      // Position at the x-center and above the terminal
+      orb.position.copy(terminal.position);
+      
+      // Calculate the height of the terminal
+      let terminalHeight;
+      if (this.labelOrientation === "vertical") {
+        terminalHeight = this.terminalSettings.dimensions.x;
+      } else {
+        terminalHeight = this.terminalSettings.dimensions.z;
+      }
+      
+      // Position orb above the terminal with some offset
+      orb.position.z += terminalHeight / 2 + (radius + 60);
+      
+      orb.name = `Orb-${terminalId}`;
+      
+      // Add to scene
+      sharedData.sceneHelper.addToScene(orb);
+      
+      // Store reference
+      this.orbs[terminalId] = orb;
+    }
+  }
+
+  // Method to set orb color
+  setOrbColor(terminalId, color) {
+    const orb = this.orbs[terminalId];
+    if (orb) {
+      orb.material.color.set(color);
+      orb.material.needsUpdate = true;
+    }
+  }
+
+  // Method to toggle orb visibility
+  toggleOrbVisibility(terminalId, visible) {
+    const orb = this.orbs[terminalId];
+    if (orb) {
+      orb.visible = visible;
+    }
+  }
+
+  connectPort(terminalId) {
+    // Find the terminal mesh by its ID
+    const terminal = this.terminals[terminalId];
+    
+    if (!terminal) {
+      console.warn(`Terminal with ID ${terminalId} not found`);
+      return;
+    }
+    
+    // Try multiple approaches to change the material color
+    const materials = terminal.material;
+    const lightGrey = new THREE.Color('#cccccc');
+    
+    // Update all materials directly
+    for (let i = 0; i < materials.length; i++) {
+      materials[i].color = lightGrey;
+      materials[i].needsUpdate = true;
+    }
+    
   }
 
   createLabel(label) {
@@ -141,51 +230,77 @@ export default class Panel {
     const dimensions = this.terminalSettings.dimensions;
     const padding = this.terminalSettings.padding;
   
-    this.terminalWidthSpan = padding.x;
-    this.terminalMeshes = [];
-
+    // Calculate ports per row (evenly distribute ports across rows)
+    const portsPerRow = Math.ceil(this.portNum / this.rowNum);
+    
+    // Calculate the maximum width span needed for any row
     if(this.labelOrientation === "vertical") {
-      this.terminalWidthSpan += (dimensions.z + padding.x) * this.portNum;
-    }
-    else {
-      this.terminalWidthSpan += (dimensions.x + padding.x) * this.portNum;
-    }    
-  
-    for(let i = 0; i < this.portNum; i++) {
-
-      const label = this.labels[i];
-
-      const boxLabel = this.createLabel(label);
-  
-      // Create terminal with the materials
-      const terminalGeometry = new THREE.BoxGeometry(
-        dimensions.x, 
-        dimensions.y, 
-        dimensions.z
-      );
-      
-      const terminalMesh = new THREE.Mesh(terminalGeometry, boxLabel);
-      terminalMesh.position.copy(this.panelSettings.position);
-      
-      // terminalMesh.position.y += (dimensions.y / 2);
-      
-
-      if(this.labelOrientation === "vertical") {
-        terminalMesh.rotation.y = Math.PI/2;
-        terminalMesh.position.x += (dimensions.z + padding.x) * i;
-        terminalMesh.position.x += -this.terminalWidthSpan / 2 + (dimensions.z/2 + padding.x);
-      }
-      else {
-        terminalMesh.position.x += (dimensions.x + padding.x) * i;
-        terminalMesh.position.x += -this.terminalWidthSpan / 2 + (dimensions.x/2 + padding.x);
-      }
-
-      terminalMesh.name = `Panel-Terminal-${label}`;
-      
-      sharedData.sceneHelper.addToScene(terminalMesh);  
-      this.terminals[label] = terminalMesh;
+      this.terminalWidthSpan = padding.x + (dimensions.z + padding.x) * portsPerRow;
+    } else {
+      this.terminalWidthSpan = padding.x + (dimensions.x + padding.x) * portsPerRow;
     }
     
+    this.terminalMeshes = [];
+  
+    for(let rowIndex = 0; rowIndex < this.rowNum; rowIndex++) {
+      // Calculate the number of ports in this specific row
+      const portsInThisRow = Math.min(
+        portsPerRow, 
+        this.portNum - (rowIndex * portsPerRow)
+      );
+      
+      // Skip if there are no ports left for this row
+      if (portsInThisRow <= 0) break;
+      
+      for(let colIndex = 0; colIndex < portsInThisRow; colIndex++) {
+        // Calculate the absolute index of this terminal
+        const terminalIndex = rowIndex * portsPerRow + colIndex;
+        
+        // Skip if we've already placed all ports
+        if (terminalIndex >= this.portNum) break;
+        
+        const label = this.labels[terminalIndex] || "";
+
+        const boxLabel = this.createLabel(label);
+    
+        // Create terminal with the materials
+        const terminalGeometry = new THREE.BoxGeometry(
+          dimensions.x, 
+          dimensions.y, 
+          dimensions.z
+        );
+        
+        const terminalMesh = new THREE.Mesh(terminalGeometry, boxLabel);
+        terminalMesh.position.copy(this.panelSettings.position);
+        
+        if(this.labelOrientation === "vertical") {
+          terminalMesh.rotation.y = Math.PI/2;
+          
+          // Position in the X axis (columns)
+          terminalMesh.position.x += (dimensions.z + padding.x) * colIndex;
+          terminalMesh.position.x += -this.terminalWidthSpan / 2 + (dimensions.z/2 + padding.x);
+          
+          // Position in the Z axis (rows) - with additional padding between rows
+          // MODIFIED: Use negative values to position new rows below the previous ones
+          const rowHeightWithPadding = dimensions.x + padding.z * 2;
+          terminalMesh.position.z -= rowHeightWithPadding * rowIndex; // Changed += to -=
+        } else {
+          // Position in the X axis (columns)
+          terminalMesh.position.x += (dimensions.x + padding.x) * colIndex;
+          terminalMesh.position.x += -this.terminalWidthSpan / 2 + (dimensions.x/2 + padding.x);
+          
+          // Position in the Z axis (rows) - with additional padding between rows
+          // MODIFIED: Use negative values to position new rows below the previous ones
+          const rowHeightWithPadding = dimensions.z + padding.z * 2;
+          terminalMesh.position.z -= rowHeightWithPadding * rowIndex; // Changed += to -=
+        }
+  
+        terminalMesh.name = `Panel-Terminal-${label}`;
+        
+        sharedData.sceneHelper.addToScene(terminalMesh);  
+        this.terminals[label] = terminalMesh;
+      }
+    }
   }
 
   findCenterDuct(meshDictionary) {
@@ -251,109 +366,136 @@ export default class Panel {
     return position;
   }
 
-  initPanel() {
-    this.panelSettings.dimensions.x = this.terminalWidthSpan;
-    
-    // Create a group to hold all frame parts
-    const frameGroup = new THREE.Group();
-    frameGroup.position.copy(this.panelSettings.position);
-    
-    // Dimensions for the frame parts
-    const width = this.panelSettings.dimensions.x;
-    const depth = this.panelSettings.dimensions.y;
-    const height = this.panelSettings.dimensions.z;
-
-    const wallThickness = this.panelSettings.wallThickness;
+  initPanelTrays() {
+    // Calculate ports per row (evenly distribute ports across rows)
+    const portsPerRow = Math.ceil(this.portNum / this.rowNum);
     
     // Material for the frame
     const frameMaterial = new THREE.MeshStandardMaterial({
       color: sharedData.primaryColor,
-        transparent: true,
-        opacity: this.panelSettings.opacity
+      transparent: true,
+      opacity: this.panelSettings.opacity
     });
     
-    // Create ceiling (top face)
-    const ceilingGeometry = new THREE.BoxGeometry(
-      width + wallThickness*2, 
-      depth, 
-      wallThickness
-    );
-    const ceiling = new THREE.Mesh(
-      ceilingGeometry, 
-      new THREE.MeshStandardMaterial({
-        color: sharedData.primaryColor,
-        transparent: true,
-        opacity: this.panelSettings.opacity
-      })
-    );
-    ceiling.position.z += height/2 + wallThickness/2;
+    // Store reference to the frames for later use if needed
+    this.terminalPanelFrames = [];
     
-    // Create floor (bottom face)
-    const floorGeometry = new THREE.BoxGeometry(
-      width + wallThickness*2, 
-      depth, 
-      wallThickness
-    );
-    const floor = new THREE.Mesh(
-      floorGeometry, 
-      new THREE.MeshStandardMaterial({
-        color: sharedData.primaryColor,
-        transparent: true,
-        opacity: this.panelSettings.opacity
-      })
-    );
-    floor.position.z += -height/2 - wallThickness/2;
-    
-    // Create left wall
-    const leftWallGeometry = new THREE.BoxGeometry(
-      wallThickness, 
-      depth, 
-      height
-    );
-    const leftWall = new THREE.Mesh(leftWallGeometry, frameMaterial);
-    leftWall.position.x -= width/2 + wallThickness/2;
-    
-    // Create right wall
-    const rightWallGeometry = new THREE.BoxGeometry(
-      wallThickness, 
-      depth, 
-      height
-    );
-    const rightWall = new THREE.Mesh(rightWallGeometry, frameMaterial);
-    rightWall.position.x += width/2 + wallThickness/2;
-
-    const backWallThickness = 10;
-
-    const backWallGeometry = new THREE.BoxGeometry(
-      width, 
-      1, 
-      height
-    );
-    const backWallMesh = new THREE.Mesh(
-      backWallGeometry, 
-      new THREE.MeshStandardMaterial({
-        color: sharedData.primaryColor,
-        transparent: true,
-        opacity: this.panelSettings.opacity
-      })
-    );
-    // backWallMesh.position.y += depth/2 - backWallThickness/2;
-    
-    // Add all parts to the group
-    frameGroup.add(ceiling);
-    frameGroup.add(floor);
-    frameGroup.add(leftWall);
-    frameGroup.add(rightWall);
-    frameGroup.add(backWallMesh);
-
-    frameGroup.name = `Panel-Tray`;
-    
-    // Add the complete frame to the scene
-    sharedData.sceneHelper.addToScene(frameGroup);
-    
-    // Store reference to the frame for later use if needed
-    this.terminalPanelFrame = frameGroup;
-
+    // Create a tray for each row
+    for(let rowIndex = 0; rowIndex < this.rowNum; rowIndex++) {
+      // Calculate the number of ports in this specific row
+      const portsInThisRow = Math.min(
+        portsPerRow, 
+        this.portNum - (rowIndex * portsPerRow)
+      );
+      
+      // Skip if there are no ports left for this row
+      if (portsInThisRow <= 0) break;
+      
+      // Calculate the width for this specific row's tray
+      let rowWidth;
+      if(this.labelOrientation === "vertical") {
+        rowWidth = this.terminalSettings.padding.x + 
+                  (this.terminalSettings.dimensions.z + this.terminalSettings.padding.x) * portsInThisRow;
+      } else {
+        rowWidth = this.terminalSettings.padding.x + 
+                  (this.terminalSettings.dimensions.x + this.terminalSettings.padding.x) * portsInThisRow;
+      }
+      
+      // Create a group to hold all frame parts for this row
+      const frameGroup = new THREE.Group();
+      frameGroup.position.copy(this.panelSettings.position);
+      
+      // Dimensions for the frame parts
+      const width = rowWidth;
+      const depth = this.panelSettings.dimensions.y;
+      
+      const wallThickness = this.panelSettings.wallThickness;
+  
+      // Set height to match the labels based on orientation
+      const height = this.labelOrientation === "vertical" 
+                    ? this.terminalSettings.dimensions.x + (wallThickness / 2)  // Use X dimension if vertical
+                    : this.terminalSettings.dimensions.z + (wallThickness / 2); // Use Z dimension if horizontal
+      
+      // Adjust Z position for this row with additional padding between rows
+      // MODIFIED: Use negative values to position new rows below the previous ones
+      if(this.labelOrientation === "vertical") {
+        // Calculate the row height plus padding
+        const rowHeightWithPadding = this.terminalSettings.dimensions.x + this.terminalSettings.padding.z * 2;
+        frameGroup.position.z -= rowHeightWithPadding * rowIndex; // Changed += to -=
+      } else {
+        // Calculate the row height plus padding
+        const rowHeightWithPadding = this.terminalSettings.dimensions.z + this.terminalSettings.padding.z * 2;
+        frameGroup.position.z -= rowHeightWithPadding * rowIndex; // Changed += to -=
+      }
+      
+      // Create ceiling (top face)
+      const ceilingGeometry = new THREE.BoxGeometry(
+        width + wallThickness*2, 
+        depth, 
+        wallThickness
+      );
+      const ceiling = new THREE.Mesh(
+        ceilingGeometry, 
+        frameMaterial.clone()
+      );
+      ceiling.position.z += height/2 + wallThickness/2;
+      
+      // Create floor (bottom face)
+      const floorGeometry = new THREE.BoxGeometry(
+        width + wallThickness*2, 
+        depth, 
+        wallThickness
+      );
+      const floor = new THREE.Mesh(
+        floorGeometry, 
+        frameMaterial.clone()
+      );
+      floor.position.z += -height/2 - wallThickness/2;
+      
+      // Create left wall
+      const leftWallGeometry = new THREE.BoxGeometry(
+        wallThickness, 
+        depth, 
+        height
+      );
+      const leftWall = new THREE.Mesh(leftWallGeometry, frameMaterial.clone());
+      leftWall.position.x -= width/2 + wallThickness/2;
+      
+      // Create right wall
+      const rightWallGeometry = new THREE.BoxGeometry(
+        wallThickness, 
+        depth, 
+        height
+      );
+      const rightWall = new THREE.Mesh(rightWallGeometry, frameMaterial.clone());
+      rightWall.position.x += width/2 + wallThickness/2;
+      
+      // Create back wall
+      const backWallGeometry = new THREE.BoxGeometry(
+        width, 
+        1, 
+        height
+      );
+      const backWallMesh = new THREE.Mesh(
+        backWallGeometry, 
+        frameMaterial.clone()
+      );
+      
+      // Add all parts to the group
+      frameGroup.add(ceiling);
+      frameGroup.add(floor);
+      frameGroup.add(leftWall);
+      frameGroup.add(rightWall);
+      frameGroup.add(backWallMesh);
+      
+      frameGroup.name = `Panel-Tray-Row-${rowIndex}`;
+      
+      // Add the complete frame to the scene
+      sharedData.sceneHelper.addToScene(frameGroup);
+      
+      // Store reference to the frame
+      this.terminalPanelFrames.push(frameGroup);
+    }
   }
 
   initPanelPipe() {
