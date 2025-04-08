@@ -80,16 +80,17 @@ class Scene3D {
                 unshow: ["Panel-Pipe", "Wire"]
             },
             "Wire": {
-                state: "LOD 3 / Wire - Multiple Wires",
+                state: "LOD 3 / Wire - Multiple Wires",
                 range: [0, 12],
                 type: "Wire",
                 show: ["Panel-Tray", "Panel-Terminal", "Wire", "Panel-Port"],
                 unshow: ["Panel-Pipe", "Cable"]
             }
-        }        
-
-        this.zoom2Threshold = 12;
-        this.zoom1Threshold = 20;
+        }       
+        
+        if (process.env.NODE_ENV === "development") {
+            // delete this.LODs["Wire"];
+        }
 
         this.init();
     }
@@ -858,6 +859,8 @@ class Scene3D {
         const distance = cameraPosition.distanceTo(targetPosition);
 
         this.currentZoomDistance = distance;
+
+        // this.toggleWiring(this.LODs['Cable']); return;
 
         // Check each LOD
         for(const key in this.LODs) {

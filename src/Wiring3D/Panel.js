@@ -55,6 +55,16 @@ export default class Panel {
       opacity: 0.75
     }
 
+    this.cableRadiusMax = 6;
+    this.cablePaddingMax = 5;
+
+    this.wireRadiusMax = 1.5;
+    this.wirePaddingMax = 5;
+
+    if (process.env.NODE_ENV === "development") {
+      this.wireRadiusMax = 3;
+    }
+
     this.terminals = {};
 
     this.closestCenterDuct = this.findCenterDuct(this.ahuObject['3d'].ducts.meshes);
@@ -65,7 +75,26 @@ export default class Panel {
 
     this.addOrbs();
 
+    const orbKeys = Object.keys(this.orbs);
+
+    console.log("Panel constructor this.orbs:", this.orbs);
+    console.log("Panel constructor orbKeys:", orbKeys);
+
+    this.orbDistanceX = Math.abs(this.orbs[orbKeys[0]].position.x - this.orbs[orbKeys[1]].position.x);
+
+    console.log("Panel constructor orbDistanceX:", this.orbDistanceX);
+
     this.initPanelTrays();
+
+    // const orbGeometry = new THREE.SphereGeometry(100, 16, 16);
+    // const orbMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+    // const orb = new THREE.Mesh(orbGeometry, orbMaterial);
+    // orb.position.copy(this.orbs[orbKeys[0]].position);
+    // sharedData.sceneHelper.addToScene(orb);
+    
+    // const orbSecondary = orb.clone();
+    // orbSecondary.position.x = this.orbs[orbKeys[1]].position.x;
+    // sharedData.sceneHelper.addToScene(orbSecondary);
   }
 
   addOrbs() {
@@ -513,7 +542,7 @@ export default class Panel {
     const tubeGeometry = new TubePath(
       curve, 
       TubePath.pathToUMapping(curve, 5, 2), 
-      128, 
+      this.cableRadiusMax * 2, 
       8, 
       false
     );
@@ -542,16 +571,16 @@ export default class Panel {
 
   getWireColor(colorName) {
     const colorMap = {
-      'Red': 0xff0000,
-      'Green': 0x00ff00,
-      'Blue': 0x0000ff,
-      'Yellow': 0xffff00,
-      'Orange': 0xffa500,
-      'Purple': 0x800080,
-      'Black': 0x000000,
-      'White': 0xffffff,
-      'Grey': 0x808080,
-      'Brown': 0x8b4513
+      'Red':    0xF44336,
+      'Green':  0x4CAF50,
+      'Blue':   0x2196F3,
+      'Yellow': 0xFFEB3B,
+      'Orange': 0xFF9800,
+      'Purple': 0x9C27B0,
+      'Black':  0x000000,
+      'White':  0xffffff,
+      'Grey':   0x808080,
+      'Brown':  0x795548
     };
     
     return colorMap[colorName] || 0xcccccc; // Default to gray if color not found
@@ -626,14 +655,24 @@ export default class Panel {
     const terminal = this.terminals[terminalLabel];
     const orb = this.orbs[terminalLabel];
     const component = this.ahuObject['3d'].components.meshes[componentId];
+
+    // console.log("createSingleCable componentId:", componentId);
+
+    const ductId = this.ahuObject.associations.components[componentId];
+    const ductHalfDepth = this.ahuObject.resources.ducts[ductId].dimensions.y / 2;
     
     if (!terminal || !component || !orb) {
       console.warn(`Missing terminal, orb, or component for cable: ${terminalLabel} -> ${componentId}`);
       return null;
     }
+
+    const orbToCenterDistanceX = Math.abs(this.panelSettings.position.x - orb.position.x) / 10;
+    // const orbToCenterDistanceX = 0;
+
+    const orbToCenterDistanceZ = Math.abs(this.panelSettings.position.z - orb.position.z);
+    // orbToCenterDistanceZ = 0;
     
-    const travelDepth = 1000;
-    const componentBackYPos = component.position.y + this.ahuObject.resources.components[componentId].dimensions.y / 2;
+    const travelDepth = 500 + orbToCenterDistanceZ + orbToCenterDistanceX;
     
     const points = [];
     
@@ -654,33 +693,53 @@ export default class Panel {
         orb.position.z,
       )
     );
+
+    points.push(
+      new THREE.Vector3(
+        orb.position.x,
+        orb.position.y + travelDepth,
+        orb.position.z + 500
+      )
+    );
+
+    const convergenceFactor = 6;
+
+    // The point where the points should approach each other very closely on the x-axis.
+    points.push(
+      new THREE.Vector3(
+        orb.position.x / convergenceFactor,
+        orb.position.y + travelDepth,
+        orb.position.z + 500 + this.cableRadiusMax + (orbToCenterDistanceX)
+      )
+    );
+
+    const zStep = Math.abs(0 - component.position.x) / 20;
     
     // Travel horizontally to be above component
     points.push(
       new THREE.Vector3(
-        orb.position.x,
-        component.position.y + travelDepth,
-        component.position.z
+        orb.position.x / convergenceFactor,
+        orb.position.y + travelDepth,
+        component.position.z + zStep - ductHalfDepth/2
       )
-    );
-    
-    // Adjust horizontal position if needed
-    if (Math.abs(orb.position.x - component.position.x) > 1) {
+    );        
+
+    // if (Math.abs(orb.position.x - component.position.x) > 1) {
       points.push(
         new THREE.Vector3(
           component.position.x,
-          component.position.y + travelDepth,
-          component.position.z
+          orb.position.y + travelDepth,
+          component.position.z + zStep - ductHalfDepth/2 + this.cableRadiusMax*2
         )
       );
-    }
+    // }
     
     // Move down to component
     points.push(
       new THREE.Vector3(
         component.position.x,
-        componentBackYPos,
-        component.position.z
+        0 + ductHalfDepth,
+        component.position.z + zStep - ductHalfDepth/2 + this.cableRadiusMax*2
       )
     );
     
@@ -690,7 +749,7 @@ export default class Panel {
     const tubeGeometry = new TubePath(
       curve, 
       TubePath.pathToUMapping(curve, 5, 2), 
-      64, 
+      this.cableRadiusMax, 
       8, 
       false
     );
@@ -721,7 +780,7 @@ export default class Panel {
   // New method to create wires for a specific cable
   createWiresForCable(terminalLabel, componentId, points) {
     // Define default wire colors for variety
-    const defaultWireColors = ['Red', 'Green', 'Blue', 'Yellow', 'Black', 'White'];
+    const defaultWireColors = ['Red', 'Green', 'Blue', 'Yellow', 'Purple', 'Orange'];
     const numWires = Math.floor(Math.random() * 3) + 2; // Random number of wires (2-4)
     
     const wires = [];
@@ -730,7 +789,7 @@ export default class Panel {
     
     for (let i = 0; i < numWires; i++) {
       // Select a color from the default colors
-      const wireColor = defaultWireColors[i % defaultWireColors.length];
+      const wireColor = defaultWireColors[Math.floor(Math.random() * 6)];
       
       // Calculate offset
       const offsetFactor = Math.ceil((i+1)/2) * (i % 2 === 0 ? -1 : 1);
@@ -741,7 +800,7 @@ export default class Panel {
       
       // Apply offset to each point (except start and end points)
       for (let j = 1; j < wirePoints.length - 1; j++) {
-        wirePoints[j].y += offset;
+        // wirePoints[j].y += offset;
       }
       
       // Create curve and geometry
@@ -750,16 +809,14 @@ export default class Panel {
       const tubeGeometry = new TubePath(
         curve, 
         TubePath.pathToUMapping(curve, 5, 2),
-        24, // Smaller radius for individual wires
+        this.wireRadiusMax, // Smaller radius for individual wires
         8,
         false
       );
       
       // Create material with wire color
       const tubeMaterial = new THREE.MeshStandardMaterial({
-        color: this.getWireColor(wireColor),
-        metalness: 0.3,
-        roughness: 0.5
+        color: this.getWireColor(wireColor)
       });
       
       // Create mesh
