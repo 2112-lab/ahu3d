@@ -50,6 +50,7 @@ import { Context } from "svgcanvas";
 import jsPDF from "jspdf";
 import "svg2pdf.js";
 import { CableSystem } from "./CableSystem.js";
+import Panel from "../Wiring3D/Panel.js";
 
 class Ahu3DAPI extends CableSystem {
     /**
@@ -68,6 +69,84 @@ class Ahu3DAPI extends CableSystem {
         this.Mesh3D = new Mesh3D(this.sceneHelper);
         // Initialize flow control system
         this.FlowControl = new FlowControl();
+
+        this.panel = null;
+
+        // Wiring data storage
+        this.wiringData = {
+            cables: []
+        };
+    }
+
+    initWiringPanel(ahuObject, wiringData) {
+        const rowNum = 2;
+        const labelOrientation = "vertical";
+
+        this.panel = new Panel(
+            rowNum, 
+            labelOrientation, 
+            ahuObject, 
+            wiringData
+        );
+
+        this.panel.initPanelPipe();
+    }
+
+    set3dWiringData(wiringData) {
+        // this.sceneHelper.clear3dWiring();
+        this.panel.set3dWiringData(wiringData);
+    }
+
+    createDuctConnectionsDict(inputDict) {
+        const result = {};
+        const locationMap = {}; // Maps locations (like "B2") to ducts that connect there
+        
+        // First pass: Extract duct IDs and create location mapping
+        Object.keys(inputDict).forEach(fullDuctId => {
+          // Extract just the duct name (e.g., "Duct-0" from "r:novo.graphics::Duct-0")
+          const ductId = fullDuctId.split("::")[1];
+          
+          // Initialize the duct in the result dictionary
+          result[ductId] = {
+            connections: []
+          };
+          
+          // Map the start and end locations to this duct
+          const location = inputDict[fullDuctId].graphicLocation;
+          
+          // Add duct to the start location map
+          if (!locationMap[location.start]) {
+            locationMap[location.start] = [];
+          }
+          locationMap[location.start].push(ductId);
+          
+          // Add duct to the end location map
+          if (!locationMap[location.end]) {
+            locationMap[location.end] = [];
+          }
+          locationMap[location.end].push(ductId);
+        });
+        
+        // Second pass: Determine connections based on shared locations
+        Object.keys(locationMap).forEach(location => {
+          const ductsAtLocation = locationMap[location];
+          
+          // If more than one duct shares a location, they're connected
+          if (ductsAtLocation.length > 1) {
+            // For each duct at this location
+            ductsAtLocation.forEach(ductId => {
+              // Add all other ducts at this location as connections
+              ductsAtLocation.forEach(connectedDuct => {
+                if (ductId !== connectedDuct && 
+                    !result[ductId].connections.includes(connectedDuct)) {
+                  result[ductId].connections.push(connectedDuct);
+                }
+              });
+            });
+          }
+        });
+        
+        return result;
     }
 
     insertComponent(xeto, selectedLibraryItem, selectedEdge, insertIndex = null) {

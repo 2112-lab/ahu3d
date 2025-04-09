@@ -985,12 +985,37 @@ class Scene3D {
         camera.position.z = center.z + 2;
         camera.updateProjectionMatrix();
 
-        camera.lookAt(center);
+        this.controls.target.copy(center);
 
-        // Update the OrbitControls' target
+        if (process.env.NODE_ENV === "development") {
+            // this.orbitToOtherSide();
+            // camera.position.z += 3;
+
+            camera.position.y -= 12;
+        }        
+
+        camera.lookAt(center);
         this.controls.target.copy(center);
         this.controls.update(); // Ensure the controls are updated
     } 
+
+    orbitToOtherSide() {
+        const camera = this.cameras.primary;
+        const center = this.controls.target;
+        
+        // Calculate vector from target to camera
+        const directionVector = new THREE.Vector3().subVectors(camera.position, center);
+        
+        // Invert the direction (rotate 180 degrees)
+        directionVector.multiplyScalar(-1);
+        
+        // Set new camera position
+        const newPosition = new THREE.Vector3().addVectors(center, directionVector);
+        camera.position.copy(newPosition);
+        
+        camera.lookAt(center);
+        this.controls.update();
+    }
 
     addBoundingBox() {
         const dimensions = this.selectedMesh.userData.component.object.boundingBox.dimensions;

@@ -3,25 +3,27 @@ import * as THREE from 'three';
 import { TubePath } from 'three-tube-path';
 
 export default class Panel {
-  constructor(portNum = 0, rowNum = 1, labels = [], labelOrientation = "vertical", ahuObject = {}, wiringData = {}) {   
+  constructor(rowNum = 1, labelOrientation = "vertical", ahuObject = {}, wiringData = {}) {       
+    // Set defaults for panel parameters
+    this.portNum = 24;
+    this.rowNum = rowNum || 1;
+    this.labelOrientation = labelOrientation || "vertical";
+    this.ahuObject = ahuObject;        
 
-    portNum = 24;
-    rowNum = 2;
-    labels = [
-      "I1-9A", "I1-9B", "I1-10A", "I1-10B", "I1-11A", "I1-11B", "I1-12A", "I1-12B", "I1-13A", "I1-13B", "I1-14A", "I1-14B", 
-      "I2-9A", "I2-9B", "I2-10A", "I2-10B", "I2-11A", "I2-11B", "I2-12A", "I2-12B", "I2-13A", "I2-13B", null, null
-    ];
-    labelOrientation = "vertical";
+    this.cableRadiusMax = 18;
+    this.cablePaddingMax = 5;
 
-    this.portNum = portNum;
-    this.rowNum = rowNum;
-    this.labels = labels;
-    this.labelOrientation = labelOrientation;
-    
-    this.ahuObject = ahuObject;
+    this.wireRadiusMax = 1.5;
+    this.wirePaddingMax = 5;
 
-    this.wiringData = wiringData;
+    if (process.env.NODE_ENV === "development") {
+      this.wireRadiusMax = 6;
+    }
 
+    this.set3dWiringData(wiringData);
+  }
+
+  set3dWiringData(wiringData) {
     this.panelSettings = {
       position: {
         x: 'center',
@@ -54,16 +56,13 @@ export default class Panel {
       },
       opacity: 0.75
     }
+    // Use the provided wiringData or default to empty structure
+    this.wiringData = wiringData || { cables: [] };
 
-    this.cableRadiusMax = 6;
-    this.cablePaddingMax = 5;
+    this.removeExistingConnections();
 
-    this.wireRadiusMax = 1.5;
-    this.wirePaddingMax = 5;
-
-    if (process.env.NODE_ENV === "development") {
-      this.wireRadiusMax = 3;
-    }
+    // Extract terminal labels from wiringData
+    this.labels = this.extractLabelsFromWiringData();
 
     this.terminals = {};
 
@@ -80,22 +79,333 @@ export default class Panel {
     console.log("Panel constructor this.orbs:", this.orbs);
     console.log("Panel constructor orbKeys:", orbKeys);
 
-    this.orbDistanceX = Math.abs(this.orbs[orbKeys[0]].position.x - this.orbs[orbKeys[1]].position.x);
-
-    console.log("Panel constructor orbDistanceX:", this.orbDistanceX);
+    // Calculate orb distance if orbs exist
+    if (orbKeys.length >= 2) {
+      this.orbDistanceX = Math.abs(this.orbs[orbKeys[0]].position.x - this.orbs[orbKeys[1]].position.x);
+      console.log("Panel constructor orbDistanceX:", this.orbDistanceX);
+    }
 
     this.initPanelTrays();
-
-    // const orbGeometry = new THREE.SphereGeometry(100, 16, 16);
-    // const orbMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
-    // const orb = new THREE.Mesh(orbGeometry, orbMaterial);
-    // orb.position.copy(this.orbs[orbKeys[0]].position);
-    // sharedData.sceneHelper.addToScene(orb);
     
-    // const orbSecondary = orb.clone();
-    // orbSecondary.position.x = this.orbs[orbKeys[1]].position.x;
-    // sharedData.sceneHelper.addToScene(orbSecondary);
+    // Create cables and wires based on wiring data
+    this.createCablesFromWiringData();
   }
+
+  // Remove existing cables and wires from the scene
+  removeExistingConnections() {
+    // Find and remove all meshes with names that match our cable/wire pattern
+    const objectsToRemove = [];
+    
+    sharedData.sceneHelper.scene.traverse((object) => {
+      if(
+        object.name.includes('Cable') || 
+        object.name.includes('Wire') ||
+        object.name.includes('Panel')
+      ) {
+        objectsToRemove.push(object);
+      }
+    });
+    
+    // Remove all found objects from the scene
+    objectsToRemove.forEach(object => {
+      sharedData.sceneHelper.removeFromScene(object);
+      if (object.geometry) object.geometry.dispose();
+      if (object.material) {
+        if (Array.isArray(object.material)) {
+          object.material.forEach(mat => mat.dispose());
+        } else {
+          object.material.dispose();
+        }
+      }
+    });
+  }
+
+  // Reset terminals and orbs to their default visual state
+  resetTerminalsAndOrbs() {
+    // Reset all terminals to default appearance
+    for (const terminalId in this.terminals) {
+      const terminal = this.terminals[terminalId];
+      const materials = terminal.material;
+      
+      // Reset to default color
+      const defaultColor = new THREE.Color(sharedData.primaryColor);
+      
+      // Update all materials except labels
+      for (let i = 0; i < materials.length; i++) {
+        if (i !== 2 && i !== 3) { // Don't change the label textures (front and back)
+          materials[i].color = defaultColor;
+          materials[i].needsUpdate = true;
+        }
+      }
+    }
+    
+    // Reset all orbs to default appearance
+    for (const orbId in this.orbs) {
+      // Reset color to default blue
+      this.setOrbColor(orbId, 0x3366cc);
+      
+      // Reset scale to normal
+      this.orbs[orbId].scale.set(1.0, 1.0, 1.0);
+    }
+  }
+
+  // New method to extract terminal labels from wiringData
+  extractLabelsFromWiringData() {
+    const uniqueTerminalIds = new Set();
+    
+    // Extract unique panel wiring IDs from each cable's wires
+    if (this.wiringData && this.wiringData.cables) {
+      this.wiringData.cables.forEach(cable => {
+        if (cable.wires && Array.isArray(cable.wires)) {
+          cable.wires.forEach(wire => {
+            // Only add if panelWiringId exists
+            if (wire.panelWiringId) {
+              uniqueTerminalIds.add(wire.panelWiringId);
+            }
+          });
+        }
+      });
+    }
+    
+    // Convert the Set to an array and sort to ensure consistent ordering
+    const uniqueLabels = Array.from(uniqueTerminalIds);
+    console.log("Unique terminal IDs from wiringData:", uniqueLabels);
+    
+    this.portNum = uniqueLabels.length + (uniqueLabels.length % this.rowNum);
+    
+    // Create the labels array with the appropriate size
+    const labels = new Array(this.portNum).fill(null);
+    
+    // Fill the labels array with the unique labels
+    for (let i = 0; i < uniqueLabels.length; i++) {
+      labels[i] = uniqueLabels[i];
+    }
+    
+    console.log("Final labels from wiringData:", labels);
+    return labels;
+  }
+
+  // New method to create cables based on wiring data
+  createCablesFromWiringData() {
+    if (!this.wiringData || !this.wiringData.cables || !Array.isArray(this.wiringData.cables)) {
+      console.warn("No valid wiring data available");
+      return;
+    }
+    
+    console.log("Creating cables from wiring data:", this.wiringData);
+    
+    // Create a map to track which components are connected to which terminals
+    const terminalToComponentMap = {};
+    
+    // Process each cable in the wiring data
+    this.wiringData.cables.forEach(cable => {
+      // Skip if no wires or invalid cable
+      if (!cable.wires || !Array.isArray(cable.wires) || cable.wires.length === 0) {
+        return;
+      }
+      
+      // Get component ID from the cable
+      const componentId = cable.idTag;
+      
+      // Check if component exists in the ahuObject
+      if (!componentId) {
+        console.warn(`Component ID missing for cable ${cable.id}`);
+        return;
+      }
+      
+      // If the component doesn't exist in the scene, we'll handle this gracefully
+      const componentExists = this.ahuObject && 
+                             this.ahuObject['3d'] && 
+                             this.ahuObject['3d'].components && 
+                             this.ahuObject['3d'].components.meshes && 
+                             this.ahuObject['3d'].components.meshes[componentId];
+      
+      if (!componentExists) {
+        console.warn(`Component ${componentId} not found in scene for cable ${cable.id}`);
+        // Instead of returning, we'll continue and connect to a fallback position later
+      }
+      
+      // Process each wire in the cable
+      cable.wires.forEach(wire => {
+        const terminalId = wire.panelWiringId;
+        
+        // Skip if terminal doesn't exist
+        if (!terminalId || !this.terminals[terminalId]) {
+          console.warn(`Terminal ${terminalId} not found for wire ${wire.id}`);
+          return;
+        }
+        
+        // Map this terminal to the component
+        terminalToComponentMap[terminalId] = componentId;
+        
+        // Set orb color to indicate connection
+        this.setOrbColor(terminalId, 0x00ff00);
+      });
+    });
+    
+    console.log("Terminal to component mapping:", terminalToComponentMap);
+    
+    // Create cables for mapped terminals
+    for (const terminalId in terminalToComponentMap) {
+      const componentId = terminalToComponentMap[terminalId];
+      this.createCableWithWires(terminalId, componentId);
+    }
+  }
+  
+  // Enhanced method to create a cable with its wires based on wiring data
+  createCableWithWires(terminalId, componentId) {
+    // Find the cable data that connects this terminal to this component
+    const cableData = this.findCableData(terminalId, componentId);
+    
+    if (!cableData) {
+      console.warn(`No cable data found for ${terminalId} to ${componentId}`);
+      
+      // Create a default cable with generic wires (for terminals without specific wire data)
+      const cable = this.createSingleCable(terminalId, componentId);
+      
+      if (cable) {
+        // Create default wires with standard colors
+        const defaultWireColors = ['Red', 'Yellow'];
+        const cablePoints = cable.userData.cablePoints;
+        
+        if (cablePoints) {
+          // Create a couple of default wires
+          for (let i = 0; i < 2; i++) {
+            // Use the exact same path as the cable
+            const wirePoints = cablePoints.map(point => point.clone());
+            const curve = new THREE.CatmullRomCurve3(wirePoints);
+            
+            const tubeGeometry = new TubePath(
+              curve, 
+              TubePath.pathToUMapping(curve, 5, 2),
+              this.wireRadiusMax,
+              8,
+              false
+            );
+            
+            const tubeMaterial = new THREE.MeshStandardMaterial({
+              color: this.getWireColor(defaultWireColors[i])
+            });
+            
+            const tube = new THREE.Mesh(tubeGeometry, tubeMaterial);
+            tube.name = `${terminalId}-to-${componentId}-Wire-Default-${i}`;
+            tube.visible = true;
+            
+            sharedData.sceneHelper.addToScene(tube);
+          }
+        }
+        
+        // Mark the terminal as connected
+        this.connectPort(terminalId);
+      }
+      
+      return cable;
+    }
+    
+    // Create the main cable path
+    const cable = this.createSingleCable(terminalId, componentId);
+    
+    if (!cable) {
+      return null;
+    }
+    
+    // Create individual wires using the wire data
+    this.createWiresFromData(terminalId, componentId, cableData, cable.userData.cablePoints);
+    
+    // Mark the terminal as connected
+    this.connectPort(terminalId);
+    
+    return cable;
+  }
+  
+  // Helper to find cable data for a specific terminal and component
+  findCableData(terminalId, componentId) {
+    if (!this.wiringData || !this.wiringData.cables) {
+      return null;
+    }
+    
+    // Find the cable that connects to this component
+    for (const cable of this.wiringData.cables) {
+      if (cable.idTag === componentId) {
+        // Check if any of its wires connect to this terminal
+        if (cable.wires && Array.isArray(cable.wires)) {
+          for (const wire of cable.wires) {
+            if (wire.panelWiringId === terminalId) {
+              return cable;
+            }
+          }
+        }
+      }
+    }
+    
+    // If we didn't find an exact match, just find any cable with this terminal
+    for (const cable of this.wiringData.cables) {
+      if (cable.wires && Array.isArray(cable.wires)) {
+        for (const wire of cable.wires) {
+          if (wire.panelWiringId === terminalId) {
+            return cable;
+          }
+        }
+      }
+    }
+    
+    return null;
+  }
+  
+  // Create wires using the wiring data instead of random generation
+  createWiresFromData(terminalId, componentId, cableData, cablePoints) {
+    if (!cablePoints || cablePoints.length === 0) {
+      console.warn(`No path found for cable ${terminalId} to ${componentId}`);
+      return [];
+    }
+    
+    const wires = [];
+    
+    // Create a wire for each wire in the cable data
+    if (cableData.wires && Array.isArray(cableData.wires)) {
+      cableData.wires.forEach((wireData, index) => {
+        // Get the wire color from the data
+        const wireColor = wireData.color || 'Red';
+        
+        // Create a deep copy of the points array for this wire
+        // IMPORTANT: We're using the exact same points as the cable
+        const wirePoints = cablePoints.map(point => point.clone());
+        
+        // Create curve and geometry - using the same path as the cable
+        const curve = new THREE.CatmullRomCurve3(wirePoints);
+        
+        const tubeGeometry = new TubePath(
+          curve, 
+          TubePath.pathToUMapping(curve, 5, 2),
+          this.wireRadiusMax,
+          8,
+          false
+        );
+        
+        // Create material with wire color
+        const tubeMaterial = new THREE.MeshStandardMaterial({
+          color: this.getWireColor(wireColor)
+        });
+        
+        // Create mesh
+        const tube = new THREE.Mesh(tubeGeometry, tubeMaterial);
+        
+        // Name the wire
+        tube.name = `${terminalId}-to-${componentId}-Wire-${wireData.id}`;
+        
+        // Make wire visible
+        tube.visible = true;
+        
+        // Add to scene and store reference
+        sharedData.sceneHelper.addToScene(tube);
+        wires.push(tube);
+      });
+    }
+    
+    return wires;
+  }
+  
+  // Remove the redundant getCablePath method since we're storing path data with the cable
 
   addOrbs() {
     // Store references to orbs
@@ -508,7 +818,7 @@ export default class Panel {
     console.log("initPanelPipe started:", this.ahuObject);
     const panel = {
       position: this.panelSettings.position
-    }    
+    };    
 
     const centerMeshBackwallYPos = this.closestCenterDuct.mesh.position.y + this.ahuObject.resources.ducts[this.closestCenterDuct.key].dimensions.y / 2;
 
@@ -547,14 +857,6 @@ export default class Panel {
       false
     );
 
-    // const tubeGeometry = new THREE.TubeGeometry(
-    //   curve,       // The curve to follow
-    //   128,          // Number of segments (higher = smoother)
-    //   64,           // Radius of the tube
-    //   8,           // Number of sides (higher = more circular)
-    //   false        // Closed or not (true = connect ends)
-    // );
-
     const tubeMaterial = new THREE.MeshStandardMaterial({
       color: 0xffffff,
       metalness: 0.3,
@@ -571,108 +873,88 @@ export default class Panel {
 
   getWireColor(colorName) {
     const colorMap = {
-      'Red':    0xF44336,
-      'Green':  0x4CAF50,
-      'Blue':   0x2196F3,
+      'Red':    0xE57373,
+      'Green':  0x81C784,
+      'Blue':   0x4FC3F7,
       'Yellow': 0xFFEB3B,
-      'Orange': 0xFF9800,
-      'Purple': 0x9C27B0,
+      'Orange': 0xFFA726,
+      'Purple': 0xCE93D8,
       'Black':  0x000000,
       'White':  0xffffff,
       'Grey':   0x808080,
-      'Brown':  0x795548
+      'Brown':  0xBCAAA4
     };
     
     return colorMap[colorName] || 0xcccccc; // Default to gray if color not found
   }
 
-  // Modified createCables method to map each label to a unique component
-  createCables() {
-    console.log("createCables started:", this.ahuObject);
-
-    // Get all available component IDs
-    const componentIDs = Object.keys(this.ahuObject['3d'].components.meshes);
+  // Create a cable and return its path points
+  createSingleCable(terminalId, componentId) {
+    const terminal = this.terminals[terminalId];
+    const orb = this.orbs[terminalId];
     
-    // Get all terminal labels that are not null
-    const validLabels = this.labels.filter(label => label !== null);
-    
-    // Create a mapping between labels and components
-    // This ensures each label connects to a unique component
-    const labelToComponentMap = {};
-    
-    // If we have wiringData already defined with proper mapping, use it
-    if (this.wiringData && this.wiringData.cables) {
-      for (const cable of this.wiringData.cables) {
-        if (validLabels.includes(cable.idTag) && componentIDs.includes(cable.componentId)) {
-          labelToComponentMap[cable.idTag] = cable.componentId;
-        }
-      }
-    }
-    
-    // For any labels that don't have a mapping yet, create one
-    let unusedComponentIndex = 0;
-    for (const label of validLabels) {
-      if (!labelToComponentMap[label]) {
-        // Find a component that hasn't been used yet
-        while (unusedComponentIndex < componentIDs.length) {
-          const componentId = componentIDs[unusedComponentIndex];
-          
-          // Check if this component is already mapped to another label
-          if (!Object.values(labelToComponentMap).includes(componentId)) {
-            labelToComponentMap[label] = componentId;
-            unusedComponentIndex++;
-            break;
-          }
-          unusedComponentIndex++;
-        }
-      }
-    }
-    
-    // Now create a cable for each mapping
-    for (const label in labelToComponentMap) {
-      const componentId = labelToComponentMap[label];
-      
-      // Skip if terminal or component doesn't exist
-      if (!this.terminals[label] || !this.ahuObject['3d'].components.meshes[componentId]) {
-        console.warn(`Cannot create cable: Terminal ${label} or component ${componentId} not found`);
-        continue;
-      }
-      
-      this.createSingleCable(label, componentId);
-      
-      // Set orb color to indicate connection
-      this.setOrbColor(label, 0x00ff00); // Green for connected
-    }
-    
-    console.log("createCables finished with mapping:", labelToComponentMap);
-    
-    // Return the mapping for reference
-    return labelToComponentMap;
-  }
-
-  // New method to create a single cable between an orb and component
-  createSingleCable(terminalLabel, componentId) {
-    const terminal = this.terminals[terminalLabel];
-    const orb = this.orbs[terminalLabel];
-    const component = this.ahuObject['3d'].components.meshes[componentId];
-
-    // console.log("createSingleCable componentId:", componentId);
-
-    const ductId = this.ahuObject.associations.components[componentId];
-    const ductHalfDepth = this.ahuObject.resources.ducts[ductId].dimensions.y / 2;
-    
-    if (!terminal || !component || !orb) {
-      console.warn(`Missing terminal, orb, or component for cable: ${terminalLabel} -> ${componentId}`);
+    if (!terminal || !orb) {
+      console.warn(`Missing terminal or orb for cable: ${terminalId}`);
       return null;
     }
-
-    const orbToCenterDistanceX = Math.abs(this.panelSettings.position.x - orb.position.x) / 10;
-    // const orbToCenterDistanceX = 0;
-
-    const orbToCenterDistanceZ = Math.abs(this.panelSettings.position.z - orb.position.z);
-    // orbToCenterDistanceZ = 0;
     
-    const travelDepth = 500 + orbToCenterDistanceZ + orbToCenterDistanceX;
+    // Check if component exists in the scene
+    let component = null;
+    let ductId = null;
+    let ductHalfDepth = 0;
+    let targetPosition = null;
+    
+    // If we have a valid component, use its position
+    if (this.ahuObject && 
+        this.ahuObject['3d'] && 
+        this.ahuObject['3d'].components && 
+        this.ahuObject['3d'].components.meshes && 
+        this.ahuObject['3d'].components.meshes[componentId]) {
+      
+      component = this.ahuObject['3d'].components.meshes[componentId];
+      targetPosition = component.position.clone();
+      
+      if (this.ahuObject.associations && 
+          this.ahuObject.associations.components && 
+          this.ahuObject.associations.components[componentId]) {
+        
+        ductId = this.ahuObject.associations.components[componentId];
+        
+        if (this.ahuObject.resources && 
+            this.ahuObject.resources.ducts && 
+            this.ahuObject.resources.ducts[ductId]) {
+          
+          ductHalfDepth = this.ahuObject.resources.ducts[ductId].dimensions.y / 2;
+        }
+      }
+    } 
+    // If component doesn't exist, create a fallback position
+    else {
+      console.warn(`Component ${componentId} not found, using fallback position`);
+      
+      // Use the center duct position if available, or create a reasonable default
+      if (this.closestCenterDuct && this.closestCenterDuct.mesh) {
+        targetPosition = this.closestCenterDuct.mesh.position.clone();
+        
+        // Offset by a random factor to avoid cables overlapping
+        const randomOffsetX = (Math.random() - 0.5) * 500;
+        const randomOffsetZ = (Math.random() - 0.5) * 300;
+        
+        targetPosition.x += randomOffsetX;
+        targetPosition.z += randomOffsetZ;
+        
+        ductHalfDepth = 100; // Default height
+      } else {
+        // Completely fallback position if no reference points
+        targetPosition = new THREE.Vector3(0, 500, 0);
+        ductHalfDepth = 0;
+      }
+    }
+    
+    const orbToCenterDistanceX = Math.abs(this.panelSettings.position.x - orb.position.x) / 10;
+    const orbToCenterDistanceZ = Math.abs(this.panelSettings.position.z - orb.position.z);
+    
+    const travelDepth = 750 + orbToCenterDistanceZ;
     
     const points = [];
     
@@ -713,33 +995,31 @@ export default class Panel {
       )
     );
 
-    const zStep = Math.abs(0 - component.position.x) / 20;
+    const zStep = Math.abs(0 - targetPosition.x) / 20;
     
-    // Travel horizontally to be above component
+    // Travel horizontally to be above target position
     points.push(
       new THREE.Vector3(
         orb.position.x / convergenceFactor,
         orb.position.y + travelDepth,
-        component.position.z + zStep - ductHalfDepth/2
+        targetPosition.z + zStep - ductHalfDepth/2
       )
     );        
 
-    // if (Math.abs(orb.position.x - component.position.x) > 1) {
-      points.push(
-        new THREE.Vector3(
-          component.position.x,
-          orb.position.y + travelDepth,
-          component.position.z + zStep - ductHalfDepth/2 + this.cableRadiusMax*2
-        )
-      );
-    // }
-    
-    // Move down to component
     points.push(
       new THREE.Vector3(
-        component.position.x,
+        targetPosition.x,
+        orb.position.y + travelDepth,
+        targetPosition.z + zStep - ductHalfDepth/2 + this.cableRadiusMax*2
+      )
+    );
+    
+    // Move down to target position
+    points.push(
+      new THREE.Vector3(
+        targetPosition.x,
         0 + ductHalfDepth,
-        component.position.z + zStep - ductHalfDepth/2 + this.cableRadiusMax*2
+        targetPosition.z + zStep - ductHalfDepth/2 + this.cableRadiusMax*2
       )
     );
     
@@ -761,91 +1041,19 @@ export default class Panel {
     });
     
     const tube = new THREE.Mesh(tubeGeometry, tubeMaterial);
-    tube.name = `${terminalLabel}-to-${componentId}-Cable`;
+    tube.name = `${terminalId}-to-${componentId}-Cable`;
     
     // Make cable visible
     tube.visible = true;
     
-    sharedData.sceneHelper.addToScene(tube);
+    // sharedData.sceneHelper.addToScene(tube);
     
-    // Create individual wires for this cable
-    this.createWiresForCable(terminalLabel, componentId, points);
-    
-    // Mark the terminal as connected
-    this.connectPort(terminalLabel);
+    // Store the points with the cable for wire creation
+    tube.userData = {
+      cablePoints: points
+    };
     
     return tube;
-  }
-
-  // New method to create wires for a specific cable
-  createWiresForCable(terminalLabel, componentId, points) {
-    // Define default wire colors for variety
-    const defaultWireColors = ['Red', 'Green', 'Blue', 'Yellow', 'Purple', 'Orange'];
-    const numWires = Math.floor(Math.random() * 3) + 2; // Random number of wires (2-4)
-    
-    const wires = [];
-    // Get direction from orb to component, not terminal to component
-    const wireDirection = points[0].x < points[points.length - 1].x ? 1 : -1;
-    
-    for (let i = 0; i < numWires; i++) {
-      // Select a color from the default colors
-      const wireColor = defaultWireColors[Math.floor(Math.random() * 6)];
-      
-      // Calculate offset
-      const offsetFactor = Math.ceil((i+1)/2) * (i % 2 === 0 ? -1 : 1);
-      const offset = 45 * offsetFactor; // Smaller offset for tighter bundling
-      
-      // Create a deep copy of the points array for this wire
-      const wirePoints = points.map(point => point.clone());
-      
-      // Apply offset to each point (except start and end points)
-      for (let j = 1; j < wirePoints.length - 1; j++) {
-        // wirePoints[j].y += offset;
-      }
-      
-      // Create curve and geometry
-      const curve = new THREE.CatmullRomCurve3(wirePoints);
-      
-      const tubeGeometry = new TubePath(
-        curve, 
-        TubePath.pathToUMapping(curve, 5, 2),
-        this.wireRadiusMax, // Smaller radius for individual wires
-        8,
-        false
-      );
-      
-      // Create material with wire color
-      const tubeMaterial = new THREE.MeshStandardMaterial({
-        color: this.getWireColor(wireColor)
-      });
-      
-      // Create mesh
-      const tube = new THREE.Mesh(tubeGeometry, tubeMaterial);
-      
-      // Name the wire
-      tube.name = `${terminalLabel}-to-${componentId}-Wire-${i}`;
-      
-      // Make wire visible
-      tube.visible = true;
-      
-      // Add to scene and store reference
-      sharedData.sceneHelper.addToScene(tube);
-      wires.push(tube);
-    }
-    
-    return wires;
-  }
-
-  // New method to connect all terminals to unique components
-  connectAllTerminalsToComponents() {
-    // Clear existing connections first (if needed)
-    // Implementation depends on how you track existing connections
-    
-    // Create new connections for all terminals
-    const mapping = this.createCables();
-    
-    // Return the mapping for reference
-    return mapping;
   }
 
   // Enhanced version of connectPort to visually indicate connection
@@ -881,9 +1089,6 @@ export default class Panel {
     
     // Scale the orb slightly to make it more prominent
     orb.scale.set(1.2, 1.2, 1.2);
-    
-    // Add a subtle pulsing animation or glow effect if desired
-    // This could be implemented in the animation loop elsewhere
     
     return terminal;
   }

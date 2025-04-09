@@ -1,433 +1,222 @@
-/**
- * AHU Cable Management Module
- */
+import * as THREE from "three";
+import { OutlinePass } from "three/examples/jsm/postprocessing/OutlinePass.js";
+import axios from "axios";
+import Preprocess from "../Preprocess/_Preprocess.js";
+import Assets3D from "../3D/Assets3D.js";
+import Mesh3D from "../3D/Mesh3D.js";
+import FlowControl from "./FlowControl.js";
+import { sharedData } from "./globals.js";
+import wildcardSvg from "../assets/2D-Wildcard.svg";
+import { Context } from "svgcanvas";
+import jsPDF from "jspdf";
+import "svg2pdf.js";
+import { CableSystem } from "./CableSystem.js";
+import Panel from "../Wiring3D/Panel.js";
 
-/**
- * Represents a single wire within a cable
- */
-class Wire {
-  /**
-   * Create a new Wire
-   * @param {Object} options - Wire configuration options
-   * @param {string} options.id - Unique wire identifier (e.g., "Wire-1")
-   * @param {string} [options.label] - Human-readable label (e.g., "Ground Wire")
-   * @param {string} [options.fieldWiring] - Field wiring designation (e.g., "White", "Power")
-   * @param {string} [options.panelWiringId] - Panel connection point (e.g., "I1-9B")
-   * @param {string} [options.type] - Wire type (e.g., "18 Gauge")
-   * @param {string} [options.color] - Wire color (e.g., "Red")
-   * @param {number} [options.size] - Wire gauge size (e.g., 18)
-   * @param {string} [options.markers] - Additional wire markers (e.g., "SCHP1-CS")
-   */
-  constructor({
-    id,
-    label = null,
-    fieldWiring = null,
-    panelWiringId = null,
-    type = null,
-    color = null,
-    size = null,
-    markers = null
-  } = {}) {
-    if (!id) throw new Error("Wire requires an ID");
-    
-    this.id = id;
-    this.label = label;
-    this.fieldWiring = fieldWiring;
-    this.panelWiringId = panelWiringId;
-    this.type = type;
-    this.color = color;
-    this.size = size;
-    this.markers = markers;
-  }
+class Ahu3DAPI extends CableSystem {
+    /**
+     * Creates an instance of the AHU3D API.
+     * Initializes core components and state management.
+     *
+     * @param {Object} ahu3DInstance - Instance of the main AHU3D application
+     */
+    constructor(ahu3DInstance) {
+        // Initialize the CableSystem parent class
+        super();
+        
+        // Store reference to main AHU3D instance
+        this.ahu3D = ahu3DInstance;    
+        
+        // Track library loading state
+        this.libraryLoadInitiated = false;
+        
+        // Initialize 3D mesh handler
+        this.Mesh3D = new Mesh3D(this.sceneHelper);
+        
+        // Initialize flow control system
+        this.FlowControl = new FlowControl();
+        
+        // Initialize panel
+        this.panel = null;
+    }
 
-  /**
-   * Set the wire label
-   * @param {string} label - Human-readable label
-   */
-  setLabel(label) {
-    this.label = label;
-    return this;
-  }
+    /**
+     * Initialize the panel component with wiring data
+     * @param {HTMLElement} container - DOM element to render the panel into
+     * @return {Panel} The initialized panel instance
+     */
+    initializePanel(container) {
+        this.panel = new Panel(container, this.getWiringDataObject());
+        return this.panel;
+    }
 
-  /**
-   * Set the field wiring designation
-   * @param {string} fieldWiring - Field wiring designation
-   */
-  setFieldWiring(fieldWiring) {
-    this.fieldWiring = fieldWiring;
-    return this;
-  }
-
-  /**
-   * Set the panel wiring ID
-   * @param {string} panelWiringId - Panel connection point
-   */
-  setPanelWiringId(panelWiringId) {
-    this.panelWiringId = panelWiringId;
-    return this;
-  }
-
-  /**
-   * Set the wire type
-   * @param {string} type - Wire type
-   */
-  setType(type) {
-    this.type = type;
-    return this;
-  }
-
-  /**
-   * Set the wire color
-   * @param {string} color - Wire color
-   */
-  setColor(color) {
-    this.color = color;
-    return this;
-  }
-
-  /**
-   * Set the wire size/gauge
-   * @param {number} size - Wire gauge size
-   */
-  setSize(size) {
-    this.size = size;
-    return this;
-  }
-
-  /**
-   * Set additional wire markers
-   * @param {string} markers - Additional markers
-   */
-  setMarkers(markers) {
-    this.markers = markers;
-    return this;
-  }
-
-  /**
-   * Get the wire as a plain object
-   * @return {Object} Plain object representation of the wire
-   */
-  toObject() {
-    return {
-      id: this.id,
-      label: this.label,
-      fieldWiring: this.fieldWiring,
-      panelWiringId: this.panelWiringId,
-      type: this.type,
-      color: this.color,
-      size: this.size,
-      markers: this.markers
-    };
-  }
-}
-
-/**
- * Represents a cable containing multiple wires
- */
-class Cable {
-  /**
-   * Create a new Cable
-   * @param {Object} options - Cable configuration options
-   * @param {string} options.id - Unique cable identifier (e.g., "Cable-1")
-   * @param {string} [options.label] - Human-readable label (e.g., "Fan Cable")
-   * @param {string} [options.equipment] - Equipment/component type (e.g., "Fan")
-   * @param {string} [options.idTag] - Component ID (e.g., "Fan-1")
-   * @param {string} [options.pointName] - Component name (e.g., "Fan Outer")
-   * @param {string} [options.markers] - Additional cable markers (e.g., "SCHP1-CS")
-   * @param {Array<Object>} [options.wires] - Initial wire configurations
-   */
-  constructor({
-    id,
-    label = null,
-    equipment = null,
-    idTag = null,
-    pointName = null,
-    markers = null,
-    wires = []
-  } = {}) {
-    if (!id) throw new Error("Cable requires an ID");
-    
-    this.id = id;
-    this.label = label;
-    this.equipment = equipment;
-    this.idTag = idTag;
-    this.pointName = pointName;
-    this.markers = markers;
-    this.wires = wires.map(wireConfig => 
-      wireConfig instanceof Wire ? wireConfig : new Wire(wireConfig)
-    );
-  }
-
-  /**
-   * Set the cable label
-   * @param {string} label - Human-readable label
-   */
-  setLabel(label) {
-    this.label = label;
-    return this;
-  }
-
-  /**
-   * Set the equipment/component type
-   * @param {string} equipment - Equipment/component type
-   */
-  setEquipment(equipment) {
-    this.equipment = equipment;
-    return this;
-  }
-
-  /**
-   * Set the component ID tag
-   * @param {string} idTag - Component ID
-   */
-  setIdTag(idTag) {
-    this.idTag = idTag;
-    return this;
-  }
-
-  /**
-   * Set the component point name
-   * @param {string} pointName - Component name
-   */
-  setPointName(pointName) {
-    this.pointName = pointName;
-    return this;
-  }
-
-  /**
-   * Set additional cable markers
-   * @param {string} markers - Additional markers
-   */
-  setMarkers(markers) {
-    this.markers = markers;
-    return this;
-  }
-
-  /**
-   * Add a wire to the cable
-   * @param {Wire|Object} wire - Wire instance or configuration object
-   */
-  addWire(wire) {
-    this.wires.push(wire instanceof Wire ? wire : new Wire(wire));
-    return this;
-  }
-
-  /**
-   * Get a wire by ID
-   * @param {string} wireId - Wire ID to find
-   * @return {Wire|null} Wire instance or null if not found
-   */
-  getWire(wireId) {
-    return this.wires.find(wire => wire.id === wireId) || null;
-  }
-
-  /**
-   * Remove a wire by ID
-   * @param {string} wireId - Wire ID to remove
-   * @return {boolean} True if wire was removed, false otherwise
-   */
-  removeWire(wireId) {
-    const initialLength = this.wires.length;
-    this.wires = this.wires.filter(wire => wire.id !== wireId);
-    return this.wires.length < initialLength;
-  }
-
-  /**
-   * Get the cable as a plain object
-   * @return {Object} Plain object representation of the cable
-   */
-  toObject() {
-    return {
-      id: this.id,
-      label: this.label,
-      equipment: this.equipment,
-      idTag: this.idTag,
-      pointName: this.pointName,
-      markers: this.markers,
-      wires: this.wires.map(wire => wire.toObject())
-    };
-  }
-}
-
-/**
- * Manages the creation and associations of cables and wires within the AHU system
- */
-class CableSystem {
-  constructor() {
-    this.cables = {}; // Object of cable ID to Cable instance
-    this.componentToCables = {}; // Object of component ID to array of cable IDs
-    this.panelToCables = {}; // Object of panel wiring ID to array of cable IDs
-  }
-
-  /**
-   * Create a new wire
-   * @param {Object} wireConfig - Wire configuration
-   * @return {Wire} The created Wire instance
-   */
-  createWire(wireConfig) {
-    return new Wire(wireConfig);
-  }
-  
-  /**
-   * Create a new cable
-   * @param {Object} cableConfig - Cable configuration
-   * @return {Cable} The created Cable instance
-   */
-  createCable(cableConfig) {
-    const cable = new Cable(cableConfig);
-    this.cables[cable.id] = cable;
-    return cable;
-  }
-
-  /**
-   * Set a cable with its associations
-   * @param {string} cableId - Unique cable identifier
-   * @param {string} [idTag] - Component ID to associate with
-   * @param {string} [panelWiringId] - Panel wiring ID to associate with
-   * @param {Object} [cableAttributes] - Additional cable attributes
-   * @return {Cable} The created or updated Cable instance
-   */
-  setCable(cableId, idTag = null, panelWiringId = null, cableAttributes = {}) {
-    // Get existing cable or create new one
-    let cable = this.cables[cableId];
-    
-    if (!cable) {
-      cable = this.createCable({ 
-        id: cableId, 
-        ...cableAttributes 
-      });
-    } else {
-      // Update existing cable with new attributes
-      for (const [key, value] of Object.entries(cableAttributes)) {
-        if (key !== 'id' && key !== 'wires') {
-          cable[key] = value;
+    /**
+     * Update the panel with current wiring data
+     */
+    updatePanel() {
+        if (this.panel) {
+            this.panel.updateWiringData(this.getWiringDataObject());
         }
-      }
     }
-    
-    // Handle component association
-    if (idTag) {
-      cable.setIdTag(idTag);
-      
-      if (!this.componentToCables[idTag]) {
-        this.componentToCables[idTag] = [];
-      }
-      
-      const componentCables = this.componentToCables[idTag];
-      if (!componentCables.includes(cableId)) {
-        componentCables.push(cableId);
-      }
-    }
-    
-    // Handle panel association (via wire)
-    if (panelWiringId) {
-      // First wire will get the panelWiringId for simplicity
-      // More complex logic could be implemented if needed
-      if (cable.wires.length === 0) {
-        cable.addWire({ 
-          id: `${cableId}-Wire-1`, 
-          panelWiringId 
-        });
-      } else {
-        cable.wires[0].setPanelWiringId(panelWiringId);
-      }
-      
-      if (!this.panelToCables[panelWiringId]) {
-        this.panelToCables[panelWiringId] = [];
-      }
-      
-      const panelCables = this.panelToCables[panelWiringId];
-      if (!panelCables.includes(cableId)) {
-        panelCables.push(cableId);
-      }
-    }
-    
-    return cable;
-  }
 
-  /**
-   * Get cables associated with a component
-   * @param {string} idTag - Component ID
-   * @return {Array<Cable>} Array of Cable instances
-   */
-  getCablesByComponent(idTag) {
-    const cableIds = this.componentToCables[idTag] || [];
-    return cableIds.map(id => this.cables[id]).filter(Boolean);
-  }
-
-  /**
-   * Get cables associated with a panel connection point
-   * @param {string} panelWiringId - Panel wiring ID
-   * @return {Array<Cable>} Array of Cable instances
-   */
-  getCablesByPanel(panelWiringId) {
-    const cableIds = this.panelToCables[panelWiringId] || [];
-    return cableIds.map(id => this.cables[id]).filter(Boolean);
-  }
-
-  /**
-   * Get a cable by ID
-   * @param {string} cableId - Cable ID
-   * @return {Cable|null} Cable instance or null if not found
-   */
-  getCable(cableId) {
-    return this.cables[cableId] || null;
-  }
-  
-  /**
-   * Remove a cable and its associations
-   * @param {string} cableId - Cable ID to remove
-   * @return {boolean} True if cable was removed, false otherwise
-   */
-  removeCable(cableId) {
-    const cable = this.cables[cableId];
-    if (!cable) return false;
+    /**
+     * Override parent methods to add panel updates
+     */
     
-    // Remove from components mapping
-    if (cable.idTag && this.componentToCables[cable.idTag]) {
-      const componentCables = this.componentToCables[cable.idTag];
-      const index = componentCables.indexOf(cableId);
-      if (index !== -1) {
-        componentCables.splice(index, 1);
-      }
+    // Override createCable to update panel
+    createCable(cableConfig) {
+        const cable = super.createCable(cableConfig);
+        this.updatePanel();
+        return cable;
     }
     
-    // Remove from panels mapping
-    cable.wires.forEach(wire => {
-      if (wire.panelWiringId && this.panelToCables[wire.panelWiringId]) {
-        const panelCables = this.panelToCables[wire.panelWiringId];
-        const index = panelCables.indexOf(cableId);
-        if (index !== -1) {
-          panelCables.splice(index, 1);
+    // Override removeCable to update panel
+    removeCable(cableId) {
+        const result = super.removeCable(cableId);
+        this.updatePanel();
+        return result;
+    }
+    
+    // Override addWireToCable to update panel
+    addWireToCable(cableId, wireConfig) {
+        const wire = super.addWireToCable(cableId, wireConfig);
+        this.updatePanel();
+        return wire;
+    }
+    
+    // Override removeWireFromCable to update panel
+    removeWireFromCable(cableId, wireId) {
+        const result = super.removeWireFromCable(cableId, wireId);
+        this.updatePanel();
+        return result;
+    }
+    
+    // Override updateCable to update panel
+    updateCable(cableId, updates) {
+        const cable = super.updateCable(cableId, updates);
+        this.updatePanel();
+        return cable;
+    }
+    
+    // Override updateWire to update panel
+    updateWire(cableId, wireId, updates) {
+        const wire = super.updateWire(cableId, wireId, updates);
+        this.updatePanel();
+        return wire;
+    }
+    
+    // Override loadWiringData to update panel
+    loadWiringData(wiringData) {
+        const result = super.loadWiringData(wiringData);
+        this.updatePanel();
+        return result;
+    }
+
+    /**
+     * Handle updating the 3D visualization when cables change
+     * @param {string} cableId - ID of the changed cable
+     */
+    updateCableVisualization(cableId) {
+        const cable = this.getCable(cableId);
+        if (!cable) return;
+        
+        // This method integrates with the 3D rendering system
+        if (this.ahu3D && this.ahu3D.updateCableRendering) {
+            this.ahu3D.updateCableRendering(cable);
         }
-      }
-    });
+    }
     
-    // Remove the cable itself
-    delete this.cables[cableId];
-    return true;
-  }
-  
-  /**
-   * Get all cables in the system
-   * @return {Array<Cable>} Array of all Cable instances
-   */
-  getAllCables() {
-    return Object.values(this.cables);
-  }
-  
-  /**
-   * Export the entire cable system as a plain object
-   * @return {Object} Object representing the cable system
-   */
-  cableSystemToObject() {
-    return {
-      cables: this.getAllCables().map(cable => cable.toObject()),
-      componentAssociations: this.componentToCables,
-      panelAssociations: this.panelToCables
-    };
-  }
+    /**
+     * Render cables in 3D space
+     * This method would be implemented based on your specific 3D environment
+     */
+    renderCablesIn3D() {
+        const allCables = this.getAllCables();
+        
+        // This is just a placeholder for your 3D rendering logic
+        if (this.ahu3D && this.ahu3D.renderCables) {
+            this.ahu3D.renderCables(allCables);
+        }
+    }
+    
+    /**
+     * Export cable data as PDF
+     * @param {string} filename - Output filename
+     * @return {Promise<boolean>} Success status
+     */
+    async exportCableDataAsPDF(filename = 'cable-system.pdf') {
+        try {
+            const doc = new jsPDF();
+            
+            // Add title
+            doc.setFontSize(16);
+            doc.text('Cable System Report', 20, 20);
+            
+            // Add generation date
+            doc.setFontSize(10);
+            doc.text(`Generated: ${new Date().toLocaleString()}`, 20, 30);
+            
+            // Add cable info
+            doc.setFontSize(12);
+            doc.text('Cable Inventory:', 20, 40);
+            
+            let yPos = 50;
+            this.getAllCables().forEach((cable, index) => {
+                // Check if we need a new page
+                if (yPos > 260) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+                
+                doc.setFontSize(11);
+                doc.text(`${index + 1}. ${cable.id} - ${cable.label || 'Unlabeled Cable'}`, 20, yPos);
+                yPos += 7;
+                
+                doc.setFontSize(9);
+                doc.text(`Equipment: ${cable.equipment || 'N/A'}`, 25, yPos);
+                yPos += 5;
+                
+                doc.text(`Component: ${cable.idTag || 'N/A'}`, 25, yPos);
+                yPos += 5;
+                
+                doc.text(`Wires: ${cable.wires.length}`, 25, yPos);
+                yPos += 5;
+                
+                cable.wires.forEach(wire => {
+                    doc.text(`- ${wire.id}: ${wire.color || 'N/A'} (${wire.panelWiringId || 'No panel'})`, 30, yPos);
+                    yPos += 5;
+                });
+                
+                yPos += 5;
+            });
+            
+            // Add report summary
+            const report = this.generateCableReport();
+            
+            // Add a new page for the report
+            doc.addPage();
+            doc.setFontSize(14);
+            doc.text('System Summary', 20, 20);
+            
+            doc.setFontSize(10);
+            doc.text(`Total Cables: ${report.totalCables}`, 20, 30);
+            
+            // Equipment types
+            let eqYPos = 40;
+            doc.text('Equipment Types:', 20, eqYPos);
+            eqYPos += 5;
+            
+            Object.entries(report.equipmentTypes).forEach(([type, count]) => {
+                doc.text(`- ${type}: ${count}`, 25, eqYPos);
+                eqYPos += 5;
+            });
+            
+            // Save the document
+            doc.save(filename);
+            return true;
+        } catch (error) {
+            console.error('Failed to export PDF', error);
+            return false;
+        }
+    }
 }
-
-// Export the classes
-export { Wire, Cable, CableSystem };
