@@ -906,6 +906,11 @@ class Scene3D {
     }
     
     createDomInfoPanel() {
+
+        if (process.env.NODE_ENV === "development") {
+            return
+        }
+
         // Remove any existing info panel
         if (this.infoPanel) {
             document.body.removeChild(this.infoPanel);
