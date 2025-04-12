@@ -73,6 +73,8 @@ class Ahu3DAPI extends CableSystem {
         this.panel = null;
 
         this.cableSystem = new CableSystem();
+
+        this.ahuObject = {};
     }
 
     /**
@@ -810,12 +812,12 @@ class Ahu3DAPI extends CableSystem {
         this.sceneHelper.clearScene();
 
         // Process and render AHU configuration
-        const ahuObject = await this.FlowControl.runAhu3D(cleanedXeto, outputMode);
+        this.ahuObject = await this.FlowControl.runAhu3D(cleanedXeto, outputMode);
 
         // Store component meshes for later reference
-        this.components = ahuObject["3d"].components.meshes;
+        this.components = this.ahuObject["3d"].components.meshes;
 
-        return ahuObject;
+        return this.ahuObject;
     }
 
     /**
