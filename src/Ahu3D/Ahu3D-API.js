@@ -75,6 +75,8 @@ class Ahu3DAPI extends CableSystem {
         this.cableSystem = new CableSystem();
 
         this.ahuObject = {};
+
+        this.wiringDiagram = null;
     }
 
     /**
@@ -515,7 +517,7 @@ class Ahu3DAPI extends CableSystem {
      * @param {Object} imageParams - Image Parameters (e.g., colors, file name)
      * @param {Object} [pdfOptions] - Additional PDF settings
      */
-    async exportLayerAsVector(layer, imageParams, pdfOptions = {}) {
+    async exportBlueprintLayerAsVector(layer, imageParams, pdfOptions = {}) {
         return new Promise(async (resolve) => {
             if (!layer) {
                 console.error("No layer provided.");
@@ -548,12 +550,10 @@ class Ahu3DAPI extends CableSystem {
             // Create an SVG rendering context
             const exportShrinkFactor = 0.25; // Shrink SVG size further
             const c2s = layer.canvas.context._context = new Context({
-                height: layer.height() * exportShrinkFactor,
-                width: layer.width() * exportShrinkFactor,
+                height: layer.height(),
+                width: layer.width(),
                 ctx: oldContext
             });
-
-            pdfOptions.x = 
 
             // Draw the layer
             layer.draw();
@@ -577,11 +577,11 @@ class Ahu3DAPI extends CableSystem {
                 URL.revokeObjectURL(svgDataUrl); // Cleanup
             } 
             else if (imageParams.fileType === "pdf") {
-                layer.width(100);
-                layer.height(200);
+                // layer.width(100);
+                // layer.height(200);
                 // Get the original SVG dimensions
-                const svgWidth = layer.width();
-                const svgHeight = layer.height();
+                const svgWidth = layer.width() * 1.5;
+                const svgHeight = layer.height() * 1.5;
 
                 // Set default PDF dimensions (A4 size in points: 595x842)
                 const pdfWidth = 794;
@@ -632,6 +632,237 @@ class Ahu3DAPI extends CableSystem {
 
             resolve(svgData);
         });
+    }
+
+    exportWiringDiagram() {
+        const imageParams = {
+            fileName: "wiring-export",
+            fileType: "svg",
+            strokeColor: "#000000",
+            textColor: "#000000",
+            backgroundColor: "#ffffff"
+        }
+
+        const  pdfOptions = {
+            scale: 0.25,
+            x: 0,
+            y: 0,
+            preserveAspectRatio: true,
+            useCSS: true
+        }
+
+        this.exportWiringLayerAsVector(this.wiringDiagram, imageParams, pdfOptions);
+    }
+
+    async exportWiringLayerAsVector(layer, imageParams, pdfOptions = {}) {
+        return new Promise(async (resolve) => {
+          if (!layer) {
+            console.error("No layer provided.");
+            return resolve(null);
+          }            
+  
+          // Store original styles for later restoration
+          const allText = layer.find("Text");
+          const allRects = layer.find("Rect");
+          const allLines = layer.find("Line");
+          // Instead of getting paths, we'll get shapes that aren't Text, Rect or Line
+          const allShapes = layer.getChildren(node => 
+            node.getClassName() !== 'Text' && 
+            node.getClassName() !== 'Rect' && 
+            node.getClassName() !== 'Line'
+          );
+  
+          const originalStyles = {};
+          if (allText.length > 0) originalStyles.textFill = allText[0].fill();
+          if (allRects.length > 0) {
+            originalStyles.rectStroke = allRects[0].stroke();
+            originalStyles.rectFill = allRects[0].fill();
+          }
+          // Don't store any original line styles - we'll keep those intact
+  
+          // Apply export styles
+          for (const text of allText) {
+            text.fill(imageParams.textColor);
+          }
+          for (const rect of allRects) {
+            rect.stroke(imageParams.strokeColor);
+            rect.fill(imageParams.backgroundColor);
+          }
+          // Lines are untouched - they keep their original colors
+  
+          // Get the existing 2D rendering context
+          const oldContext = layer.canvas.context._context;
+  
+          // Calculate the actual bounds of all elements to determine optimal SVG size
+          const bounds = this.calculateLayerBounds(layer);
+          
+          // Create an SVG rendering context with proper dimensions
+          const c2s = layer.canvas.context._context = new Context({
+            width: bounds.width,
+            height: bounds.height,
+            ctx: oldContext
+          });
+  
+          // Temporarily position everything to fit within the SVG canvas
+          const originalLayerPosition = {
+            x: layer.x(),
+            y: layer.y()
+          };
+          
+          layer.x(-bounds.x);
+          layer.y(-bounds.y);
+  
+          // Draw the layer
+          layer.draw();
+  
+          // Get the SVG data
+          let svgData = c2s.getSerializedSvg();
+  
+          // Add a background rectangle to match the specified background color
+          const backgroundRect = `<rect x="0" y="0" width="${bounds.width}" height="${bounds.height}" fill="${imageParams.backgroundColor}" />`;
+          // Replace old rect fill with new rect with backgroundColor
+          svgData = svgData.replace('<rect fill="#FFFFFF" stroke="none" x="0" y="0" width="600" height="400" transform="matrix(1 0 0 1 0 0)"/>', backgroundRect);
+  
+          
+  
+          if (imageParams.fileType === "svg") {
+            svgData = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+            const svgDataUrl = URL.createObjectURL(svgData);
+  
+            // Export the SVG file
+            const a = document.createElement("a");
+            a.href = svgDataUrl;
+            a.download = `${imageParams.fileName}.${imageParams.fileType}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(svgDataUrl); // Cleanup
+          } 
+          else if (imageParams.fileType === "pdf") {
+            // Create jsPDF instance with appropriate dimensions
+            const pdf = new jsPDF({
+              orientation: bounds.height > bounds.width ? "portrait" : "landscape",
+              unit: "px",
+              format: [bounds.width, bounds.height]
+            });
+  
+            // Convert SVG string to a DOM element
+            const parser = new DOMParser();
+            const svgElement = parser.parseFromString(svgData, "image/svg+xml").documentElement;
+  
+            // Embed SVG into PDF with options
+            await pdf.svg(svgElement, {
+              x: pdfOptions.x || 0,
+              y: pdfOptions.y || 0,
+              width: bounds.width,
+              height: bounds.height,
+              preserveAspectRatio: pdfOptions.preserveAspectRatio || true
+            });
+  
+            // Save or download the PDF
+            pdf.save(`${imageParams.fileName}.pdf`);
+          }
+  
+          // Restore original styles
+          for (const text of allText) {
+            text.fill(originalStyles.textFill);
+          }
+          for (const rect of allRects) {
+            rect.stroke(originalStyles.rectStroke);
+            rect.fill(originalStyles.rectFill);
+          }
+          // No need to restore lines since we didn't change them
+          
+          // Restore other shapes
+          for (const shape of allShapes) {
+            if (originalStyles.pathStroke) {
+              shape.stroke(originalStyles.pathStroke);
+            }
+          }
+  
+          // Restore original layer position
+          layer.x(originalLayerPosition.x);
+          layer.y(originalLayerPosition.y);
+  
+          // Restore original context
+          layer.canvas.context._context = oldContext;
+          layer.draw();
+  
+          resolve(svgData);
+        });
+    }
+
+    calculateLayerBounds(layer) {
+        // Initialize bounds to the initial layer size
+        let minX = Infinity;
+        let minY = Infinity;
+        let maxX = -Infinity;
+        let maxY = -Infinity;
+  
+        // Get all shapes in the layer
+        const shapes = layer.getChildren();
+  
+        shapes.forEach(shape => {
+          // Get the absolute position
+          const absPos = shape.getAbsolutePosition();
+          
+          // For simple shapes
+          if (shape.className !== 'Group') {
+            // Calculate width and height based on shape properties
+            let width = 0;
+            let height = 0;
+            
+            if (shape.width && shape.height) {
+              width = shape.width() * shape.scaleX();
+              height = shape.height() * shape.scaleY();
+            } else if (shape.radius) {
+              // For circles and similar shapes
+              const radius = shape.radius() * Math.max(shape.scaleX(), shape.scaleY());
+              width = height = radius * 2;
+            }
+            
+            // Update bounds
+            minX = Math.min(minX, absPos.x);
+            minY = Math.min(minY, absPos.y);
+            maxX = Math.max(maxX, absPos.x + width);
+            maxY = Math.max(maxY, absPos.y + height);
+          } else {
+            // For groups, recurse into their children
+            const groupChildren = shape.getChildren();
+            groupChildren.forEach(child => {
+              const childPos = child.getAbsolutePosition();
+              let childWidth = 0;
+              let childHeight = 0;
+              
+              if (child.width && child.height) {
+                childWidth = child.width() * child.scaleX();
+                childHeight = child.height() * child.scaleY();
+              } else if (child.radius) {
+                const radius = child.radius() * Math.max(child.scaleX(), child.scaleY());
+                childWidth = childHeight = radius * 2;
+              }
+              
+              minX = Math.min(minX, childPos.x);
+              minY = Math.min(minY, childPos.y);
+              maxX = Math.max(maxX, childPos.x + childWidth);
+              maxY = Math.max(maxY, childPos.y + childHeight);
+            });
+          }
+        });
+  
+        // Add padding
+        const padding = 20;
+        minX -= padding;
+        minY -= padding;
+        maxX += padding;
+        maxY += padding;
+  
+        return {
+          x: minX,
+          y: minY,
+          width: maxX - minX,
+          height: maxY - minY
+        };
     }
 
     exportLayerAsRaster(layer, imageParams) {
