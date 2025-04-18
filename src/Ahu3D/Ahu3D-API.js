@@ -565,16 +565,6 @@ class Ahu3DAPI extends CableSystem {
 
             if (imageParams.fileType === "svg") {
                 svgData = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
-                const svgDataUrl = URL.createObjectURL(svgData);
-
-                // Export the SVG file
-                const a = document.createElement("a");
-                a.href = svgDataUrl;
-                a.download = `${imageParams.fileName}.${imageParams.fileType}`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(svgDataUrl); // Cleanup
             } 
             else if (imageParams.fileType === "pdf") {
                 // layer.width(100);
@@ -634,7 +624,7 @@ class Ahu3DAPI extends CableSystem {
         });
     }
 
-    exportWiringDiagram() {
+    exportWiringDiagram(callback = null) {
         const imageParams = {
             fileName: "wiring-export",
             fileType: "svg",
@@ -643,7 +633,7 @@ class Ahu3DAPI extends CableSystem {
             backgroundColor: "#ffffff"
         }
 
-        const  pdfOptions = {
+        const pdfOptions = {
             scale: 0.25,
             x: 0,
             y: 0,
@@ -651,10 +641,30 @@ class Ahu3DAPI extends CableSystem {
             useCSS: true
         }
 
-        this.exportWiringLayerAsVector(this.wiringDiagram, imageParams, pdfOptions);
+        // Call exportWiringLayerAsVector with a promise
+        this.exportWiringLayerAsVector(this.wiringDiagram, imageParams, pdfOptions)
+            .then(svgData => {
+                // If svgData is already a blob, use it
+                const blob = (svgData instanceof Blob) ? 
+                    svgData : 
+                    new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+                    
+                // If a callback was provided, pass the blob to it
+                if (typeof callback === 'function') {
+                    callback(blob);
+                }
+                
+                return blob;
+            })
+            .catch(err => {
+                console.error("Error exporting wiring diagram:", err);
+                if (typeof callback === 'function') {
+                    callback(null);
+                }
+            });
     }
 
-    async exportWiringLayerAsVector(layer, imageParams, pdfOptions = {}) {
+    async exportWiringLayerAsVector(layer, imageParams, pdfOptions = {}, customDirectory = null) {
         return new Promise(async (resolve) => {
           if (!layer) {
             console.error("No layer provided.");
@@ -726,17 +736,7 @@ class Ahu3DAPI extends CableSystem {
           
   
           if (imageParams.fileType === "svg") {
-            svgData = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
-            const svgDataUrl = URL.createObjectURL(svgData);
-  
-            // Export the SVG file
-            const a = document.createElement("a");
-            a.href = svgDataUrl;
-            a.download = `${imageParams.fileName}.${imageParams.fileType}`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(svgDataUrl); // Cleanup
+            svgData = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });  
           } 
           else if (imageParams.fileType === "pdf") {
             // Create jsPDF instance with appropriate dimensions
