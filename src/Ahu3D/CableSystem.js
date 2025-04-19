@@ -450,13 +450,13 @@ class CableSystem {
    * @return {boolean} Success status
    */
   loadWiringData(wiringData) {
+    // Store all properties, including non-standard ones like panelRows
+    this.wiringData = { ...wiringData };
+    
     if (!wiringData || !wiringData.cables || !Array.isArray(wiringData.cables)) {
       console.error('Invalid wiringData format');
       return false;
     }
-
-    // Store the wiring data for later access
-    this.wiringData = wiringData;
 
     // Reset existing data
     this.cables = {};
@@ -503,7 +503,9 @@ class CableSystem {
    * @return {Object} Formatted wiring data object
    */
   getWiringDataObject() {
+    // Return the full object with all properties
     return {
+      ...this.wiringData, // Preserve any custom attributes like panelRows
       cables: this.getAllCables().map(cable => cable.toObject())
     };
   }

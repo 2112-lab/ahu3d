@@ -273,9 +273,9 @@ class Ahu3DAPI extends CableSystem {
         this.panel.initPanelPipe();
     }
 
-    set3dWiringData(wiringData) {
+    set3dWiringData(ahuObject, wiringData) {
         // this.sceneHelper.clear3dWiring();
-        this.panel.set3dWiringData(wiringData);
+        this.panel.set3dWiringData(ahuObject, wiringData);
     }
 
     createDuctConnectionsDict(inputDict) {

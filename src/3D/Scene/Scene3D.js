@@ -996,7 +996,7 @@ class Scene3D {
             // this.orbitToOtherSide();
             // camera.position.z += 3;
 
-            camera.position.y -= 12;
+            // camera.position.y -= 12;
         }        
 
         camera.lookAt(center);
@@ -1083,7 +1083,10 @@ class Scene3D {
             child.name.includes('text') ||
             child.name.includes('joint') ||
             child.name.includes('duct') ||
-            child.name.includes('controller')
+            child.name.includes('controller') ||
+            child.name.includes('Cable') || 
+            child.name.includes('Wire') ||
+            child.name.includes('Panel')
         );
         sceneIndicators.forEach((child) => {
           this.scene.remove(child);

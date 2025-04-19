@@ -7,23 +7,29 @@ export default class Panel {
     // Set defaults for panel parameters
     this.portNum = 24;
     this.rowNum = rowNum || 1;
-    this.labelOrientation = labelOrientation || "vertical";
-    this.ahuObject = ahuObject;        
+    this.labelOrientation = labelOrientation || "vertical";      
 
     this.cableRadiusMax = 18;
     this.cablePaddingMax = 5;
 
-    this.wireRadiusMax = 1.5;
+    this.wireRadiusMax = 2.5;
     this.wirePaddingMax = 5;
 
     if (process.env.NODE_ENV === "development") {
       this.wireRadiusMax = 6;
     }
 
-    this.set3dWiringData(wiringData);
+    this.set3dWiringData(ahuObject, wiringData);
   }
 
-  set3dWiringData(wiringData) {
+  set3dWiringData(ahuObject, wiringData) {
+
+    this.ahuObject = ahuObject;
+
+    // Store the new wiringData
+    this.wiringData = wiringData || { cables: [] };
+
+    // Reset all panel settings to defaults
     this.panelSettings = {
       position: {
         x: 'center',
@@ -56,38 +62,50 @@ export default class Panel {
       },
       opacity: 0.75
     }
-    // Use the provided wiringData or default to empty structure
-    this.wiringData = wiringData || { cables: [] };
 
+    // Clean up existing elements
     this.removeExistingConnections();
+    
+    // Update rowNum if specified in wiringData
+    if (wiringData && wiringData.panelRows) {
+      this.rowNum = wiringData.panelRows;
+    }
 
-    // Extract terminal labels from wiringData
+    // Reset internal data structures
+    this.labels = [];
+    this.terminals = {};
+    this.orbs = {};
+    this.terminalPanelFrames = [];
+
+    // Re-extract terminal labels from the new wiringData
     this.labels = this.extractLabelsFromWiringData();
 
-    this.terminals = {};
+    // Find the center duct for positioning
+    this.closestCenterDuct = this.findCenterDuct(this.ahuObject['3d']?.ducts?.meshes || {});
 
-    this.closestCenterDuct = this.findCenterDuct(this.ahuObject['3d'].ducts.meshes);
-
+    // Calculate the panel position based on the center duct or default position
     this.panelSettings.position = this.calculatePanelPosition("duct"); 
 
+    // Rebuild terminal interface
     this.initTerminals();
 
+    // Add connection orbs on terminals
     this.addOrbs();
 
     const orbKeys = Object.keys(this.orbs);
 
-    console.log("Panel constructor this.orbs:", this.orbs);
-    console.log("Panel constructor orbKeys:", orbKeys);
-
     // Calculate orb distance if orbs exist
     if (orbKeys.length >= 2) {
       this.orbDistanceX = Math.abs(this.orbs[orbKeys[0]].position.x - this.orbs[orbKeys[1]].position.x);
-      console.log("Panel constructor orbDistanceX:", this.orbDistanceX);
     }
 
+    // Rebuild panel trays
     this.initPanelTrays();
     
-    // Create cables and wires based on wiring data
+    // Initialize the panel pipe for cable routing
+    this.initPanelPipe();
+    
+    // Create cables and wires based on the new wiring data
     this.createCablesFromWiringData();
   }
 
