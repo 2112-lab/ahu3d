@@ -1171,16 +1171,16 @@ export default class Panel {
 
   getWireColor(colorName) {
     const colorMap = {
-      'Red':    0xE57373,
-      'Green':  0x81C784,
-      'Blue':   0x4FC3F7,
-      'Yellow': 0xFFEB3B,
-      'Orange': 0xFFA726,
-      'Purple': 0xCE93D8,
-      'Black':  0x000000,
-      'White':  0xffffff,
-      'Grey':   0x808080,
-      'Brown':  0xBCAAA4
+      'Red':    0xFF0000, // More saturated red
+      'Green':  0x00FF00, // More saturated green
+      'Blue':   0x0066FF, // More saturated blue
+      'Yellow': 0xFFFF00, // More saturated yellow
+      'Orange': 0xFF8800, // More saturated orange
+      'Purple': 0xAA00FF, // More saturated purple
+      'Black':  0x8B8B8B,
+      'White':  0xFFFFFF, // Pure white
+      'Grey':   0x888888, // Slightly darker gray
+      'Brown':  0xb8845e  // More saturated brown
     };
     
     return colorMap[colorName] || 0xcccccc; // Default to gray if color not found

@@ -73,15 +73,16 @@ class Scene3D {
                 show: ["Panel-Tray", "Panel-Terminal", "Panel-Pipe"],
                 unshow: ["Cable", "Wire", "Panel-Port"]
             },
-            "Cable": {
-                state: "LOD 2 / Cable - Multiple Cables",
-                range: [12, 20],
-                show: ["Panel-Tray", "Panel-Terminal", "Cable", "Panel-Port"],
-                unshow: ["Panel-Pipe", "Wire"]
-            },
+            // "Cable": {
+            //     state: "LOD 2 / Cable - Multiple Cables",
+            //     range: [12, 20],
+            //     show: ["Panel-Tray", "Panel-Terminal", "Cable", "Panel-Port"],
+            //     unshow: ["Panel-Pipe", "Wire"]
+            // },
             "Wire": {
                 state: "LOD 3 / Wire - Multiple Wires",
-                range: [0, 12],
+                // range: [0, 12],
+                range: [0, 20],
                 type: "Wire",
                 show: ["Panel-Tray", "Panel-Terminal", "Wire", "Panel-Port"],
                 unshow: ["Panel-Pipe", "Cable"]
