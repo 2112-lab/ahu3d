@@ -517,7 +517,7 @@ class Ahu3DAPI extends CableSystem {
      * @param {Object} imageParams - Image Parameters (e.g., colors, file name)
      * @param {Object} [pdfOptions] - Additional PDF settings
      */
-    async exportBlueprintLayerAsVector(layer, imageParams, pdfOptions = {}) {
+    async exportBlueprintAsVector(layer, imageParams, pdfOptions = {}) {
         return new Promise(async (resolve) => {
             if (!layer) {
                 console.error("No layer provided.");
@@ -561,7 +561,7 @@ class Ahu3DAPI extends CableSystem {
             // Get the SVG data
             let svgData = c2s.getSerializedSvg();
 
-            console.log("exportLayerAsVector fileType:", imageParams.fileType);
+            console.log("exportBlueprintAsVector fileType:", imageParams.fileType);
 
             if (imageParams.fileType === "svg") {
                 svgData = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
@@ -837,7 +837,7 @@ class Ahu3DAPI extends CableSystem {
         };
     }
 
-    exportLayerAsRaster(layer, imageParams) {
+    exportBlueprintAsRaster(layer, imageParams) {
         console.log("exportLayerAsSVGRaster started:", layer);
 
         const allText = layer.find("Text");
@@ -863,6 +863,17 @@ class Ahu3DAPI extends CableSystem {
         const pngDataUrl = layer.toDataURL({x:0, y:0});
 
         console.log("exportLayerAsSVGRaster pngDataUrl:", pngDataUrl);
+
+        for (const text of allText) {
+            text.fill(oldTextFill);
+        }
+        for (const rect of allRects) {
+            rect.stroke(oldRectStroke);
+            rect.fill(oldRectFill);
+        }
+        for (const path of allPaths) {
+            path.stroke(oldPathStroke);
+        }
 
         const a = document.createElement('a');
         a.href = pngDataUrl;
@@ -1202,6 +1213,17 @@ class Ahu3DAPI extends CableSystem {
         else {
             console.warn(`Component with key ${key} not found`);
         }
+    }
+
+    set3dWireVisibility(isVisible = true) {
+        console.log("set3dWireVisibility started");
+        this.sceneHelper.scene.traverse((object3d) => {
+            // console.log("set3dWireVisibility traverse:", object3d);
+            if (object3d.isObject3D && object3d.name.includes('Wire')) {
+                console.log("set3dWireVisibility found wire:", object3d);
+                object3d.visible = isVisible;
+            }
+        });
     }
 
     /**
