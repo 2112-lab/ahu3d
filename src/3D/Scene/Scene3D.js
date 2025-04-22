@@ -407,7 +407,7 @@ class Scene3D {
     }
 
     onMeshClick(event) {
-        // event.preventDefault();
+        event.preventDefault();
 
         if(this.renderer && this.renderer.domElement && event) {
             this.boundingClientRect = this.renderer.domElement.getBoundingClientRect();    
@@ -418,13 +418,17 @@ class Scene3D {
             this.raycaster.setFromCamera(this.mouseVector, this.cameras.primary);
         
             const hvacIntersects = this.raycaster.intersectObjects(
-                this.scene.children.filter(child => child.name === 'hvac' && child.visible || child.name.includes('controller') && child.visible )
+                this.scene.children.filter(child => (child.name === 'hvac' || child.name === 'duct' || child.name === 'joint') && child.visible)
             );
 
             console.log("onMeshClick hvacIntersects:", hvacIntersects);
 
             if (hvacIntersects.length > 0) {
                 let mesh = null;
+
+                if(hvacIntersects[0].object.parent.name === "duct" || hvacIntersects[0].object.parent.name === "joint"){
+                    return;
+                }
 
                 if(hvacIntersects[0].object.parent.name === "hvac"){
                     mesh = hvacIntersects[0].object.parent;
@@ -996,7 +1000,7 @@ class Scene3D {
             // this.orbitToOtherSide();
             // camera.position.z += 3;
 
-            // camera.position.y -= 12;
+            // camera.position.y -= 15;
         }        
 
         camera.lookAt(center);

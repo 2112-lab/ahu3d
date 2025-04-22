@@ -624,13 +624,13 @@ class Ahu3DAPI extends CableSystem {
         });
     }
 
-    exportWiringDiagram(callback = null) {
+    exportWiringDiagram(callback = null, params) {
         const imageParams = {
-            fileName: "wiring-export",
-            fileType: "svg",
-            strokeColor: "#000000",
-            textColor: "#000000",
-            backgroundColor: "#ffffff"
+            fileName: params?.fileName || "wiring-export",
+            fileType: params?.fileType || "svg",
+            strokeColor: params?.strokeColor || "#000000",
+            textColor: params?.textColor || "#000000",
+            backgroundColor: params?.backgroundColor || "#ffffff"
         }
 
         const pdfOptions = {
@@ -642,7 +642,7 @@ class Ahu3DAPI extends CableSystem {
         }
 
         // Call exportWiringLayerAsVector with a promise
-        this.exportWiringLayerAsVector(this.wiringDiagram, imageParams, pdfOptions)
+        this.exportWiringLayerAsVector(this.wiringDiagram, imageParams)
             .then(svgData => {
                 // If svgData is already a blob, use it
                 const blob = (svgData instanceof Blob) ? 
@@ -664,7 +664,7 @@ class Ahu3DAPI extends CableSystem {
             });
     }
 
-    async exportWiringLayerAsVector(layer, imageParams, pdfOptions = {}, customDirectory = null) {
+    async exportWiringLayerAsVector(layer, imageParams) {
         return new Promise(async (resolve) => {
           if (!layer) {
             console.error("No layer provided.");
@@ -732,36 +732,8 @@ class Ahu3DAPI extends CableSystem {
           const backgroundRect = `<rect x="0" y="0" width="${bounds.width}" height="${bounds.height}" fill="${imageParams.backgroundColor}" />`;
           // Replace old rect fill with new rect with backgroundColor
           svgData = svgData.replace('<rect fill="#FFFFFF" stroke="none" x="0" y="0" width="600" height="400" transform="matrix(1 0 0 1 0 0)"/>', backgroundRect);
-  
-          
-  
-          if (imageParams.fileType === "svg") {
-            svgData = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });  
-          } 
-          else if (imageParams.fileType === "pdf") {
-            // Create jsPDF instance with appropriate dimensions
-            const pdf = new jsPDF({
-              orientation: bounds.height > bounds.width ? "portrait" : "landscape",
-              unit: "px",
-              format: [bounds.width, bounds.height]
-            });
-  
-            // Convert SVG string to a DOM element
-            const parser = new DOMParser();
-            const svgElement = parser.parseFromString(svgData, "image/svg+xml").documentElement;
-  
-            // Embed SVG into PDF with options
-            await pdf.svg(svgElement, {
-              x: pdfOptions.x || 0,
-              y: pdfOptions.y || 0,
-              width: bounds.width,
-              height: bounds.height,
-              preserveAspectRatio: pdfOptions.preserveAspectRatio || true
-            });
-  
-            // Save or download the PDF
-            pdf.save(`${imageParams.fileName}.pdf`);
-          }
+
+          svgData = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });  
   
           // Restore original styles
           for (const text of allText) {

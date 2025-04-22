@@ -297,7 +297,7 @@ export default class Panel {
               curve, 
               TubePath.pathToUMapping(curve, 5, 2),
               this.wireRadiusMax,
-              8,
+              4,
               false
             );
             
@@ -381,16 +381,35 @@ export default class Panel {
     
     // Create a wire for each wire in the cable data
     if (cableData.wires && Array.isArray(cableData.wires)) {
-      cableData.wires.forEach((wireData, index) => {
+      cableData.wires.forEach((wireData) => {
+        // Skip if this wire doesn't match the current terminal
+        if (wireData.panelWiringId !== terminalId) {
+          return;
+        }
+        
         // Get the wire color from the data
         const wireColor = wireData.color || 'Red';
         
-        // Create a deep copy of the points array for this wire
-        // IMPORTANT: We're using the exact same points as the cable
-        const wirePoints = cablePoints.map(point => point.clone());
+        // Create unique orb ID for this wire
+        const wireOrbId = `${terminalId}-${wireData.id}`;
         
-        // Create curve and geometry - using the same path as the cable
-        const curve = new THREE.CatmullRomCurve3(wirePoints);
+        // Get the orb for this specific wire or fall back to terminal orb
+        const wireOrb = this.orbs[wireOrbId] || this.orbs[terminalId];
+        
+        if (!wireOrb) {
+          console.warn(`No orb found for wire ${wireData.id} at terminal ${terminalId}`);
+          return;
+        }
+        
+        // Create wire path from orb to component
+        const wirePath = this.createWirePath(wireOrb, componentId);
+        
+        if (!wirePath || wirePath.length === 0) {
+          return;
+        }
+        
+        // Create curve and geometry for this specific wire
+        const curve = new THREE.CatmullRomCurve3(wirePath);
         
         const tubeGeometry = new TubePath(
           curve, 
@@ -417,6 +436,10 @@ export default class Panel {
         // Add to scene and store reference
         sharedData.sceneHelper.addToScene(tube);
         wires.push(tube);
+        
+        // Mark the orb as connected
+        this.setOrbColor(wireOrbId, this.getWireColor(wireColor));
+        wireOrb.scale.set(1.2, 1.2, 1.2);
       });
     }
     
@@ -433,42 +456,299 @@ export default class Panel {
     for (const terminalId in this.terminals) {
       const terminal = this.terminals[terminalId];
       if (!terminal || terminalId == "") continue;
+      
+      // Get all wires connected to this terminal
+      const connectedWires = this.getWiresForTerminal(terminalId);
+      
+      // If no wires or a single wire, create just one orb
+      if (connectedWires.length <= 1) {
+        this.createOrb(terminal, terminalId);
+      } 
+      // If multiple wires, create an orb for each wire
+      else {
+        connectedWires.forEach((wire, index) => {
+          const wireOrbId = `${terminalId}-${wire.id}`;
+          this.createOrb(terminal, wireOrbId, index, connectedWires.length);
+        });
+      }
+    }
+  }
 
-      const radius = 50;
+  // New helper method to create an orb
+  createOrb(terminal, orbId, index = 0, totalOrbs = 1) {
+    const radius = 50;
+    
+    // Create orb geometry (small sphere)
+    const orbGeometry = new THREE.SphereGeometry(radius, 16, 16);
+    const orbMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffffff,  // Default white color
+      emissive: 0x003366, // Slight glow
+      metalness: 0.3,
+      roughness: 0.2
+    });
+    
+    const orb = new THREE.Mesh(orbGeometry, orbMaterial);
+    
+    // Position at terminal
+    orb.position.copy(terminal.position);
+    
+    // Calculate the height of the terminal
+    let terminalHeight;
+    if (this.labelOrientation === "vertical") {
+      terminalHeight = this.terminalSettings.dimensions.x;
+    } else {
+      terminalHeight = this.terminalSettings.dimensions.z;
+    }
+    
+    // If multiple orbs, distribute them horizontally
+    let horizontalOffset = 0;
+    if (totalOrbs > 1) {
+      // Distribute orbs horizontally
+      const orbSpacing = 120; // Space between orbs
+      horizontalOffset = (index - (totalOrbs - 1) / 2) * orbSpacing;
+    }
+    
+    // Position orb above the terminal with some offset and horizontal spacing
+    orb.position.z += terminalHeight / 2 + (radius + 60);
+    orb.position.x += horizontalOffset;
+    
+    orb.name = `Panel-Port-${orbId}`;
+    
+    // Add to scene
+    sharedData.sceneHelper.addToScene(orb);
+    
+    // Store reference
+    this.orbs[orbId] = orb;
+    
+    return orb;
+  }
+
+  // New helper method to get all wires for a terminal
+  getWiresForTerminal(terminalId) {
+    const wires = [];
+    
+    if (!this.wiringData || !this.wiringData.cables) {
+      return wires;
+    }
+    
+    // Search all cables for wires connected to this terminal
+    for (const cable of this.wiringData.cables) {
+      if (cable.wires && Array.isArray(cable.wires)) {
+        for (const wire of cable.wires) {
+          if (wire.panelWiringId === terminalId) {
+            wires.push(wire);
+          }
+        }
+      }
+    }
+    
+    return wires;
+  }
+
+  // New helper method to create a path for a specific wire
+  createWirePath(orb, componentId) {
+    if (!orb) {
+      return null;
+    }
+    
+    // Check if component exists in the scene
+    let component = null;
+    let ductId = null;
+    let ductHalfDepth = 0;
+    let targetPosition = null;
+    
+    // If we have a valid component, use its position
+    if (this.ahuObject && 
+        this.ahuObject['3d'] && 
+        this.ahuObject['3d'].components && 
+        this.ahuObject['3d'].components.meshes && 
+        this.ahuObject['3d'].components.meshes[componentId]) {
       
-      // Create orb geometry (small sphere)
-      const orbGeometry = new THREE.SphereGeometry(radius, 16, 16);
-      const orbMaterial = new THREE.MeshStandardMaterial({
-        color: 0xffffff,  // Blue color
-        emissive: 0x003366, // Slight glow
-        metalness: 0.3,
-        roughness: 0.2
-      });
+      component = this.ahuObject['3d'].components.meshes[componentId];
+      targetPosition = component.position.clone();
       
-      const orb = new THREE.Mesh(orbGeometry, orbMaterial);
+      if (this.ahuObject.associations && 
+          this.ahuObject.associations.components && 
+          this.ahuObject.associations.components[componentId]) {
+        
+        ductId = this.ahuObject.associations.components[componentId];
+        
+        if (this.ahuObject.resources && 
+            this.ahuObject.resources.ducts && 
+            this.ahuObject.resources.ducts[ductId]) {
+          
+          ductHalfDepth = this.ahuObject.resources.ducts[ductId].dimensions.y / 2;
+        }
+      }
+    } 
+    // If component doesn't exist, create a fallback position
+    else {
+      console.warn(`Component ${componentId} not found, using fallback position`);
       
-      // Position at the x-center and above the terminal
-      orb.position.copy(terminal.position);
-      
-      // Calculate the height of the terminal
-      let terminalHeight;
-      if (this.labelOrientation === "vertical") {
-        terminalHeight = this.terminalSettings.dimensions.x;
+      // Use the center duct position if available, or create a reasonable default
+      if (this.closestCenterDuct && this.closestCenterDuct.mesh) {
+        targetPosition = this.closestCenterDuct.mesh.position.clone();
+        
+        // Offset by a random factor to avoid cables overlapping
+        const randomOffsetX = (Math.random() - 0.5) * 500;
+        const randomOffsetZ = (Math.random() - 0.5) * 300;
+        
+        targetPosition.x += randomOffsetX;
+        targetPosition.z += randomOffsetZ;
+        
+        ductHalfDepth = 100; // Default height
       } else {
-        terminalHeight = this.terminalSettings.dimensions.z;
+        // Completely fallback position if no reference points
+        targetPosition = new THREE.Vector3(0, 500, 0);
+        ductHalfDepth = 0;
+      }
+    }
+    
+    const orbToCenterDistanceX = Math.abs(this.panelSettings.position.x - orb.position.x) / 10;
+    const orbToCenterDistanceZ = Math.abs(this.panelSettings.position.z - orb.position.z);
+    
+    const travelDepth = 750 + orbToCenterDistanceZ;
+    
+    const points = [];
+    
+    // Starting point (orb position)
+    points.push(
+      new THREE.Vector3(
+        orb.position.x,
+        orb.position.y,
+        orb.position.z,
+      )
+    );
+    
+    // Rise up from the orb
+    points.push(
+      new THREE.Vector3(
+        orb.position.x,
+        orb.position.y + travelDepth,
+        orb.position.z,
+      )
+    );
+
+    points.push(
+      new THREE.Vector3(
+        orb.position.x,
+        orb.position.y + travelDepth,
+        orb.position.z + 500
+      )
+    );
+
+    const convergenceFactor = 6;
+
+    // The point where the points should approach each other very closely on the x-axis.
+    points.push(
+      new THREE.Vector3(
+        orb.position.x / convergenceFactor,
+        orb.position.y + travelDepth,
+        orb.position.z + 500 + this.cableRadiusMax + (orbToCenterDistanceX)
+      )
+    );
+
+    const zStep = Math.abs(0 - targetPosition.x) / 20;
+    
+    // Travel horizontally to be above target position
+    points.push(
+      new THREE.Vector3(
+        orb.position.x / convergenceFactor,
+        orb.position.y + travelDepth,
+        targetPosition.z + zStep - ductHalfDepth/2
+      )
+    );        
+
+    points.push(
+      new THREE.Vector3(
+        targetPosition.x,
+        orb.position.y + travelDepth,
+        targetPosition.z + zStep - ductHalfDepth/2 + this.cableRadiusMax*2
+      )
+    );
+    
+    // Move down to target position
+    points.push(
+      new THREE.Vector3(
+        targetPosition.x,
+        0 + ductHalfDepth,
+        targetPosition.z + zStep - ductHalfDepth/2 + this.cableRadiusMax*2
+      )
+    );
+    
+    return points;
+  }
+
+  // Modify the createCableWithWires method to use individual wire paths
+  createCableWithWires(terminalId, componentId) {
+    // Find the cable data that connects this terminal to this component
+    const cableData = this.findCableData(terminalId, componentId);
+    
+    if (!cableData || !cableData.wires || !Array.isArray(cableData.wires)) {
+      console.warn(`No valid cable data found for ${terminalId} to ${componentId}`);
+      return null;
+    }
+    
+    // Now create individual wires for this cable
+    const wires = [];
+    
+    // For each wire in the cable data
+    cableData.wires.forEach(wireData => {
+      // Skip if this wire doesn't match the current terminal
+      if (wireData.panelWiringId !== terminalId) {
+        return;
       }
       
-      // Position orb above the terminal with some offset
-      orb.position.z += terminalHeight / 2 + (radius + 60);
+      // Create unique orb ID for this wire
+      const wireOrbId = `${terminalId}-${wireData.id}`;
       
-      orb.name = `Panel-Port-${terminalId}`;
+      // Get the orb for this specific wire or fall back to terminal orb
+      const wireOrb = this.orbs[wireOrbId] || this.orbs[terminalId];
+      
+      if (!wireOrb) {
+        console.warn(`No orb found for wire ${wireData.id} at terminal ${terminalId}`);
+        return;
+      }
+      
+      // Create wire path and mesh
+      const wirePath = this.createWirePath(wireOrb, componentId);
+      
+      if (!wirePath || wirePath.length === 0) {
+        return;
+      }
+      
+      // Create curve and geometry
+      const curve = new THREE.CatmullRomCurve3(wirePath);
+      
+      const tubeGeometry = new TubePath(
+        curve, 
+        TubePath.pathToUMapping(curve, 5, 2),
+        this.wireRadiusMax,
+        8,
+        false
+      );
+      
+      // Get color from wire data
+      const wireColor = wireData.color || 'Red';
+      
+      const tubeMaterial = new THREE.MeshStandardMaterial({
+        color: this.getWireColor(wireColor)
+      });
+      
+      const tube = new THREE.Mesh(tubeGeometry, tubeMaterial);
+      tube.name = `${terminalId}-to-${componentId}-Wire-${wireData.id}`;
+      tube.visible = true;
       
       // Add to scene
-      sharedData.sceneHelper.addToScene(orb);
+      sharedData.sceneHelper.addToScene(tube);
+      wires.push(tube);
       
-      // Store reference
-      this.orbs[terminalId] = orb;
-    }
+      // Mark the orb as connected with the wire's color
+      this.setOrbColor(wireOrbId, this.getWireColor(wireColor));
+      wireOrb.scale.set(1.2, 1.2, 1.2);
+    });
+    
+    return wires.length > 0 ? { wires } : null;
   }
 
   setOrbColor(terminalId, color) {
