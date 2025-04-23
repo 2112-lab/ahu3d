@@ -512,17 +512,25 @@ class Ahu3DAPI extends CableSystem {
     }
 
     /**
-     * Converts a Konva Layer to an embedded SVG in a PDF with customizable options.
+     * Converts a Konva Layer to an embedded SVG with customizable options.
      * @param {Konva.Layer} layer - The Konva Layer
-     * @param {Object} imageParams - Image Parameters (e.g., colors, file name)
-     * @param {Object} [pdfOptions] - Additional PDF settings
+     * @param {Object} params - Image Parameters (e.g., colors, file name)
      */
-    async exportBlueprintAsVector(layer, imageParams, pdfOptions = {}) {
+    async exportBlueprintAsVector(layer, params) {
         return new Promise(async (resolve) => {
             if (!layer) {
                 console.error("No layer provided.");
                 return resolve(null);
-            }            
+            }     
+            
+            const imageParams = {
+                fileName: params.fileName || "blueprint-export",
+                fileType: params.fileType || "svg",
+                strokeColor: params.strokeColor || "#000000",
+                textColor: params.textColor || "#000000",
+                backgroundColor: params.backgroundColor || "#ffffff",
+                scale: params.scale || 1
+            }
 
             const allText = layer.find("Text");
             const allRects = layer.find("Rect");
@@ -547,12 +555,45 @@ class Ahu3DAPI extends CableSystem {
             // Get the existing 2D rendering context
             const oldContext = layer.canvas.context._context;
 
-            // Create an SVG rendering context
-            const exportShrinkFactor = 0.25; // Shrink SVG size further
+            // Store original positions and dimensions
+            const originalPosition = {
+                x: layer.x(),
+                y: layer.y()
+            };
+            const originalWidth = layer.width();
+            const originalHeight = layer.height();
+            const scaledWidth = originalWidth * imageParams.scale;
+            const scaledHeight = originalHeight * imageParams.scale;
+
+            // Create an SVG rendering context with scaled dimensions
             const c2s = layer.canvas.context._context = new Context({
-                height: layer.height(),
-                width: layer.width(),
+                height: scaledHeight,
+                width: scaledWidth,
                 ctx: oldContext
+            });
+
+            // Store original layer scaling
+            const originalScale = {
+                x: layer.scaleX(),
+                y: layer.scaleY()
+            };
+
+            // Apply scale to the layer
+            layer.scale({
+                x: imageParams.scale * originalScale.x,
+                y: imageParams.scale * originalScale.y
+            });
+            
+            // Calculate position adjustment to center the content
+            // For scaling > 1, we need to move the layer inward to show more content
+            // For scaling < 1, we need to move the layer outward to center the smaller content
+            const positionAdjustX = Math.max(imageParams.scale - 1, 0) * 50;
+            const positionAdjustY = Math.max(imageParams.scale - 1, 0) * 50;
+            
+            // Apply position adjustment
+            layer.position({
+                x: originalPosition.x + positionAdjustX,
+                y: originalPosition.y + positionAdjustY
             });
 
             // Draw the layer
@@ -563,48 +604,9 @@ class Ahu3DAPI extends CableSystem {
 
             console.log("exportBlueprintAsVector fileType:", imageParams.fileType);
 
-            if (imageParams.fileType === "svg") {
-                svgData = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
-            } 
-            else if (imageParams.fileType === "pdf") {
-                // layer.width(100);
-                // layer.height(200);
-                // Get the original SVG dimensions
-                const svgWidth = layer.width() * 1.5;
-                const svgHeight = layer.height() * 1.5;
+            svgData = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
 
-                // Set default PDF dimensions (A4 size in points: 595x842)
-                const pdfWidth = 794;
-                const pdfHeight = 1123;
-
-                // Calculate scaling factor
-                const scaleX = pdfWidth / svgWidth;
-                const scaleY = pdfHeight / svgHeight;
-                const scale = pdfOptions.scale || Math.min(scaleX, scaleY); // Default: Fit inside PDF
-
-                // Create jsPDF instance
-                const pdf = new jsPDF({
-                    orientation: "portrait",
-                    unit: "px",
-                    format: [svgWidth, svgHeight]
-                });
-
-                // Convert SVG string to a DOM element
-                const parser = new DOMParser();
-                const svgElement = parser.parseFromString(svgData, "image/svg+xml").documentElement;
-
-                // Embed SVG into PDF with options
-                await pdf.svg(svgElement, {
-                    x: pdfOptions.x || 0,  // Custom X position (default: 0)
-                    y: pdfOptions.y || 0,  // Custom Y position (default: 0)
-                    width: svgWidth,  // Scale width
-                    height: svgHeight, // Scale height
-                });
-
-                // Save or download the PDF
-                pdf.save(`${imageParams.fileName}.pdf`);
-            }
-
+            // Restore original styles
             for (const text of allText) {
                 text.fill(oldTextFill);
             }
@@ -615,6 +617,15 @@ class Ahu3DAPI extends CableSystem {
             for (const path of allPaths) {
                 path.stroke(oldPathStroke);
             }
+
+            // Restore original scaling
+            layer.scale({
+                x: originalScale.x,
+                y: originalScale.y
+            });
+            
+            // Restore original position
+            layer.position(originalPosition);
 
             // Restore original context
             layer.canvas.context._context = oldContext;
@@ -630,16 +641,10 @@ class Ahu3DAPI extends CableSystem {
             fileType: params?.fileType || "svg",
             strokeColor: params?.strokeColor || "#000000",
             textColor: params?.textColor || "#000000",
-            backgroundColor: params?.backgroundColor || "#ffffff"
+            backgroundColor: params?.backgroundColor || "#ffffff",
+            scale: params?.scale || 1
         }
 
-        const pdfOptions = {
-            scale: 0.25,
-            x: 0,
-            y: 0,
-            preserveAspectRatio: true,
-            useCSS: true
-        }
 
         // Call exportWiringLayerAsVector with a promise
         this.exportWiringLayerAsVector(this.wiringDiagram, imageParams)
@@ -671,11 +676,13 @@ class Ahu3DAPI extends CableSystem {
             return resolve(null);
           }            
   
+          // Apply scale parameter (default to 1 if not provided)
+          const scale = imageParams.scale || 1;
+  
           // Store original styles for later restoration
           const allText = layer.find("Text");
           const allRects = layer.find("Rect");
           const allLines = layer.find("Line");
-          // Instead of getting paths, we'll get shapes that aren't Text, Rect or Line
           const allShapes = layer.getChildren(node => 
             node.getClassName() !== 'Text' && 
             node.getClassName() !== 'Rect' && 
@@ -688,7 +695,6 @@ class Ahu3DAPI extends CableSystem {
             originalStyles.rectStroke = allRects[0].stroke();
             originalStyles.rectFill = allRects[0].fill();
           }
-          // Don't store any original line styles - we'll keep those intact
   
           // Apply export styles
           for (const text of allText) {
@@ -698,29 +704,41 @@ class Ahu3DAPI extends CableSystem {
             rect.stroke(imageParams.strokeColor);
             rect.fill(imageParams.backgroundColor);
           }
-          // Lines are untouched - they keep their original colors
   
           // Get the existing 2D rendering context
           const oldContext = layer.canvas.context._context;
   
-          // Calculate the actual bounds of all elements to determine optimal SVG size
+          // Calculate the actual bounds of all elements
           const bounds = this.calculateLayerBounds(layer);
           
-          // Create an SVG rendering context with proper dimensions
+          // Store original layer scaling
+          const originalScale = {
+            x: layer.scaleX(),
+            y: layer.scaleY()
+          };
+  
+          // Apply the scaling factor
+          layer.scale({
+            x: originalScale.x * scale,
+            y: originalScale.y * scale
+          });
+          
+          // Create an SVG rendering context with scaled dimensions
           const c2s = layer.canvas.context._context = new Context({
-            width: bounds.width,
-            height: bounds.height,
+            width: bounds.width * scale,
+            height: bounds.height * scale,
             ctx: oldContext
           });
   
-          // Temporarily position everything to fit within the SVG canvas
+          // Store original position
           const originalLayerPosition = {
             x: layer.x(),
             y: layer.y()
           };
           
-          layer.x(-bounds.x);
-          layer.y(-bounds.y);
+          // Adjust position to account for the scaling
+          layer.x(-bounds.x * scale);
+          layer.y(-bounds.y * scale);
   
           // Draw the layer
           layer.draw();
@@ -729,10 +747,9 @@ class Ahu3DAPI extends CableSystem {
           let svgData = c2s.getSerializedSvg();
   
           // Add a background rectangle to match the specified background color
-          const backgroundRect = `<rect x="0" y="0" width="${bounds.width}" height="${bounds.height}" fill="${imageParams.backgroundColor}" />`;
-          // Replace old rect fill with new rect with backgroundColor
+          const backgroundRect = `<rect x="0" y="0" width="${bounds.width * scale}" height="${bounds.height * scale}" fill="${imageParams.backgroundColor}" />`;
           svgData = svgData.replace('<rect fill="#FFFFFF" stroke="none" x="0" y="0" width="600" height="400" transform="matrix(1 0 0 1 0 0)"/>', backgroundRect);
-
+  
           svgData = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });  
   
           // Restore original styles
@@ -743,15 +760,17 @@ class Ahu3DAPI extends CableSystem {
             rect.stroke(originalStyles.rectStroke);
             rect.fill(originalStyles.rectFill);
           }
-          // No need to restore lines since we didn't change them
           
-          // Restore other shapes
+          // Restore original shape styles
           for (const shape of allShapes) {
             if (originalStyles.pathStroke) {
               shape.stroke(originalStyles.pathStroke);
             }
           }
   
+          // Restore original scale
+          layer.scale(originalScale);
+          
           // Restore original layer position
           layer.x(originalLayerPosition.x);
           layer.y(originalLayerPosition.y);
