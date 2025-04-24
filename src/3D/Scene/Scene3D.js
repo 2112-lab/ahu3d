@@ -49,15 +49,15 @@ class Scene3D {
         this.infoPanelTemplate = infoPanelTemplate;
         this.currentZoomDistance = 0;
 
-        this.wireLabelRenderer = new CSS2DRenderer();
-        this.wireLabelRenderer.setSize(
-            this.moduleConfigs.scene.renderer.size.width, 
-            this.moduleConfigs.scene.renderer.size.height
-        );
-        this.wireLabelRenderer.domElement.style.position = 'absolute';
-        this.wireLabelRenderer.domElement.style.top = '0px';
-        this.wireLabelRenderer.domElement.style.pointerEvents = 'none';
-        document.body.appendChild(this.wireLabelRenderer.domElement);
+        // this.wireLabelRenderer = new CSS2DRenderer();
+        // this.wireLabelRenderer.setSize(
+        //     this.moduleConfigs.scene.renderer.size.width, 
+        //     this.moduleConfigs.scene.renderer.size.height
+        // );
+        // this.wireLabelRenderer.domElement.style.position = 'absolute';
+        // this.wireLabelRenderer.domElement.style.top = '0px';
+        // this.wireLabelRenderer.domElement.style.pointerEvents = 'none';
+        // document.body.appendChild(this.wireLabelRenderer.domElement);
 
         this.LODs = {
             "AHU": {
@@ -237,7 +237,7 @@ class Scene3D {
 
         this.updateComposer();
         this.labelRenderer.render(this.scene, this.cameras.primary);
-        this.wireLabelRenderer.render(this.scene, this.cameras.primary);
+        // this.wireLabelRenderer.render(this.scene, this.cameras.primary);
         this.animateCachedTargets();
     }
 
