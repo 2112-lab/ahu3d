@@ -16,8 +16,8 @@ import Lights from './Lights3D.js';
 import Cameras from './Cameras3D.js';
 import Materials from './Materials3D.js';
 
-import componentTemplate from '../../assets/tooltips/component.html';
-import controllerTemplate from '../../assets/tooltips/controller.html';
+// import tooltipTemplate from '../../assets/component.html';
+import tooltipTemplate from '../../assets/tooltip.html';
 import infoPanelTemplate from '../../assets/tooltips/infoPanel.html';
 
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
@@ -42,8 +42,7 @@ class Scene3D {
         this.tooltipEnabled = this.moduleConfigs.ui.showTooltip;
         this.grid = null;
         this.ahuComponents = [];
-        this.componentTemplate = componentTemplate;
-        this.controllerTemplate = controllerTemplate;
+        this.tooltipTemplate = tooltipTemplate;
         
         this.infoPanel = null;
         this.infoPanelObject = null;
@@ -408,7 +407,7 @@ class Scene3D {
     }
 
     onMeshClick(event) {
-        event.preventDefault();
+        // event.preventDefault();
 
         if(this.renderer && this.renderer.domElement && event) {
             this.boundingClientRect = this.renderer.domElement.getBoundingClientRect();    
@@ -421,8 +420,6 @@ class Scene3D {
             const hvacIntersects = this.raycaster.intersectObjects(
                 this.scene.children.filter(child => (child.name === 'hvac' || child.name === 'duct' || child.name === 'joint') && child.visible)
             );
-
-            console.log("onMeshClick hvacIntersects:", hvacIntersects);
 
             if (hvacIntersects.length > 0) {
                 let mesh = null;
@@ -438,21 +435,7 @@ class Scene3D {
                     this.selectedMesh = mesh;
                     if(this.tooltipEnabled) {
                         this.addBoundingBox();
-                        this.showComponentTooltip();
-                    } 
-                }
-                else if(hvacIntersects[0].object.name.includes('controller')) {
-                    mesh = hvacIntersects[0].object;
-
-                    if(mesh.name.includes('controllerOrb')) {
-                        mesh = mesh.parent;
-                    }
-
-                    console.log("onMeshClick mesh:", mesh);
-
-                    this.selectedMesh = mesh;
-                    if(this.tooltipEnabled) {
-                        this.showControllerTooltip();
+                        this.showTooltip();
                     } 
                 }
                 else {
@@ -465,269 +448,18 @@ class Scene3D {
             }
         }
     }
-
-    clearTooltip() {
-        if (this.tooltipParent && this.tooltipObject) {
-            this.tooltipParent.remove(this.tooltipObject);
-            this.tooltipParent = null;
-            this.tooltipObject = null;
-        }
-    }
-
-    showControllerTooltip() {
-        console.log("showControllerTooltip started");
-        console.log("showControllerTooltip this.selectedMesh:", this.selectedMesh);
     
-        // Clone the loaded template
-        const tooltipDiv = document.createElement('div');
-        tooltipDiv.innerHTML = this.controllerTemplate.trim(); // Use the imported template
-        const tooltipElement = tooltipDiv.firstElementChild;
-    
-        // Update the tooltip header
-        tooltipElement.querySelector('.tooltip-header').textContent = `${this.selectedMesh.userData.type}-1`;
-    
-        // Get the tooltip body to append rows to
-        const tooltipBody = tooltipElement.querySelector('.tooltip-body');
-        
-        // Clear any existing rows
-        tooltipBody.innerHTML = '';
-        
-        // Initialize attributes object
-        let attributes = {};
-        
-        // Collect attributeType from children
-        if (this.selectedMesh.children && this.selectedMesh.children.length > 0) {
-            // Iterate through all children
-            this.selectedMesh.children.forEach(child => {
-                // Check if the child has userData with an attributeType
-                if (child.userData && child.userData.attributeType) {
-                    // Generate a random value for demonstration (replace with actual values if available)
-                    const randomValue = Math.floor(Math.random() * 21);
-                    
-                    // Determine if this is an input or output based on your criteria
-                    // For example, you might want to check child.userData.type or some other property
-                    // Here I'm using a simple check on the attributeType name
-                    const isInput = child.userData.attributeType.toLowerCase().includes('input');
-                    
-                    // Store the attribute with its value and reference to the mesh
-                    attributes[child.userData.attributeType] = {
-                        value: randomValue,
-                        isInput: isInput,
-                        meshReference: child  // Store reference to the actual mesh
-                    };
-                    console.log("showControllerTooltip child.userData.attributeType:", child.userData.attributeType);
-                }
-            });
-        }
-        
-        // Create a row for each attribute
-        Object.entries(attributes).forEach(([key, data]) => {
-            // Create a new row
-            const rowElement = document.createElement('div');
-            rowElement.className = 'tooltip-row';
-            
-            // Add hover events to the row
-            rowElement.addEventListener('mouseenter', () => {
-                console.log(`showControllerTooltip Hovering over ${key}`);
-                rowElement.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
-
-                for(const child of this.selectedMesh.children) {
-                    if(child.isMesh) {
-                        if(child.userData.attributeType == key) {
-                            child.material.color.set(0xff9900);
-                            child.material.needsUpdate = true;
-                        }
-                    }
-                }
-                
-            });
-            
-            rowElement.addEventListener('mouseleave', () => {
-                console.log(`Mouse left ${key} row`);
-                rowElement.style.backgroundColor = 'transparent';
-                
-                for(const child of this.selectedMesh.children) {
-                    if(child.isMesh) {
-                        if(child.userData.attributeType == key) {
-                            child.material.color.set(0xffffff);
-                            child.material.needsUpdate = true;
-                        }
-                    }
-                }
-            });
-            
-            // Create key element
-            const keyElement = document.createElement('div');
-            keyElement.className = 'tooltip-key';
-            keyElement.textContent = `${key}:`;
-            
-            // Check if this is an input row
-            if (!data.isInput) {
-                // Create controls container for input rows (with buttons)
-                const controlsElement = document.createElement('div');
-                controlsElement.className = 'tooltip-controls';
-                
-                // Create minus button
-                const minusButton = document.createElement('button');
-                minusButton.className = 'tooltip-minus';
-                minusButton.textContent = '-';
-                minusButton.addEventListener('click', () => {
-                    console.log(`Decrease value for ${key}`);
-                    
-                    // Decrease the value in the data object (with a minimum of 0)
-                    data.value = Math.max(0, data.value - 1);
-                    
-                    // Update the displayed value
-                    valueElement.textContent = data.value;
-                    
-                    // If there's a mesh reference, update any visual representation
-                    if (data.meshReference && data.meshReference.userData) {
-                        // Update the mesh userData value if needed
-                        data.meshReference.userData.value = data.value;
-                        
-                        // Trigger any required updates (e.g., material updates, re-calculations)
-                        this.updateControllerValues(key, data.value);
-                    }
-                });
-                
-                // Create value element
-                const valueElement = document.createElement('div');
-                valueElement.className = 'tooltip-value';
-                valueElement.textContent = data.value;
-                
-                // Create plus button
-                const plusButton = document.createElement('button');
-                plusButton.className = 'tooltip-plus';
-                plusButton.textContent = '+';
-                plusButton.addEventListener('click', () => {
-                    console.log(`Increase value for ${key}`);
-                    
-                    // Increase the value (add an upper limit if needed)
-                    const maxValue = 100; // Example maximum value
-                    data.value = Math.min(maxValue, data.value + 1);
-                    
-                    // Update the displayed value
-                    valueElement.textContent = data.value;
-                    
-                    // If there's a mesh reference, update any visual representation
-                    if (data.meshReference && data.meshReference.userData) {
-                        // Update the mesh userData value if needed
-                        data.meshReference.userData.value = data.value;
-                        
-                        // Trigger any required updates (e.g., material updates, re-calculations)
-                        this.updateControllerValues(key, data.value);
-                    }
-                });
-                
-                // Assemble the controls
-                controlsElement.appendChild(minusButton);
-                controlsElement.appendChild(valueElement);
-                controlsElement.appendChild(plusButton);
-                
-                // Assemble the row
-                rowElement.appendChild(keyElement);
-                rowElement.appendChild(controlsElement);
-            } else {
-                // For output rows, just display the value without buttons
-                const valueElement = document.createElement('div');
-                valueElement.className = 'tooltip-value';
-                valueElement.textContent = data.value;
-                
-                // Assemble the row
-                rowElement.appendChild(keyElement);
-                rowElement.appendChild(valueElement);
-            }
-            
-            // Add the row to the tooltip body
-            tooltipBody.appendChild(rowElement);
-        });
-    
-        const tooltipWidth = 150;
-    
-        // Set the position of the tooltip using CSS
-        tooltipElement.style.position = 'absolute';
-        tooltipElement.style.left = `${(0) + (tooltipWidth / 1.35)}px`;
-        tooltipElement.style.pointerEvents = 'auto'; // Changed to auto to enable button clicks
-    
-        // Add the tooltip as a CSS2DObject
-        const label = new CSS2DObject(tooltipElement);
-    
-        // Add the label to the mesh
-        this.selectedMesh.add(label);
-    
-        this.tooltipParent = this.selectedMesh;
-        this.tooltipObject = label;
-    }
-
-    updateControllerValues(attributeType, newValue) {
-        console.log(`Updating ${attributeType} with new value: ${newValue}`);
-        
-        // Update any dependent outputs or visuals
-        // This could involve re-calculating other values based on inputs
-        
-        // Example: update all output values if an input changes
-        if (attributeType.toLowerCase().includes('input')) {
-            // Re-calculate outputs based on inputs
-            this.recalculateOutputs();
-        }
-        
-        // Trigger any needed scene updates
-        if (this.onControllerUpdate) {
-            this.onControllerUpdate(attributeType, newValue);
-        }
-    }
-    
-    // Example method to recalculate outputs based on inputs
-    recalculateOutputs() {
-        // Get all current input values
-        const inputValues = {};
-        Object.entries(attributes).forEach(([key, data]) => {
-            if (data.isInput) {
-                inputValues[key] = data.value;
-            }
-        });
-        
-        // Calculate new output values based on inputs
-        // This is where you would implement your specific logic
-        Object.entries(attributes).forEach(([key, data]) => {
-            if (!data.isInput) {
-                // Example: set output to sum of inputs (replace with your logic)
-                const newValue = Object.values(inputValues).reduce((sum, val) => sum + val, 0);
-                
-                // Update the output value
-                data.value = newValue;
-                
-                // Find and update the displayed value in the tooltip
-                const outputRows = tooltipBody.querySelectorAll('.tooltip-row');
-                outputRows.forEach(row => {
-                    const keyElement = row.querySelector('.tooltip-key');
-                    if (keyElement && keyElement.textContent === `${key}:`) {
-                        const valueElement = row.querySelector('.tooltip-value');
-                        if (valueElement) {
-                            valueElement.textContent = newValue;
-                        }
-                    }
-                });
-                
-                // Update the mesh reference if available
-                if (data.meshReference) {
-                    data.meshReference.userData.value = newValue;
-                }
-            }
-        });
-    }
-    
-    showComponentTooltip() {
+    showTooltip() {
         const meshComponentData = this.selectedMesh.userData.component;
         const meshAttributes = meshComponentData.attributes;
     
         // Clone the loaded template
         const tooltipDiv = document.createElement('div');
-        tooltipDiv.innerHTML = this.componentTemplate.trim(); // Use the imported template
+        tooltipDiv.innerHTML = this.tooltipTemplate.trim(); // Use the imported template
         const tooltipElement = tooltipDiv.firstElementChild;
 
-        console.log("showComponentTooltip this.selectedMesh:", this.selectedMesh);
-        console.log("showComponentTooltip meshComponentData:", meshComponentData);
+        console.log("showTooltip this.selectedMesh:", this.selectedMesh);
+        console.log("showTooltip meshComponentData:", meshComponentData);
     
         // Update the tooltip content
         tooltipElement.querySelector('.tooltip-header').textContent = this.selectedMesh.userData.name.split("::")[1] || this.selectedMesh.userData.name;
@@ -782,9 +514,17 @@ class Scene3D {
     updateTooltip() {
         if (this.tooltipParent && this.tooltipObject) {
             this.tooltipParent.remove(this.tooltipObject);
-            this.showComponentTooltip();
+            this.showTooltip();
         }        
-    }    
+    }   
+    
+    clearTooltip() {
+        if (this.tooltipParent && this.tooltipObject) {
+            this.tooltipParent.remove(this.tooltipObject);
+            this.tooltipParent = null;
+            this.tooltipObject = null;
+        }
+    }
 
     // Method to create a gradient background using ShaderMaterial
     createGradientBackground() {
@@ -913,7 +653,7 @@ class Scene3D {
     createDomInfoPanel() {
 
         if (process.env.NODE_ENV === "development") {
-            return
+            // return
         }
 
         // Remove any existing info panel
@@ -998,34 +738,15 @@ class Scene3D {
         this.controls.target.copy(center);
 
         if (process.env.NODE_ENV === "development") {
-            // this.orbitToOtherSide();
-            // camera.position.z += 3;
-
             // camera.position.y -= 15;
         }        
 
         camera.lookAt(center);
+
+        // Update the OrbitControls' target
         this.controls.target.copy(center);
         this.controls.update(); // Ensure the controls are updated
     } 
-
-    orbitToOtherSide() {
-        const camera = this.cameras.primary;
-        const center = this.controls.target;
-        
-        // Calculate vector from target to camera
-        const directionVector = new THREE.Vector3().subVectors(camera.position, center);
-        
-        // Invert the direction (rotate 180 degrees)
-        directionVector.multiplyScalar(-1);
-        
-        // Set new camera position
-        const newPosition = new THREE.Vector3().addVectors(center, directionVector);
-        camera.position.copy(newPosition);
-        
-        camera.lookAt(center);
-        this.controls.update();
-    }
 
     addBoundingBox() {
         const dimensions = this.selectedMesh.userData.component.object.boundingBox.dimensions;
@@ -1116,21 +837,21 @@ class Scene3D {
             document.body.removeChild(this.infoPanel);
             this.infoPanel = null;
         }
-       
+    
         if (this.onMouseDownHandler) {
             window.removeEventListener('mousedown', this.onMouseDownHandler);
             this.onMouseDownHandler = null; // Clear the reference to prevent memory leaks
         }
-       
+    
         if (this.renderer) {
             this.renderer.dispose();
         }
-       
+    
         if (this.labelRenderer) {
             document.body.removeChild(this.labelRenderer.domElement);
             this.labelRenderer = null;
         }
-       
+    
         this.scene.traverse((object) => {
             if (object.geometry) {
                 object.geometry.dispose();
@@ -1146,12 +867,12 @@ class Scene3D {
                     });
                 } else {
                     // Handle single materials
-                    if (object.material.map) object.material.map.dispose();
-                    object.material.dispose();
+                if (object.material.map) object.material.map.dispose();
+                object.material.dispose();
                 }
             }
         });
-       
+    
         this.scene.clear();
         this.scene = null;
         this.renderer = null;

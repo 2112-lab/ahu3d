@@ -931,20 +931,29 @@ createJointCorner(layer, point1, point2, midPoint, arcDirectionOverride = null) 
   const p1ToP2 = this.analyzePointRelationship(point1, point2);
   const p1ToMid = this.analyzePointRelationship(point1, midPoint);
   const p2ToMid = this.analyzePointRelationship(point2, midPoint);
-  
+
+  let isColinear = false;
+
   // Draw straight lines for colinear points
   if (p1ToP2.isColinear) {
     this.drawStraightLine(layer, point1, point2);
+    isColinear = true;
   }
   
   if (p1ToMid.isColinear) {
     this.drawStraightLine(layer, point1, midPoint);
+    isColinear = true;
   }
   
   if (p2ToMid.isColinear) {
     this.drawStraightLine(layer, point2, midPoint);
+    isColinear = true;
   }
-  
+
+  if(isColinear && sharedData.jointStyle == "orthogonal") {
+    return;
+  }
+
   // Draw arcs for points with equal x-z distances (diagonal movement)
   if (p1ToP2.hasEqualDistances) {
     this.createJointArc(layer, point1, point2, midPoint);
@@ -962,6 +971,7 @@ createJointCorner(layer, point1, point2, midPoint, arcDirectionOverride = null) 
   if (arcDirectionOverride !== null) {
     sharedData.jointDirection = originalDirection;
   }
+  
 }
 
 /**
@@ -1004,6 +1014,27 @@ createJointArc(layer, startPoint, endPoint, controlPoint) {
   const y1 = startPoint.z * -1;
   const x2 = endPoint.x;
   const y2 = endPoint.z * -1;
+
+  if(sharedData.jointStyle == "diagonal") {
+    const points = [
+      x1, y1,
+      x2, y2
+    ];
+  
+    const jointLine = new Konva.Line({
+      points: points,
+      stroke: 'white',
+      lineCap: 'round',
+      lineJoin: 'round',
+      strokeWidth: 30,
+    });
+  
+    layer.add(jointLine);
+
+    return;
+  }
+
+  
   
   // Calculate the midpoint between the two points
   const midX = (x1 + x2) / 2;
