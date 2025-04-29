@@ -675,7 +675,7 @@ class Scene3D {
         panel.style.fontFamily = 'Arial, sans-serif';
         panel.style.fontSize = '12px';
         panel.style.pointerEvents = 'none';
-        panel.style.zIndex = '1000';
+        panel.style.zIndex = '0';
         panel.style.width = '220px';
         panel.style.boxShadow = '0 2px 5px rgba(0, 0, 0, 0.2)';
         panel.style.border = '1px solid rgba(255, 255, 255, 0.1)';

@@ -450,7 +450,7 @@ class CableSystem {
    * @return {boolean} Success status
    */
   loadWiringData(wiringData) {
-    // Store all properties, including non-standard ones like panelRows
+    // Store all properties, including non-standard ones like panelRows and components
     this.wiringData = { ...wiringData };
     
     if (!wiringData || !wiringData.cables || !Array.isArray(wiringData.cables)) {
@@ -503,11 +503,42 @@ class CableSystem {
    * @return {Object} Formatted wiring data object
    */
   getWiringDataObject() {
-    // Return the full object with all properties
-    return {
-      ...this.wiringData, // Preserve any custom attributes like panelRows
+    const { components, panelRows, ...otherProps } = this.wiringData;
+    
+    // Create the base object with all existing properties
+    const result = {
+      ...otherProps,
       cables: this.getAllCables().map(cable => cable.toObject())
     };
+    
+    // Add panelRows if it exists
+    if (panelRows !== undefined) {
+      result.panelRows = panelRows;
+    }
+    
+    // Add components if it exists, or create a default components structure
+    if (components) {
+      result.components = components;
+    } else {
+      // Create a default components structure from the cables
+      const connectedComponents = [];
+      
+      // Get all the connected components from the cables
+      this.getAllCables().forEach(cable => {
+        if (cable.idTag && !connectedComponents.includes(cable.idTag)) {
+          connectedComponents.push(cable.idTag);
+        }
+      });
+      
+      // Use the connected components to build the components object
+      result.components = {
+        all: [...connectedComponents], // Default to just what's connected
+        connected: connectedComponents,
+        unconnected: [] // Default to empty until provided with more info
+      };
+    }
+    
+    return result;
   }
 
   /**

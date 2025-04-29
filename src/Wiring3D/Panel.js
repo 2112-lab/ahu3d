@@ -243,6 +243,15 @@ export default class Panel {
         // Instead of returning, we'll continue and connect to a fallback position later
       }
       
+      // Check if this component is included in the connected components list (if available)
+      if (this.wiringData.components && 
+          this.wiringData.components.connected && 
+          Array.isArray(this.wiringData.components.connected) &&
+          !this.wiringData.components.connected.includes(componentId)) {
+        console.info(`Component ${componentId} is not in the connected list, skipping cable ${cable.id}`);
+        return;
+      }
+      
       // Process each wire in the cable
       cable.wires.forEach(wire => {
         const terminalId = wire.panelWiringId;

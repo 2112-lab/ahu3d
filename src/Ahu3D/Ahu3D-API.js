@@ -80,6 +80,95 @@ class Ahu3DAPI extends CableSystem {
     }
 
     /**
+     * Update or create the components structure in the wiringData
+     * @param {Object} wiringData - The wiring data to update
+     * @return {Object} Updated wiring data with components structure
+     */
+    updateComponentsInWiringData(wiringData) {
+      if (!wiringData) {
+        wiringData = { cables: [] };
+      }
+      
+      if (!wiringData.components) {
+        wiringData.components = {
+          all: [],
+          connected: [],
+          unconnected: []
+        };
+      }
+      
+      // Get all component IDs from the AHU object if available
+      const allComponents = [];
+      if (this.ahuObject && this.ahuObject.resources && this.ahuObject.resources.components) {
+        Object.keys(this.ahuObject.resources.components).forEach(componentId => {
+          allComponents.push(componentId);
+        });
+      }
+      
+      // Ensure components from cables are included in the all list
+      const connectedComponents = [];
+      wiringData.cables.forEach(cable => {
+        if (cable.idTag && !connectedComponents.includes(cable.idTag)) {
+          connectedComponents.push(cable.idTag);
+          if (!allComponents.includes(cable.idTag)) {
+            allComponents.push(cable.idTag);
+          }
+        }
+      });
+      
+      // Calculate unconnected components
+      const unconnectedComponents = allComponents.filter(componentId => 
+        !connectedComponents.includes(componentId)
+      );
+      
+      // Update the components in the wiring data
+      wiringData.components = {
+        all: allComponents,
+        connected: connectedComponents,
+        unconnected: unconnectedComponents
+      };
+
+      console.log("updateComponentsInWiringData wiringData:", wiringData);
+      
+      return wiringData;
+    }
+
+    setWiringDataComponents(wiringData) {
+        const componentKeys = Object.keys(this.ahuObject.resources.components); 
+        
+        let wiringDataComponents = {
+          all: componentKeys,
+          connected: [],
+          unconnected: []
+        }
+
+        // Extract idTag values from cables and populate the connected array
+        for(const cable of wiringData.cables) {
+          // Make sure we're using the right property and that it exists
+          if (cable.idTag) {
+            // Extract the component ID part from the full idTag
+            const componentId = cable.idTag;
+            if (componentId && !wiringDataComponents.connected.includes(componentId)) {
+              wiringDataComponents.connected.push(componentId);
+            }
+          }
+        }
+        
+        // Explicitly calculate unconnected as components in 'all' that aren't in 'connected'
+        wiringDataComponents.unconnected = wiringDataComponents.all.filter(component => {
+          return !wiringDataComponents.connected.includes(component);
+        });
+
+        // Update wiringData with the new components structure
+        wiringData = {
+          ...wiringData,
+          components: wiringDataComponents,
+        };
+
+        console.log("setWiringDataComponents wiringData.components:", wiringData.components);
+    }
+
+    /**
      * Initialize the panel component with wiring data
      * @param {HTMLElement} container - DOM element to render the panel into
      * @return {Panel} The initialized panel instance
