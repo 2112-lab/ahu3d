@@ -210,7 +210,7 @@ class Scene3D {
 
         this.cacheAnimationTargets();
 
-        this.createDomInfoPanel();
+        // this.createDomInfoPanel();
         
         this.animate()
 
