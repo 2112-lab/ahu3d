@@ -1289,7 +1289,27 @@ class Ahu3DAPI extends CableSystem {
         // Add CSS class for styling if needed
         this.sceneHelper.renderer.domElement.classList.add('ahu3d-renderer');
         
+        // Set the container position to relative so the labelRenderer can be positioned absolutely within it
+        container.style.position = 'relative';
+        
         container.appendChild(this.sceneHelper.renderer.domElement);
+        
+        // Attach the label renderer to the same container instead of document.body
+        if (this.sceneHelper.labelRenderer && this.sceneHelper.labelRenderer.domElement) {
+            // Remove from document.body if it's there
+            if (this.sceneHelper.labelRenderer.domElement.parentNode === document.body) {
+                document.body.removeChild(this.sceneHelper.labelRenderer.domElement);
+            }
+            
+            // Set label renderer to be positioned within the container
+            this.sceneHelper.labelRenderer.domElement.style.position = 'absolute';
+            this.sceneHelper.labelRenderer.domElement.style.top = '0px';
+            this.sceneHelper.labelRenderer.domElement.style.left = '0px';
+            this.sceneHelper.labelRenderer.domElement.style.pointerEvents = 'none';
+            this.sceneHelper.labelRenderer.domElement.style.zIndex = '1';
+            
+            container.appendChild(this.sceneHelper.labelRenderer.domElement);
+        }
     }
 
     /**
@@ -1299,6 +1319,11 @@ class Ahu3DAPI extends CableSystem {
         const rendererElement = this.sceneHelper.renderer.domElement;
         if (rendererElement && rendererElement.parentNode) {
             rendererElement.parentNode.removeChild(rendererElement);
+        }
+        
+        // Also detach the label renderer
+        if (this.sceneHelper.labelRenderer && this.sceneHelper.labelRenderer.domElement && this.sceneHelper.labelRenderer.domElement.parentNode) {
+            this.sceneHelper.labelRenderer.domElement.parentNode.removeChild(this.sceneHelper.labelRenderer.domElement);
         }
     }
 

@@ -162,7 +162,8 @@ class Scene3D {
         this.labelRenderer.domElement.style.position = 'absolute';
         this.labelRenderer.domElement.style.pointerEvents = 'none';
         this.labelRenderer.domElement.style.top = '0px';
-        document.body.appendChild(this.labelRenderer.domElement);
+        // Don't append to document.body automatically - let attachScene handle it
+        // document.body.appendChild(this.labelRenderer.domElement);
 
         if(this.tooltipParent != null && this.tooltipObject != null) {
             this.tooltipParent.remove(this.tooltipObject);
@@ -848,7 +849,10 @@ class Scene3D {
         }
     
         if (this.labelRenderer) {
-            document.body.removeChild(this.labelRenderer.domElement);
+            // Remove from its current parent (might be document.body or a container)
+            if (this.labelRenderer.domElement && this.labelRenderer.domElement.parentNode) {
+                this.labelRenderer.domElement.parentNode.removeChild(this.labelRenderer.domElement);
+            }
             this.labelRenderer = null;
         }
     
