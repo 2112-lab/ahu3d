@@ -67,8 +67,9 @@ class Ahu3DAPI extends CableSystem {
         this.libraryLoadInitiated = false;
         // Initialize 3D mesh handler
         this.Mesh3D = new Mesh3D(this.sceneHelper);
-        // Initialize flow control system
+        // Initialize flow control system and pass the Mesh3D instance
         this.FlowControl = new FlowControl();
+        this.FlowControl.Mesh3D = this.Mesh3D; // Use the same Mesh3D instance
 
         this.panel = null;
 

@@ -42,7 +42,8 @@ export default class FlowControl {
         // Dictionary for managing duct system information
         this.ductsDictionary = null;
         // Initialize all required geometry and rendering handlers
-        this.Mesh3D = new Mesh3D();
+        // Note: Mesh3D will be assigned from the parent class
+        this.Mesh3D = null;
         this.Geometry_3D_Joints_Cross = new Geometry_3D_Joints_Cross();
         this.Geometry_3D_Joints_T = new Geometry_3D_Joints_T();
         this.Geometry_3D_Joints_L = new Geometry_3D_Joints_L();
@@ -648,6 +649,6 @@ export default class FlowControl {
         await this.Mesh3D.render3D(this.ahuObject);
 
         // Adjust camera to fit entire assembly in view
-        sharedData.sceneHelper.fitAssemblyIntoView();        
+        this.Mesh3D.sceneHelper.fitAssemblyIntoView();        
     }
 }

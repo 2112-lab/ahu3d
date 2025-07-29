@@ -11,7 +11,7 @@ import { createTextMesh } from "./Geometry/Helpers/Geometry_Text.js"
  */
 export default class Mesh3D {
   constructor(sceneHelper){
-    sharedData.sceneHelper = sceneHelper; // Set the shared scene helper for scene management
+    this.sceneHelper = sceneHelper; // Store the scene helper as an instance variable instead of overriding shared data
     this.Canvas2D = new Canvas2D(); // Initialize the Canvas2D class
   }
 
@@ -122,7 +122,7 @@ export default class Mesh3D {
           
           controllerMesh.name = "controller";
           controllerMesh.userData = controllerSettings;
-          sharedData.sceneHelper.addToScene(controllerMesh);
+          this.sceneHelper.addToScene(controllerMesh);
           
           // Store reference to mesh
           ahuObject['3d'].controllers.meshes[controllerId] = controllerMesh;
@@ -240,7 +240,7 @@ export default class Mesh3D {
 
         console.log("renderHelpers arrowResource:", arrowResource, arrowId);
 
-        let arrowMesh = sharedData.sceneHelper.instanceSet?.arrow?.clone();
+        let arrowMesh = this.sceneHelper.instanceSet?.arrow?.clone();
         if (!arrowMesh) {
             console.error(`Failed to clone arrow instance for arrowId: ${arrowId}`);
             continue;
@@ -265,7 +265,7 @@ export default class Mesh3D {
         // Store arrow mesh in ahuObject["3d"].helpers.meshes
         ahuObject["3d"].helpers.meshes[arrowId] = arrowMesh;
 
-        sharedData.sceneHelper.addToScene(arrowMesh);
+        this.sceneHelper.addToScene(arrowMesh);
     }
 
     // Render label helpers
@@ -389,7 +389,7 @@ export default class Mesh3D {
     const material = new THREE.MeshStandardMaterial({ color: sharedData.primaryColor, side: THREE.DoubleSide });
     const mergedMesh = new THREE.Mesh(mergedGeometryTotal, material);
     mergedMesh.name = "ductEnd";
-    sharedData.sceneHelper.addToScene(mergedMesh);
+    this.sceneHelper.addToScene(mergedMesh);
     
     return mergedMesh;
   }
@@ -436,7 +436,7 @@ export default class Mesh3D {
       const material = new THREE.MeshStandardMaterial({ color: sharedData.primaryColor });        
       const mergedMesh = new THREE.Mesh(mergedGeometry, material);
       mergedMesh.name = "ductEnd";
-      sharedData.sceneHelper.addToScene(mergedMesh);
+      this.sceneHelper.addToScene(mergedMesh);
       
       return mergedMesh;
   }
@@ -504,12 +504,12 @@ export default class Mesh3D {
           wireframe.visible = false;
           mergedMesh.add(wireframe);
 
-          sharedData.sceneHelper.addToScene(mergedMesh);
+          this.sceneHelper.addToScene(mergedMesh);
           items3d.joints.mergedMesh = mergedMesh;
       }
 
       for (const arc of items3d.joints.arcs) {
-        sharedData.sceneHelper.addToScene(arc);
+        this.sceneHelper.addToScene(arc);
       }
 
       delete items3d.joints.geometry; // Clean up the original geometry data
@@ -549,7 +549,7 @@ export default class Mesh3D {
       const proxyMesh = new THREE.Mesh(geometry, material);
       proxyMesh.name = "jointProxy";
       proxyMesh.position.copy(position);
-      sharedData.sceneHelper.addToScene(proxyMesh);
+      this.sceneHelper.addToScene(proxyMesh);
     }
 
     for (const jointKey in data) {
@@ -593,7 +593,7 @@ export default class Mesh3D {
               proxy.name = "jointVertexHelpers";
               proxy.position.set(coord.x, coord.y, coord.z);
               proxy.visible = false;
-              sharedData.sceneHelper.addToScene(proxy);
+              this.sceneHelper.addToScene(proxy);
             });
 
             const material2 = new THREE.MeshStandardMaterial({ color: 0x0000ff, ...vertexMaterialConfigs });
@@ -602,7 +602,7 @@ export default class Mesh3D {
               proxy.name = "jointVertexHelpers";
               proxy.position.set(coord.x, coord.y, coord.z);
               proxy.visible = false;
-              sharedData.sceneHelper.addToScene(proxy);
+              this.sceneHelper.addToScene(proxy);
             });
 
             const material3 = new THREE.MeshStandardMaterial({ color: 0x00ff00, ...vertexMaterialConfigs });
@@ -611,7 +611,7 @@ export default class Mesh3D {
               proxy.name = "jointVertexHelpers";
               proxy.position.set(coord.x, coord.y, coord.z);
               proxy.visible = false;
-              sharedData.sceneHelper.addToScene(proxy);
+              this.sceneHelper.addToScene(proxy);
             });
         }
     }
@@ -633,7 +633,7 @@ export default class Mesh3D {
     const libraryKey = ahuObject.xetoDictionary.components[componentId].componentId.split("r:novo.graphics::")[1];
     const instanceKey = sharedData.componentLibrary[libraryKey].componentName;
 
-    const clonedComponent = sharedData.sceneHelper.instanceSet[instanceKey].clone();
+    const clonedComponent = this.sceneHelper.instanceSet[instanceKey].clone();
 
     // Clone materials to ensure each component instance has unique materials
     this.cloneMaterials(clonedComponent);
@@ -645,7 +645,7 @@ export default class Mesh3D {
 
     this.extendObject3D(clonedComponent);
 
-    sharedData.sceneHelper.addToScene(clonedComponent);
+    this.sceneHelper.addToScene(clonedComponent);
 
     return clonedComponent;
   }
@@ -755,7 +755,7 @@ export default class Mesh3D {
     parentObject.add(mergedMesh);
     parentObject.position.copy(duct.position);
     parentObject.name = "duct";
-    sharedData.sceneHelper.addToScene(parentObject);
+    this.sceneHelper.addToScene(parentObject);
 
     console.log("createDuct parentObject:", parentObject);
 
@@ -769,7 +769,7 @@ export default class Mesh3D {
    */
   extendObject3D(ahuComponent) {
     // Attach the sceneHelper to the ahuComponent to allow it to interact with the scene
-    ahuComponent.sceneHelper = sharedData.sceneHelper;
+    ahuComponent.sceneHelper = this.sceneHelper;
 
     // Set custom behavior for setting attributes
     ahuComponent.setAttribute = function(value) {
@@ -787,7 +787,7 @@ export default class Mesh3D {
     // Set custom behavior for animation control
     ahuComponent.setAnimation = function(value) {
         this.userData.component.attributes.setAnimation.value = value;
-        sharedData.sceneHelper.updateTooltip();  // Update the tooltip with the animation value
+        this.sceneHelper.updateTooltip();  // Update the tooltip with the animation value
     };
 
     // Set custom behavior for controlling transforms of specific targets
@@ -797,7 +797,7 @@ export default class Mesh3D {
         // Ensure the value is within the valid range
         if (value >= attribute.min && value <= attribute.max) {
             attribute.value = value;
-            sharedData.sceneHelper.updateTooltip();  // Update the tooltip with the transform value
+            this.sceneHelper.updateTooltip();  // Update the tooltip with the transform value
 
             // Traverse all children of the component and apply transformations
             this.traverse((child) => {
@@ -818,7 +818,7 @@ export default class Mesh3D {
         // Ensure the value is within the valid range
         if (value >= attribute.min && value <= attribute.max) {
             attribute.value = value;
-            sharedData.sceneHelper.updateTooltip();  // Update the tooltip with the material value
+            this.sceneHelper.updateTooltip();  // Update the tooltip with the material value
 
             // Traverse all children of the component and apply material changes
             this.traverse((child) => {
@@ -860,7 +860,7 @@ export default class Mesh3D {
     ahuComponent.setInput = function(value) {
         const attribute = this.userData.component.attributes.setInput;
         attribute.value = value;  // Set the input value
-        sharedData.sceneHelper.updateTooltip();  // Update the tooltip with the input value
+        this.sceneHelper.updateTooltip();  // Update the tooltip with the input value
     };
 
     // Set custom behavior for controlling transparency of the component
@@ -891,7 +891,7 @@ export default class Mesh3D {
     };
 
     // Cache animation targets to optimize the performance and avoid redundant computations
-    sharedData.sceneHelper.cacheAnimationTargets();
+    this.sceneHelper.cacheAnimationTargets();
   }
 
 }
