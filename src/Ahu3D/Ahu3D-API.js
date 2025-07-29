@@ -39,6 +39,7 @@
 
 import * as THREE from "three";
 import { OutlinePass } from "three/examples/jsm/postprocessing/OutlinePass.js";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import axios from "axios";
 import Preprocess from "../Preprocess/_Preprocess.js";
 import Assets3D from "../3D/Assets3D.js";
@@ -1264,12 +1265,82 @@ class Ahu3DAPI extends CableSystem {
 
     /**
      * Attaches the 3D scene to a DOM element.
+     * Creates a unique renderer DOM element for this instance to prevent sharing.
      * 
      * @param {string} selectorTag - CSS selector for container element
      */
     attachScene(selectorTag) {
         const container = document.querySelector(selectorTag);
+        
+        // Check if this renderer's DOM element is already attached to another container
+        const rendererElement = this.sceneHelper.renderer.domElement;
+        
+        if (rendererElement.parentNode && rendererElement.parentNode !== container) {
+            // The renderer is already attached to a different container
+            // Create a new unique renderer for this instance
+            this.createUniqueRenderer();
+        }
+        
+        // Attach the renderer (either the original or newly created one) to this container
         container.appendChild(this.sceneHelper.renderer.domElement);
+    }
+
+    /**
+     * Creates a unique WebGL renderer for this instance.
+     * This prevents multiple instances from sharing the same DOM element.
+     */
+    createUniqueRenderer() {
+        // Store reference to old renderer
+        const oldRenderer = this.sceneHelper.renderer;
+        const oldSize = {
+            width: oldRenderer.domElement.width || this.moduleConfigs.scene.renderer.size.width,
+            height: oldRenderer.domElement.height || this.moduleConfigs.scene.renderer.size.height
+        };
+        
+        // Create new renderer with same configuration
+        this.sceneHelper.renderer = new THREE.WebGLRenderer({
+            alpha: true,
+            antialias: true,
+            preserveDrawingBuffer: true
+        });
+        
+        // Copy settings from old renderer
+        this.sceneHelper.renderer.autoClear = oldRenderer.autoClear;
+        this.sceneHelper.renderer.setPixelRatio(oldRenderer.getPixelRatio());
+        
+        // Apply supersampling factor if it was used originally
+        const supersampleFactor = 2;
+        this.sceneHelper.renderer.setSize(
+            this.moduleConfigs.scene.renderer.size.width * supersampleFactor,
+            this.moduleConfigs.scene.renderer.size.height * supersampleFactor,
+            false
+        );
+        
+        // Apply the same styles
+        this.sceneHelper.renderer.domElement.style.width = `${this.moduleConfigs.scene.renderer.size.width}px`;
+        this.sceneHelper.renderer.domElement.style.height = `${this.moduleConfigs.scene.renderer.size.height}px`;
+        
+        // Update orbit controls to use new renderer
+        if (this.sceneHelper.controls) {
+            this.sceneHelper.controls.dispose();
+            this.sceneHelper.addOrbitControl();
+        }
+        
+        // Update composer if it exists
+        if (this.sceneHelper.composer) {
+            // Recreate composer with new renderer
+            this.sceneHelper.createComposer();
+        }
+        
+        // Update label renderer size if it exists
+        if (this.sceneHelper.labelRenderer) {
+            this.sceneHelper.labelRenderer.setSize(
+                this.moduleConfigs.scene.renderer.size.width,
+                this.moduleConfigs.scene.renderer.size.height
+            );
+        }
+        
+        console.log("Created unique renderer for AHU3D instance");
     }
 
     /**
