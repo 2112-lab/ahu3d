@@ -2,7 +2,6 @@ export const sharedData = {
     moduleConfigs: {},
     jointCenter: {},
     primaryColor: 0xAEB9C2,
-    sceneHelper: null,
     jointBlockStyle: null,
     jointStyle: null,
     jointDirection: null,

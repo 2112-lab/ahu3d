@@ -66,8 +66,8 @@ class Ahu3DAPI extends CableSystem {
         // Track library loading state
         this.libraryLoadInitiated = false;
         
-        // Initialize flow control system
-        this.FlowControl = new FlowControl(this.sceneHelper);
+        // Initialize flow control system (sceneHelper will be set later)
+        this.FlowControl = new FlowControl();
 
         this.panel = null;
 
@@ -355,7 +355,8 @@ class Ahu3DAPI extends CableSystem {
             rowNum, 
             labelOrientation, 
             ahuObject, 
-            wiringData
+            wiringData,
+            this.sceneHelper  // Pass the instance sceneHelper
         );
 
         this.panel.initPanelPipe();

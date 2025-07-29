@@ -3,11 +3,12 @@ import * as THREE from 'three';
 import { TubePath } from 'three-tube-path';
 
 export default class Panel {
-  constructor(rowNum = 1, labelOrientation = "vertical", ahuObject = {}, wiringData = {}) {       
+  constructor(rowNum = 1, labelOrientation = "vertical", ahuObject = {}, wiringData = {}, sceneHelper = null) {       
     // Set defaults for panel parameters
     this.portNum = 24;
     this.rowNum = rowNum || 1;
     this.labelOrientation = labelOrientation || "vertical";      
+    this.sceneHelper = sceneHelper;      
 
     this.cableRadiusMax = 18;
     this.cablePaddingMax = 5;
@@ -111,10 +112,16 @@ export default class Panel {
 
   // Remove existing cables and wires from the scene
   removeExistingConnections() {
+    // Check if sceneHelper is available
+    if (!this.sceneHelper || !this.sceneHelper.scene) {
+      console.warn("Panel: sceneHelper not available, skipping removeExistingConnections");
+      return;
+    }
+
     // Find and remove all meshes with names that match our cable/wire pattern
     const objectsToRemove = [];
     
-    sharedData.sceneHelper.scene.traverse((object) => {
+    this.sceneHelper.scene.traverse((object) => {
       if(
         object.name.includes('Cable') || 
         object.name.includes('Wire') ||
@@ -126,7 +133,7 @@ export default class Panel {
     
     // Remove all found objects from the scene
     objectsToRemove.forEach(object => {
-      sharedData.sceneHelper.removeFromScene(object);
+      this.sceneHelper.removeFromScene(object);
       if (object.geometry) object.geometry.dispose();
       if (object.material) {
         if (Array.isArray(object.material)) {
@@ -318,7 +325,7 @@ export default class Panel {
             tube.name = `${terminalId}-to-${componentId}-Wire-Default-${i}`;
             tube.visible = true;
             
-            sharedData.sceneHelper.addToScene(tube);
+            this.sceneHelper.addToScene(tube);
           }
         }
         
@@ -443,7 +450,7 @@ export default class Panel {
         tube.visible = true;
         
         // Add to scene and store reference
-        sharedData.sceneHelper.addToScene(tube);
+        this.sceneHelper.addToScene(tube);
         wires.push(tube);
         
         // Mark the orb as connected
@@ -524,7 +531,7 @@ export default class Panel {
     orb.name = `Panel-Port-${orbId}`;
     
     // Add to scene
-    sharedData.sceneHelper.addToScene(orb);
+    this.sceneHelper.addToScene(orb);
     
     // Store reference
     this.orbs[orbId] = orb;
@@ -749,7 +756,7 @@ export default class Panel {
       tube.visible = true;
       
       // Add to scene
-      sharedData.sceneHelper.addToScene(tube);
+      this.sceneHelper.addToScene(tube);
       wires.push(tube);
       
       // Mark the orb as connected with the wire's color
@@ -800,7 +807,7 @@ export default class Panel {
     frontTexture.generateMipmaps = true;
     frontTexture.minFilter = THREE.LinearMipMapLinearFilter;
     frontTexture.magFilter = THREE.LinearFilter;
-    frontTexture.anisotropy = sharedData.sceneHelper.renderer.capabilities.getMaxAnisotropy();
+    frontTexture.anisotropy = this.sceneHelper.renderer.capabilities.getMaxAnisotropy();
 
     // Create a properly oriented back texture
     const backCanvas = document.createElement('canvas');
@@ -836,7 +843,7 @@ export default class Panel {
     backTexture.generateMipmaps = true;
     backTexture.minFilter = THREE.LinearMipMapLinearFilter;
     backTexture.magFilter = THREE.LinearFilter;
-    backTexture.anisotropy = sharedData.sceneHelper.renderer.capabilities.getMaxAnisotropy();
+    backTexture.anisotropy = this.sceneHelper.renderer.capabilities.getMaxAnisotropy();
 
     // Create materials array for BoxGeometry with different textures for front and back
     return [
@@ -920,7 +927,7 @@ export default class Panel {
   
         terminalMesh.name = `Panel-Terminal-${label}`;
         
-        sharedData.sceneHelper.addToScene(terminalMesh);  
+        this.sceneHelper.addToScene(terminalMesh);  
         this.terminals[label] = terminalMesh;
       }
     }
@@ -1114,7 +1121,7 @@ export default class Panel {
       frameGroup.name = `Panel-Tray-Row-${rowIndex}`;
       
       // Add the complete frame to the scene
-      sharedData.sceneHelper.addToScene(frameGroup);
+      this.sceneHelper.addToScene(frameGroup);
       
       // Store reference to the frame
       this.terminalPanelFrames.push(frameGroup);
@@ -1175,7 +1182,7 @@ export default class Panel {
 
     tube.visible = false;
 
-    sharedData.sceneHelper.addToScene(tube);
+    this.sceneHelper.addToScene(tube);
   }  
 
   getWireColor(colorName) {

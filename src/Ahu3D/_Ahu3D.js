@@ -60,10 +60,15 @@ class Ahu3D extends Ahu3DAPI {
             this.Mesh3D = new Mesh3D(this.sceneHelper);
             console.log("Mesh3D created successfully");
             
-            // Also set the sceneHelper on the FlowControl's Mesh3D instance
+            // Set the sceneHelper on the FlowControl's Mesh3D instance
             if (this.FlowControl && this.FlowControl.Mesh3D) {
                 console.log("Setting sceneHelper on FlowControl.Mesh3D");
                 this.FlowControl.Mesh3D.setSceneHelper(this.sceneHelper);
+            }
+            
+            // Set the sceneHelper on FlowControl itself
+            if (this.FlowControl) {
+                this.FlowControl.setSceneHelper(this.sceneHelper);
             }
         } catch (error) {
             console.error("Error creating Mesh3D:", error);
@@ -72,9 +77,6 @@ class Ahu3D extends Ahu3DAPI {
 
         // Set the duration for the glow effect cycle (in milliseconds)
         this.setGlowCycleDuration(3000);
-
-        // Store the sceneHelper in sharedData for global access
-        sharedData.sceneHelper = this.sceneHelper;
 
         // Initialize the 3D assets and library (they will be loaded later)
         this.Assets3D = null; 

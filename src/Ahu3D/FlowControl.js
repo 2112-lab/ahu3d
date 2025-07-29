@@ -52,6 +52,19 @@ export default class FlowControl {
         this.Ahu = new Ahu();
         this.Ends = new Ends();
         this.Ducts = null;
+        this.sceneHelper = null; // Will be set later
+    }
+
+    /**
+     * Sets the scene helper for this FlowControl instance.
+     * @param {Object} sceneHelper - The scene helper instance
+     */
+    setSceneHelper(sceneHelper) {
+        this.sceneHelper = sceneHelper;
+        // Also set it on the Mesh3D instance if it exists
+        if (this.Mesh3D) {
+            this.Mesh3D.setSceneHelper(sceneHelper);
+        }
     }
 
     /**
@@ -365,7 +378,7 @@ export default class FlowControl {
             this.Mesh3D, 
             this.componentLibrary,
             this.ahuGroup,
-            sharedData.sceneHelper, // Use sceneHelper from shared data
+            this.sceneHelper, // Use instance sceneHelper instead of shared data
             this.ahuObject
         );        
 
@@ -648,6 +661,6 @@ export default class FlowControl {
         await this.Mesh3D.render3D(this.ahuObject);
 
         // Adjust camera to fit entire assembly in view
-        sharedData.sceneHelper.fitAssemblyIntoView();        
+        this.sceneHelper.fitAssemblyIntoView();        
     }
 }
