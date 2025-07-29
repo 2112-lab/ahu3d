@@ -635,6 +635,9 @@ export default class Mesh3D {
 
     const clonedComponent = sharedData.sceneHelper.instanceSet[instanceKey].clone();
 
+    // Clone materials to ensure each component instance has unique materials
+    this.cloneMaterials(clonedComponent);
+
     clonedComponent.position.copy(ahuObject.resources.components[componentId].position);
     clonedComponent.scale.copy(ahuObject.resources.components[componentId].scale);
     clonedComponent.userData.name = componentId;
@@ -645,6 +648,32 @@ export default class Mesh3D {
     sharedData.sceneHelper.addToScene(clonedComponent);
 
     return clonedComponent;
+  }
+
+  /**
+   * cloneMaterials
+   * 
+   * Recursively clones all materials in an Object3D hierarchy to ensure each instance has unique materials.
+   * This prevents material sharing between component instances.
+   * 
+   * @param {THREE.Object3D} object - The Object3D to clone materials for.
+   */
+  cloneMaterials(object) {
+    // If this object has a material, clone it
+    if (object.material) {
+      if (Array.isArray(object.material)) {
+        // Handle multi-material objects
+        object.material = object.material.map(material => material.clone());
+      } else {
+        // Handle single material objects
+        object.material = object.material.clone();
+      }
+    }
+
+    // Recursively clone materials for all children
+    object.children.forEach(child => {
+      this.cloneMaterials(child);
+    });
   }
 
   /**
@@ -796,6 +825,20 @@ export default class Mesh3D {
                 if (child.isMesh) {
                     // Apply material changes based on thresholds
                     if (child.name.includes("child")) {
+                        // Clone the material if it hasn't been cloned yet to prevent sharing
+                        if (!child.material.userData?.isCloned) {
+                            if (Array.isArray(child.material)) {
+                                child.material = child.material.map(mat => {
+                                    const cloned = mat.clone();
+                                    cloned.userData.isCloned = true;
+                                    return cloned;
+                                });
+                            } else {
+                                child.material = child.material.clone();
+                                child.material.userData.isCloned = true;
+                            }
+                        }
+                        
                         for (const i in attribute.states.thresholds) {
                             if (attribute.value >= attribute.states.thresholds[i]['value']) {
                                 if (child.name.includes(attribute.states.thresholds[i].target)) {
@@ -822,13 +865,29 @@ export default class Mesh3D {
 
     // Set custom behavior for controlling transparency of the component
     ahuComponent.setTransparency = function(value) {
-        // Iterate over the children and apply transparency based on the input value
-        for (const i in this.children) {
-            if (this.children[i].isMesh) {
-                this.children[i].material.opacity = 1 - value;  // Adjust opacity based on value
-                this.children[i].renderOrder = 1;  // Ensure proper rendering order
+        // Traverse all children and descendants to apply transparency
+        this.traverse((child) => {
+            if (child.isMesh && child.material) {
+                // Clone the material if it hasn't been cloned yet to prevent sharing
+                if (!child.material.userData?.isCloned) {
+                    if (Array.isArray(child.material)) {
+                        child.material = child.material.map(mat => {
+                            const cloned = mat.clone();
+                            cloned.userData.isCloned = true;
+                            return cloned;
+                        });
+                    } else {
+                        child.material = child.material.clone();
+                        child.material.userData.isCloned = true;
+                    }
+                }
+                
+                // Set transparency properties
+                child.material.transparent = true;
+                child.material.opacity = 1 - value;  // Adjust opacity based on value
+                child.renderOrder = 1;  // Ensure proper rendering order
             }
-        }
+        });
     };
 
     // Cache animation targets to optimize the performance and avoid redundant computations
