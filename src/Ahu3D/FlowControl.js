@@ -42,7 +42,7 @@ export default class FlowControl {
         // Dictionary for managing duct system information
         this.ductsDictionary = null;
         // Initialize all required geometry and rendering handlers
-        this.Mesh3D = new Mesh3D();
+        this.Mesh3D = new Mesh3D(); // Will set sceneHelper later
         this.Geometry_3D_Joints_Cross = new Geometry_3D_Joints_Cross();
         this.Geometry_3D_Joints_T = new Geometry_3D_Joints_T();
         this.Geometry_3D_Joints_L = new Geometry_3D_Joints_L();
@@ -365,7 +365,7 @@ export default class FlowControl {
             this.Mesh3D, 
             this.componentLibrary,
             this.ahuGroup,
-            this.sceneHelper, 
+            sharedData.sceneHelper, // Use sceneHelper from shared data
             this.ahuObject
         );        
 

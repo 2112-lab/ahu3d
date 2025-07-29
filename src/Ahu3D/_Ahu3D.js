@@ -12,6 +12,7 @@
 import Ahu3DAPI from './Ahu3D-API.js';
 import Scene3D from "../3D/Scene/Scene3D.js"
 import Utils3D from "../3D/Utils3D.js"
+import Mesh3D from "../3D/Mesh3D.js";
 import { sharedData } from "./globals.js"
 
 import moduleDefaults from '../assets/module_defaults.json';
@@ -46,7 +47,28 @@ class Ahu3D extends Ahu3DAPI {
         console.log("defaults after:", sharedData.moduleConfigs);
 
         // Initialize a new 3D scene helper based on the configuration
-        this.sceneHelper = new Scene3D(this.moduleConfigs);
+        try {
+            this.sceneHelper = new Scene3D(this.moduleConfigs);
+            console.log("Scene3D created successfully");
+        } catch (error) {
+            console.error("Error creating Scene3D:", error);
+            throw error;
+        }
+
+        // Initialize 3D mesh handler
+        try {
+            this.Mesh3D = new Mesh3D(this.sceneHelper);
+            console.log("Mesh3D created successfully");
+            
+            // Also set the sceneHelper on the FlowControl's Mesh3D instance
+            if (this.FlowControl && this.FlowControl.Mesh3D) {
+                console.log("Setting sceneHelper on FlowControl.Mesh3D");
+                this.FlowControl.Mesh3D.setSceneHelper(this.sceneHelper);
+            }
+        } catch (error) {
+            console.error("Error creating Mesh3D:", error);
+            throw error;
+        }
 
         // Set the duration for the glow effect cycle (in milliseconds)
         this.setGlowCycleDuration(3000);

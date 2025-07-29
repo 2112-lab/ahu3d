@@ -42,7 +42,7 @@ import { OutlinePass } from "three/examples/jsm/postprocessing/OutlinePass.js";
 import axios from "axios";
 import Preprocess from "../Preprocess/_Preprocess.js";
 import Assets3D from "../3D/Assets3D.js";
-import Mesh3D from "../3D/Mesh3D.js";
+
 import FlowControl from "./FlowControl.js";
 import { sharedData } from "./globals.js";
 import wildcardSvg from "../assets/2D-Wildcard.svg";
@@ -65,10 +65,9 @@ class Ahu3DAPI extends CableSystem {
         this.ahu3D = ahu3DInstance;     
         // Track library loading state
         this.libraryLoadInitiated = false;
-        // Initialize 3D mesh handler
-        this.Mesh3D = new Mesh3D(this.sceneHelper);
+        
         // Initialize flow control system
-        this.FlowControl = new FlowControl();
+        this.FlowControl = new FlowControl(this.sceneHelper);
 
         this.panel = null;
 
