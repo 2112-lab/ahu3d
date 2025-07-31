@@ -1,6 +1,6 @@
 {
     "source": {
-      "include": ["./src/_Ahu3D-API.js"]
+      "include": ["./src/Ahu3D/Ahu3D-API.js"]
     },
     "opts": {
       "destination": "./docs",

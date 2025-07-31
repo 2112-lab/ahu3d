@@ -132,6 +132,10 @@ class Ahu3DAPI extends CableSystem {
       return wiringData;
     }
 
+    /**
+     * Sets the components structure in wiring data based on AHU object
+     * @param {Object} wiringData - The wiring data to update with component structure
+     */
     setWiringDataComponents(wiringData) {
         const componentKeys = Object.keys(this.ahuObject.resources.components); 
         
@@ -190,49 +194,82 @@ class Ahu3DAPI extends CableSystem {
      * Override parent methods to add panel updates
      */
     
-    // Override createCable to update panel
+    /**
+     * Creates a cable and updates the panel
+     * @param {Object} cableConfig - Configuration for the new cable
+     * @return {Object} The created cable object
+     */
     createCable(cableConfig) {
         const cable = super.createCable(cableConfig);
         this.updatePanel();
         return cable;
     }
     
-    // Override removeCable to update panel
+    /**
+     * Removes a cable and updates the panel
+     * @param {string} cableId - ID of the cable to remove
+     * @return {boolean} Success status of the removal
+     */
     removeCable(cableId) {
         const result = super.removeCable(cableId);
         this.updatePanel();
         return result;
     }
     
-    // Override addWireToCable to update panel
+    /**
+     * Adds a wire to a cable and updates the panel
+     * @param {string} cableId - ID of the cable to add wire to
+     * @param {Object} wireConfig - Configuration for the new wire
+     * @return {Object} The created wire object
+     */
     addWireToCable(cableId, wireConfig) {
         const wire = super.addWireToCable(cableId, wireConfig);
         this.updatePanel();
         return wire;
     }
     
-    // Override removeWireFromCable to update panel
+    /**
+     * Removes a wire from a cable and updates the panel
+     * @param {string} cableId - ID of the cable to remove wire from
+     * @param {string} wireId - ID of the wire to remove
+     * @return {boolean} Success status of the removal
+     */
     removeWireFromCable(cableId, wireId) {
         const result = super.removeWireFromCable(cableId, wireId);
         this.updatePanel();
         return result;
     }
     
-    // Override updateCable to update panel
+    /**
+     * Updates cable properties and updates the panel
+     * @param {string} cableId - ID of the cable to update
+     * @param {Object} updates - Properties to update on the cable
+     * @return {Object} The updated cable object
+     */
     updateCable(cableId, updates) {
         const cable = super.updateCable(cableId, updates);
         this.updatePanel();
         return cable;
     }
     
-    // Override updateWire to update panel
+    /**
+     * Updates wire properties and updates the panel
+     * @param {string} cableId - ID of the cable containing the wire
+     * @param {string} wireId - ID of the wire to update
+     * @param {Object} updates - Properties to update on the wire
+     * @return {Object} The updated wire object
+     */
     updateWire(cableId, wireId, updates) {
         const wire = super.updateWire(cableId, wireId, updates);
         this.updatePanel();
         return wire;
     }
     
-    // Override loadWiringData to update panel
+    /**
+     * Loads wiring data and updates the panel
+     * @param {Object} wiringData - The wiring data to load
+     * @return {boolean} Success status of the load operation
+     */
     loadWiringData(wiringData) {
         const result = super.loadWiringData(wiringData);
         this.updatePanel();
@@ -347,6 +384,11 @@ class Ahu3DAPI extends CableSystem {
         }
     }
 
+    /**
+     * Initializes the wiring panel with AHU object and wiring data
+     * @param {Object} ahuObject - The AHU object containing component data
+     * @param {Object} wiringData - The wiring data for the panel
+     */
     initWiringPanel(ahuObject, wiringData) {
         const rowNum = 2;
         const labelOrientation = "vertical";
@@ -362,11 +404,21 @@ class Ahu3DAPI extends CableSystem {
         this.panel.initPanelPipe();
     }
 
+    /**
+     * Sets 3D wiring data for the panel
+     * @param {Object} ahuObject - The AHU object containing component data
+     * @param {Object} wiringData - The wiring data to set
+     */
     set3dWiringData(ahuObject, wiringData) {
         // this.sceneHelper.clear3dWiring();
         this.panel.set3dWiringData(ahuObject, wiringData);
     }
 
+    /**
+     * Creates a dictionary of duct connections based on shared locations
+     * @param {Object} inputDict - Dictionary of duct objects with location data
+     * @return {Object} Dictionary mapping duct IDs to their connected ducts
+     */
     createDuctConnectionsDict(inputDict) {
         const result = {};
         const locationMap = {}; // Maps locations (like "B2") to ducts that connect there
@@ -419,6 +471,14 @@ class Ahu3DAPI extends CableSystem {
         return result;
     }
 
+    /**
+     * Inserts a component into a XETO configuration at a specified edge and position
+     * @param {Array} xeto - The XETO configuration array
+     * @param {string} selectedLibraryItem - Name of the component to insert
+     * @param {string} selectedEdge - ID of the edge to insert the component into
+     * @param {number|null} [insertIndex=null] - Position to insert at, null for end
+     * @return {Array} Updated XETO configuration with the new component
+     */
     insertComponent(xeto, selectedLibraryItem, selectedEdge, insertIndex = null) {
         let group = xeto.filter(child => child.spec.includes('Group'));
         let edgesList = xeto.filter(child => child.spec.includes('Edge'));
@@ -489,6 +549,12 @@ class Ahu3DAPI extends CableSystem {
         return newXeto;
     }
 
+    /**
+     * Deletes a component from a XETO configuration
+     * @param {Array} xeto - The XETO configuration array
+     * @param {string} selectedComponent - ID of the component to delete
+     * @return {Array} Updated XETO configuration with the component removed
+     */
     deleteComponent(xeto, selectedComponent) {
         let group = xeto.filter(child => child.spec.includes('Group'));
         let edgesList = xeto.filter(child => child.spec.includes('Edge'));
@@ -535,6 +601,13 @@ class Ahu3DAPI extends CableSystem {
         return newXeto;
     }
 
+    /**
+     * Shifts a component's position within its edge in a XETO configuration
+     * @param {Array} xetoData - The XETO configuration array
+     * @param {string} componentId - ID of the component to shift
+     * @param {number} shiftOffset - Number of positions to shift (negative for left, positive for right)
+     * @param {boolean} shiftWrap - Whether to wrap around edges when shifting
+     */
     shiftComponent(xetoData, componentId, shiftOffset, shiftWrap) {
         // Get shift parameters (could be added to your UI)
         const offset = shiftOffset * -1 || -1; // Default to 1 if not set
@@ -601,9 +674,16 @@ class Ahu3DAPI extends CableSystem {
     }
 
     /**
-     * Converts a Konva Layer to an embedded SVG with customizable options.
-     * @param {Konva.Layer} layer - The Konva Layer
-     * @param {Object} params - Image Parameters (e.g., colors, file name)
+     * Converts a Konva Layer to an embedded SVG with customizable options
+     * @param {Konva.Layer} layer - The Konva Layer to export
+     * @param {Object} params - Export parameters including colors, filename, and scale
+     * @param {string} [params.fileName="blueprint-export"] - Output filename
+     * @param {string} [params.fileType="svg"] - Output file type
+     * @param {string} [params.strokeColor="#000000"] - Stroke color for export
+     * @param {string} [params.textColor="#000000"] - Text color for export
+     * @param {string} [params.backgroundColor="#ffffff"] - Background color for export
+     * @param {number} [params.scale=1] - Scale factor for export
+     * @return {Promise<Blob>} Promise resolving to SVG data as blob
      */
     async exportBlueprintAsVector(layer, params) {
         return new Promise(async (resolve) => {
@@ -724,6 +804,17 @@ class Ahu3DAPI extends CableSystem {
         });
     }
 
+    /**
+     * Exports the current wiring diagram as a vector graphic
+     * @param {Function|null} [callback=null] - Optional callback function to receive the exported blob
+     * @param {Object} params - Export parameters
+     * @param {string} [params.fileName="wiring-export"] - Output filename
+     * @param {string} [params.fileType="svg"] - Output file type
+     * @param {string} [params.strokeColor="#000000"] - Stroke color for export
+     * @param {string} [params.textColor="#000000"] - Text color for export
+     * @param {string} [params.backgroundColor="#ffffff"] - Background color for export
+     * @param {number} [params.scale=1] - Scale factor for export
+     */
     exportWiringDiagram(callback = null, params) {
         const imageParams = {
             fileName: params?.fileName || "wiring-export",
@@ -758,6 +849,16 @@ class Ahu3DAPI extends CableSystem {
             });
     }
 
+    /**
+     * Exports a Konva layer as a vector graphic with specified styling parameters
+     * @param {Konva.Layer} layer - The Konva layer to export
+     * @param {Object} imageParams - Export parameters including styling and scale options
+     * @param {string} imageParams.textColor - Color for text elements
+     * @param {string} imageParams.strokeColor - Color for stroke elements
+     * @param {string} imageParams.backgroundColor - Background color
+     * @param {number} imageParams.scale - Scale factor for export
+     * @return {Promise<Blob>} Promise resolving to SVG data as blob
+     */
     async exportWiringLayerAsVector(layer, imageParams) {
         return new Promise(async (resolve) => {
           if (!layer) {
@@ -872,6 +973,11 @@ class Ahu3DAPI extends CableSystem {
         });
     }
 
+    /**
+     * Calculates the bounding box of all elements in a Konva layer
+     * @param {Konva.Layer} layer - The Konva layer to calculate bounds for
+     * @return {Object} Bounds object with x, y, width, and height properties
+     */
     calculateLayerBounds(layer) {
         // Initialize bounds to the initial layer size
         let minX = Infinity;
@@ -945,6 +1051,15 @@ class Ahu3DAPI extends CableSystem {
         };
     }
 
+    /**
+     * Exports a Konva layer as a raster image (PNG) with specified styling
+     * @param {Konva.Layer} layer - The Konva layer to export
+     * @param {Object} imageParams - Export parameters including styling options
+     * @param {string} imageParams.fileName - Output filename
+     * @param {string} imageParams.textColor - Color for text elements
+     * @param {string} imageParams.strokeColor - Color for stroke elements  
+     * @param {string} imageParams.backgroundColor - Background color
+     */
     exportBlueprintAsRaster(layer, imageParams) {
         console.log("exportLayerAsSVGRaster started:", layer);
 
@@ -1057,38 +1172,6 @@ class Ahu3DAPI extends CableSystem {
         this.preprocess = new Preprocess(this.library);
     
         return this.library;
-    } 
-
-    async loadControllers(controllerConfigs) {
-        // Mark library load as initiated
-        this.libraryLoadInitiated = true;
-    
-        // Initialize storage for loaded files
-        const files = {};
-        const controllerList = controllerConfigs.controllerList;
-        const assetsPath = controllerConfigs.assetsPath;
-    
-        // Create promises for loading each controller's assets
-        const requests = controllerList.map(async (controllerName) => {
-            const jsonPath = `${assetsPath}${controllerName}/${controllerName}.json`;
-    
-            try {
-                // Load and store controllers's JSON data
-                const jsonResponse = await axios.get(jsonPath);
-                files[controllerName] = jsonResponse.data;
-            } catch (error) {
-                console.error(`Failed to load ${controllerName} controller:`, error);
-            }
-        });
-    
-        // Wait for all controllers to load
-        await Promise.all(requests);
-    
-        // Store loaded library and share through global state
-        this.controllers = files;
-        sharedData.controllers = files;
-    
-        return this.controllers;
     } 
 
     /**
@@ -1323,6 +1406,10 @@ class Ahu3DAPI extends CableSystem {
         }
     }
 
+    /**
+     * Sets the visibility of 3D wire objects in the scene
+     * @param {boolean} [isVisible=true] - Whether wires should be visible
+     */
     set3dWireVisibility(isVisible = true) {
         console.log("set3dWireVisibility started");
         this.sceneHelper.scene.traverse((object3d) => {
