@@ -111,8 +111,8 @@ export default class Canvas2D {
             z: (componentResource.position.z - duct.position.z) * -1, // Adjust for flipping on the z-axis
           };
   
-          // Render the SVG of the component to the layer
-          this.renderComponentSvg(layer, relativePosition, componentSvg, duct);
+          // Render the SVG of the component to the layer with ceiling positioning support
+          this.renderComponentSvg(layer, relativePosition, componentSvg, duct, componentId, componentKey);
         }
       }
   
@@ -132,113 +132,8 @@ export default class Canvas2D {
       this.create2DJoint(layer, this.ahuObject.resources.joints[jointKey], jointKey);
     }
   
-    // Draw controllers if they exist in the resources
-    if (this.ahuObject.resources.controllers) {
-      this.drawControllers(layer);
-    }
-  
     // Render additional helper elements (arrows, labels, etc.)
     this.renderHelpers(layer);
-  }
-
-  /**
-   * Draws controllers to the given layer in the canvas.
-   * This method handles rendering the controller boxes and their input/output ports.
-   * @param {Konva.Layer} layer - The layer to which the controllers should be drawn.
-   */
-  drawControllers(layer) {
-    // Iterate over all controllers in the AHU object and render them
-    for (const controllerId in this.ahuObject.resources.controllers) {
-      const controller = this.ahuObject.resources.controllers[controllerId];
-      
-      // Draw the main controller box
-      this.drawControllerBox(layer, controller);
-      
-      // Draw the input/output ports (spheres)
-      this.drawControllerPorts(layer, controller);
-    }
-  }
-
-  /**
-   * Draws the main controller box to the layer.
-   * @param {Konva.Layer} layer - The layer to add the controller box to.
-   * @param {Object} controller - The controller object containing position and dimension data.
-   */
-  drawControllerBox(layer, controller) {
-    const { x, z } = controller.calculatedPosition;
-    const { x: width, z: height } = controller.dimensions;
-    
-    // Create controller box as a rectangle
-    const controllerBox = new Konva.Rect({
-      x: x,
-      y: z * -1, // Convert to canvas coordinate system (flip z)
-      width: width,
-      height: height,
-      offsetX: width / 2, // Center the box at its position
-      offsetY: height / 2,
-      stroke: 'white',
-      strokeWidth: 10,
-      fill: '#333333', // Dark background for the controller
-      cornerRadius: 15, // Slightly rounded corners
-    });
-    
-    // Add elements to the layer
-    layer.add(controllerBox);
-  }
-
-  /**
-   * Draws the controller ports (input/output spheres) to the layer.
-   * @param {Konva.Layer} layer - The layer to add the controller ports to.
-   * @param {Object} controller - The controller object containing port position data.
-   */
-  drawControllerPorts(layer, controller) {
-    const baseX = controller.calculatedPosition.x;
-    const baseZ = controller.calculatedPosition.z;
-    const portRadius = 40; // Size of the port circles
-    
-    // Draw input ports (spheres)
-    if (controller.spherePositions.inputs) {
-      controller.spherePositions.inputs.forEach((port, index) => {
-        // Calculate absolute position
-        const portX = baseX + port.position.x;
-        const portY = (baseZ + port.position.z) * -1; // Convert to canvas coordinate system (flip z)
-        
-        // Create port circle
-        const portCircle = new Konva.Circle({
-          x: portX,
-          y: portY,
-          radius: portRadius,
-          // fill: '#4CAF50', // Green for inputs
-          stroke: 'white',
-          strokeWidth: 10
-        });
-        
-        // Add port elements to the layer
-        layer.add(portCircle);
-      });
-    }
-    
-    // Draw output ports (spheres)
-    if (controller.spherePositions.outputs) {
-      controller.spherePositions.outputs.forEach((port, index) => {
-        // Calculate absolute position
-        const portX = baseX + port.position.x;
-        const portY = (baseZ + port.position.z) * -1; // Convert to canvas coordinate system (flip z)
-        
-        // Create port circle
-        const portCircle = new Konva.Circle({
-          x: portX,
-          y: portY,
-          radius: portRadius,
-          // fill: '#2196F3', // Blue for outputs
-          stroke: 'white',
-          strokeWidth: 10
-        });
-        
-        // Add port elements to the layer
-        layer.add(portCircle);
-      });
-    }
   }
 
   /**
@@ -247,8 +142,10 @@ export default class Canvas2D {
    * @param {Object} relativePosition - The relative position of the component inside the duct.
    * @param {string} componentSvg - The SVG content for the component.
    * @param {Object} duct - The duct to which the component belongs.
+   * @param {string} componentId - The ID of the component being rendered.
+   * @param {string} componentKey - The key to look up the component in the library.
    */
-  renderComponentSvg(layer, relativePosition, componentSvg, duct) {
+  renderComponentSvg(layer, relativePosition, componentSvg, duct, componentId, componentKey) {
     const parser = new DOMParser();
     const svgDoc = parser.parseFromString(componentSvg, "image/svg+xml");
     const paths = svgDoc.querySelectorAll("path");
@@ -262,8 +159,8 @@ export default class Canvas2D {
         : [0, 0, width, height]; // Fallback to default size if no viewBox
 
     // Calculate scaling factors
-    const scaleX = width / vbWidth;
-    const scaleY = height / vbHeight;
+    let scaleX = width / vbWidth;
+    let scaleY = height / vbHeight;
 
     const adjustedX = duct.position.x + relativePosition.x;
     const adjustedY = (duct.position.z + relativePosition.z) * -1;
@@ -275,6 +172,30 @@ export default class Canvas2D {
     if (rotation !== 0 && rotation !== 180) {
         finalX = duct.position.x + relativePosition.z;
         finalY = (duct.position.z + relativePosition.x) * -1;
+    }
+
+    // Apply ceiling positioning offset for 2D rendering (after coordinate transformations)
+    if (componentId && componentKey && sharedData.componentLibrary && sharedData.componentLibrary[componentKey]) {
+      const libraryComponent = sharedData.componentLibrary[componentKey];      
+      
+      if (libraryComponent.componentPosition === "ceiling") {
+        
+        scaleX /= 1.5;
+        scaleY /= 1.5;
+
+        if (rotation === 0 || rotation === 180) {
+          finalY -= duct.dimensions.z;
+        } 
+        else {
+          if (rotation === 90) {
+            finalX += duct.dimensions.z;
+          } 
+          else if (rotation === 270) {
+            finalX *= 1;
+          }
+        }
+      }
+
     }
 
     paths.forEach((pathElement) => {
