@@ -974,6 +974,33 @@ export default class Ducts {
             this.ahuObject.resources.components[componentId].position.y += this.ahuObject.resources.ducts[associatedDuctId].position.y;
             this.ahuObject.resources.components[componentId].position.z += this.ahuObject.resources.ducts[associatedDuctId].position.z;
 
+            // Check for ceiling positioning based on component library data
+            const component = this.ahuObject.resources.components[componentId];
+            const libraryKey = this.ahuObject.xetoDictionary.components[componentId].componentId.split("r:novo.graphics::")[1];
+            
+            if (sharedData.componentLibrary && sharedData.componentLibrary[libraryKey]) {
+                const libraryComponent = sharedData.componentLibrary[libraryKey];
+                
+                // Check if component should be positioned at ceiling
+                if (libraryComponent.componentPosition === "ceiling") {
+                    // Get duct height (Z dimension)
+                    const ductHeight = this.ahuObject.resources.ducts[associatedDuctId].dimensions.z;
+                    
+                    // Calculate ceiling offset based on library component positioning
+                    const basePosition = libraryComponent.object.position.z || 0;
+                    const originOffset = libraryComponent.object.boundingBox.origin.z || 0;
+                    
+                    // Position component above the duct at ceiling height
+                    // Use duct height/2 to get to top of duct
+                    const ceilingOffset = (ductHeight / 2);
+
+                    // const ceilingOffset = (ductHeight / 2) + basePosition + originOffset;                    
+                    
+                    console.log(`Positioning ${componentId} at ceiling with offset: ${ceilingOffset}`);
+                    component.position.z += ceilingOffset;
+                }
+            }
+
             // Apply duct rotation to component
             this.ahuObject.resources.components[componentId].rotation.y += this.ahuObject.resources.ducts[associatedDuctId].rotation.y;
         }
