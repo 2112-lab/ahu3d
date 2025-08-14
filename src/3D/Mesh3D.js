@@ -703,16 +703,23 @@ export default class Mesh3D {
     const pivot = ductMesh.position.clone();
     const angle = THREE.MathUtils.degToRad(rotation);
 
+    // if (rotation == 90) {
+    //     componentMeshes.reverse();
+    // }
+
     componentMeshes.forEach(componentMesh => {
-        componentMesh.position.sub(pivot);  // Move relative to pivot
-        componentMesh.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);  // Rotate around pivot
-        componentMesh.position.add(pivot);  // Move back to world position
-        componentMesh.rotateOnAxis(new THREE.Vector3(0, 1, 0), angle);  // Rotate the component itself
+        if (rotation == 90) {
+            componentMesh.position.sub(pivot);  // Move relative to pivot
+            componentMesh.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);  // Rotate around pivot
+            componentMesh.position.add(pivot);  // Move back to world position
+            componentMesh.rotateOnAxis(new THREE.Vector3(0, 1, 0), angle);  // Rotate the component itself
+        }
 
         // Flip locally along the x-axis if rotation is 180 degrees
-        if (rotation == 180) {
-          componentMesh.scale.z *= -1;
-        }
+        // if (rotation == 180) {
+        //   componentMesh.scale.z *= -1;
+        // }
+
     });
 
     ductMesh.rotateY(angle); // Rotate the duct itself

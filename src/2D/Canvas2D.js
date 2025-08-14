@@ -99,17 +99,30 @@ export default class Canvas2D {
   
       // Render components if they are associated with the duct
       if (this.ahuObject.associations.ducts[ductKey].components) {
-        for (const i in this.ahuObject.associations.ducts[ductKey].components) {
-          const componentId = this.ahuObject.associations.ducts[ductKey].components[i];
+        // Get the components array
+        let componentsArray = this.ahuObject.associations.ducts[ductKey].components;
+        
+        // Reverse the order if the duct is rotated 90 degrees
+        if (duct.rotation.y === 90) {
+          componentsArray = [...componentsArray].reverse();
+        }
+        
+        for (const i in componentsArray) {
+          const componentId = componentsArray[i];
           const componentKey = this.ahuObject.xetoDictionary.components[componentId].componentId.split("r:novo.graphics::")[1];
           const componentSvg = sharedData.componentLibrary[componentKey].svg;
           const componentResource = this.ahuObject.resources.components[componentId];
   
           // Convert component position to relative to the duct
-          const relativePosition = {
+          let relativePosition = {
             x: componentResource.position.x - duct.position.x,
             z: (componentResource.position.z - duct.position.z) * -1, // Adjust for flipping on the z-axis
           };
+          
+          // For 90-degree rotated ducts, flip the relative X position to mirror the component placement
+          if (duct.rotation.y === 90) {
+            relativePosition.x = -relativePosition.x;
+          }
   
           // Render the SVG of the component to the layer with ceiling positioning support
           this.renderComponentSvg(layer, relativePosition, componentSvg, duct, componentId, componentKey);
