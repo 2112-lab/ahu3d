@@ -708,7 +708,7 @@ export default class Mesh3D {
     // }
 
     componentMeshes.forEach(componentMesh => {
-        if (rotation == 90) {
+        if (rotation != 180) {
             componentMesh.position.sub(pivot);  // Move relative to pivot
             componentMesh.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);  // Rotate around pivot
             componentMesh.position.add(pivot);  // Move back to world position
