@@ -171,9 +171,13 @@ export default class Canvas2D {
         ? viewBox.split(" ").map(Number)
         : [0, 0, width, height]; // Fallback to default size if no viewBox
 
-    // Calculate scaling factors
-    let scaleX = width / vbWidth;
+    // Calculate scaling factors - use uniform scaling to prevent warping
+    // The component should fit within the duct height
     let scaleY = height / vbHeight;
+    
+    // Use uniform scaling for both dimensions
+    let scaleX = scaleY;
+    scaleY = scaleY;
 
     const adjustedX = duct.position.x + relativePosition.x;
     const adjustedY = (duct.position.z + relativePosition.z) * -1;
@@ -193,6 +197,7 @@ export default class Canvas2D {
       
       if (libraryComponent.componentPosition === "ceiling") {
         
+        // Apply uniform scaling reduction for ceiling components
         scaleX /= 1.5;
         scaleY /= 1.5;
 
