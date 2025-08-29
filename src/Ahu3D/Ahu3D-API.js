@@ -1561,6 +1561,254 @@ class Ahu3DAPI extends CableSystem {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
     }
+
+    /**
+     * Exports wiring data as JSON format
+     * @param {Object} wiringData - The wiring data to export
+     * @param {string} fileName - Output filename
+     */
+    exportWiringDataAsJson(wiringData, fileName = "wiring-export") {
+        const jsonData = JSON.stringify(wiringData, null, 2);
+        const blob = new Blob([jsonData], { type: 'application/json;charset=utf-8' });
+        this.downloadFile(blob, `${fileName}.json`);
+    }
+
+    /**
+     * Exports wiring data as Excel format
+     * @param {Object} wiringData - The wiring data to export
+     * @param {string} fileName - Output filename
+     */
+    exportWiringDataAsExcel(wiringData, fileName = "wiring-export") {
+        // Dynamic import to handle XLSX library
+        import('xlsx').then(XLSX => {
+            const worksheet = XLSX.utils.json_to_sheet(this.convertWiringDataToTable(wiringData));
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Wiring Data");
+            
+            const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+            const blob = new Blob([excelBuffer], { 
+                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            });
+            
+            this.downloadFile(blob, `${fileName}.xlsx`);
+        }).catch(error => {
+            console.error("Error loading XLSX library:", error);
+        });
+    }
+
+    /**
+     * Exports wiring diagram as SVG format
+     * @param {Object} imageParams - Export parameters
+     * @param {string} imageParams.fileName - Output filename
+     * @param {string} imageParams.strokeColor - Stroke color
+     * @param {string} imageParams.textColor - Text color
+     * @param {string} imageParams.backgroundColor - Background color
+     * @param {number} imageParams.scale - Scale factor
+     * @returns {Promise<void>}
+     */
+    async exportWiringDataAsSvg(imageParams) {
+        if (!this.wiringDiagram) {
+            console.error("No wiring diagram instance available for SVG export");
+            return;
+        }
+
+        try {
+            await this.exportWiringDiagram((blob) => {
+                if (blob) {
+                    const name = imageParams.fileName + ".svg";
+                    const svgBlob = new Blob([blob], { type: 'image/svg+xml' });
+                    this._invokeDownload(svgBlob, name, "image/svg+xml");
+                } else {
+                    console.error("Failed to export wiring diagram as SVG");
+                }
+            }, imageParams);
+        } catch (error) {
+            console.error("Error exporting SVG format:", error);
+        }
+    }
+
+    /**
+     * Exports wiring diagram as PDF format
+     * @param {Object} imageParams - Export parameters
+     * @param {string} imageParams.fileName - Output filename
+     * @param {string} imageParams.strokeColor - Stroke color
+     * @param {string} imageParams.textColor - Text color
+     * @param {string} imageParams.backgroundColor - Background color
+     * @param {number} imageParams.scale - Scale factor
+     * @returns {Promise<void>}
+     */
+    async exportWiringDataAsPdf(imageParams) {
+        if (!this.wiringDiagram) {
+            console.error("No wiring diagram instance available for PDF export");
+            return;
+        }
+
+        try {
+            await this.exportWiringDiagram(async (blob) => {
+                if (blob) {
+                    const svgBlob = new Blob([blob], { type: 'image/svg+xml' });
+                    await this.convertSvgToPdf(svgBlob, imageParams);
+                } else {
+                    console.error("Failed to export wiring diagram for PDF conversion");
+                }
+            }, imageParams);
+        } catch (error) {
+            console.error("Error exporting PDF format:", error);
+        }
+    }
+
+    /**
+     * Converts SVG blob to PDF and triggers download
+     * @param {Blob} svgBlob - SVG blob data
+     * @param {Object} imageParams - Export parameters including fileName
+     * @returns {Promise<void>}
+     */
+    async convertSvgToPdf(svgBlob, imageParams) {
+        try {
+            // Dynamic import to handle jsPDF and svg2pdf libraries
+            const [jsPDF, svg2pdf] = await Promise.all([
+                import('jspdf').then(module => module.default),
+                import('svg2pdf.js')
+            ]);
+
+            // Convert SVG blob to SVG string
+            const svgString = await svgBlob.text();
+            
+            // Create an SVG DOM element
+            const parser = new DOMParser();
+            const svgDoc = parser.parseFromString(svgString, 'image/svg+xml');
+            const svgElement = svgDoc.documentElement;
+            
+            // Get SVG dimensions
+            const svgWidth = parseFloat(svgElement.getAttribute('width') || 600);
+            const svgHeight = parseFloat(svgElement.getAttribute('height') || 400);
+            
+            // Create PDF with appropriate dimensions
+            const pdf = new jsPDF({
+                orientation: svgWidth > svgHeight ? 'landscape' : 'portrait',
+                unit: 'pt',
+                format: [svgWidth, svgHeight]
+            });
+            
+            // Convert SVG to PDF using svg2pdf.js
+            await pdf.svg(svgElement, {
+                x: 0,
+                y: 0,
+                width: svgWidth,
+                height: svgHeight
+            });
+            
+            // Save the PDF
+            const pdfBlob = pdf.output('blob');
+            this._invokeDownload(pdfBlob, `${imageParams.fileName}.pdf`, 'application/pdf');
+        } catch (error) {
+            console.error("Error converting SVG to PDF:", error);
+        }
+    }
+
+    /**
+     * Converts wiring data to a table format suitable for Excel export
+     * @param {Object} wiringData - The wiring data to convert
+     * @returns {Array} Array of objects representing table rows
+     */
+    convertWiringDataToTable(wiringData) {
+        const tableData = [];
+        
+        if (wiringData && wiringData.cables && Array.isArray(wiringData.cables)) {
+            wiringData.cables.forEach(cable => {
+                if (cable.wires && Array.isArray(cable.wires) && cable.wires.length > 0) {
+                    cable.wires.forEach(wire => {
+                        tableData.push({
+                            'Cable ID': cable.id,
+                            'Cable Label': cable.label,
+                            'Equipment': cable.equipment,
+                            'ID Tag': cable.idTag,
+                            'Point Name': cable.pointName,
+                            'Markers': cable.markers,
+                            'Wire ID': wire.id,
+                            'Field Wiring': wire.fieldWiring,
+                            'Panel Wiring ID': wire.panelWiringId,
+                            'Wire Color': wire.color,
+                            'Wire Size': wire.size
+                        });
+                    });
+                } else {
+                    tableData.push({
+                        'Cable ID': cable.id,
+                        'Cable Label': cable.label,
+                        'Equipment': cable.equipment,
+                        'ID Tag': cable.idTag,
+                        'Point Name': cable.pointName,
+                        'Markers': cable.markers,
+                        'Wire ID': '',
+                        'Field Wiring': '',
+                        'Panel Wiring ID': '',
+                        'Wire Color': '',
+                        'Wire Size': ''
+                    });
+                }
+            });
+        }
+        
+        return tableData;
+    }
+
+    /**
+     * Downloads a file blob with the specified filename
+     * @param {Blob} blob - The file blob to download
+     * @param {string} fileName - The filename for the download
+     */
+    downloadFile(blob, fileName) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    /**
+     * Unified export method for wiring data in multiple formats
+     * @param {Object} wiringData - The wiring data to export
+     * @param {Object} exportParams - Export parameters
+     * @param {string} exportParams.fileType - Type of export (json, excel, svg, pdf)
+     * @param {string} exportParams.fileName - Output filename
+     * @param {string} [exportParams.strokeColor] - Stroke color for vector formats
+     * @param {string} [exportParams.textColor] - Text color for vector formats
+     * @param {string} [exportParams.backgroundColor] - Background color for vector formats
+     * @param {number} [exportParams.scale] - Scale factor for vector formats
+     * @returns {Promise<void>}
+     */
+    async exportWiringData(wiringData, exportParams) {
+        // Validate and normalize scale
+        if (exportParams.scale) {
+            exportParams.scale = Number(exportParams.scale);
+            if (exportParams.scale < 0.5) {
+                exportParams.scale = 0.5;
+            } else if (exportParams.scale > 3) {
+                exportParams.scale = 3;
+            }
+        }
+
+        switch (exportParams.fileType) {
+            case 'json':
+                this.exportWiringDataAsJson(wiringData, exportParams.fileName);
+                break;
+            case 'excel':
+                this.exportWiringDataAsExcel(wiringData, exportParams.fileName);
+                break;
+            case 'svg':
+                await this.exportWiringDataAsSvg(exportParams);
+                break;
+            case 'pdf':
+                await this.exportWiringDataAsPdf(exportParams);
+                break;
+            default:
+                console.error(`Unsupported export format: ${exportParams.fileType}`);
+        }
+    }
 }
 
 export default Ahu3DAPI;
