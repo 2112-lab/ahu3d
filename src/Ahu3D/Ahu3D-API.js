@@ -1457,6 +1457,110 @@ class Ahu3DAPI extends CableSystem {
 
         console.log("Ahu3D disposed successfully.");
     }
+
+    /**
+     * Enhanced blueprint export that handles all file formats and downloads
+     * @param {Konva.Layer} layer - The Konva layer to export
+     * @param {Object} imageParams - Export parameters
+     * @param {string} imageParams.fileName - Output filename
+     * @param {string} imageParams.fileType - File type (svg, pdf, png)
+     * @param {string} imageParams.strokeColor - Stroke color
+     * @param {string} imageParams.textColor - Text color
+     * @param {string} imageParams.backgroundColor - Background color
+     * @param {number} imageParams.scale - Scale factor
+     * @returns {Promise<void>}
+     */
+    async exportBlueprint(layer, imageParams) {
+        // Validate scale parameter
+        const scale = Math.max(0.5, Math.min(3, Number(imageParams.scale) || 1));
+        const params = { ...imageParams, scale };
+        
+        if (params.fileType === "png") {
+            // Use existing raster export method
+            this.exportBlueprintAsRaster(layer, params);
+        } else {
+            try {
+                // Export as vector (SVG)
+                const svg = await this.exportBlueprintAsVector(layer, params);
+                const name = `${params.fileName}.${params.fileType}`;
+                
+                if (params.fileType === "pdf") {
+                    // Convert SVG to PDF
+                    await this._convertSvgToPdf(svg, name, params);
+                } else if (params.fileType === "svg") {
+                    // Download SVG directly
+                    this._invokeDownload(svg, name, "image/svg+xml");
+                }
+            } catch (error) {
+                console.error("Error exporting blueprint:", error);
+                throw error;
+            }
+        }
+    }
+
+    /**
+     * Convert SVG blob to PDF and trigger download
+     * @private
+     * @param {Blob} svgBlob - SVG blob data
+     * @param {string} fileName - Output filename
+     * @param {Object} params - Export parameters
+     */
+    async _convertSvgToPdf(svgBlob, fileName, params) {
+        try {
+            // Convert SVG blob to SVG string
+            const svgString = await svgBlob.text();
+            
+            // Create an SVG DOM element
+            const parser = new DOMParser();
+            const svgDoc = parser.parseFromString(svgString, 'image/svg+xml');
+            const svgElement = svgDoc.documentElement;
+            
+            // Get SVG dimensions
+            const svgWidth = parseFloat(svgElement.getAttribute('width') || 600);
+            const svgHeight = parseFloat(svgElement.getAttribute('height') || 400);
+            
+            // Create PDF with appropriate dimensions
+            const pdf = new jsPDF({
+                orientation: svgWidth > svgHeight ? 'landscape' : 'portrait',
+                unit: 'pt',
+                format: [svgWidth, svgHeight]
+            });
+            
+            // Convert SVG to PDF using svg2pdf.js
+            await pdf.svg(svgElement, {
+                x: 0,
+                y: 0,
+                width: svgWidth,
+                height: svgHeight
+            });
+            
+            // Save the PDF
+            const pdfBlob = pdf.output('blob');
+            this._invokeDownload(pdfBlob, fileName, 'application/pdf');
+        } catch (error) {
+            console.error("Error converting SVG to PDF:", error);
+            throw error;
+        }
+    }
+
+    /**
+     * Trigger file download
+     * @private
+     * @param {Blob|string} content - File content
+     * @param {string} name - Filename
+     * @param {string} blobType - MIME type
+     */
+    _invokeDownload(content, name, blobType) {
+        const blob = content instanceof Blob ? content : new Blob([content], { type: blobType });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
 }
 
 export default Ahu3DAPI;
