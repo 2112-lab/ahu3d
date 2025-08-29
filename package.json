@@ -28,7 +28,8 @@
     "three": "^0.170.0",
     "three-tube-path": "^1.0.2",
     "webpack": "^5.94.0",
-    "webpack-cli": "^5.1.4"
+    "webpack-cli": "^5.1.4",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@adobe/jsonschema2md": "^8.0.2",
