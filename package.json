@@ -10,7 +10,7 @@
     "send": "npm version patch && npm run build && npm publish",
     "build": "webpack --mode production",
     "dev": "webpack --mode development --watch",
-    "docs": "jsdoc -c jsdoc.json && node removeFooter.js"
+    "docs": "jsdoc -c jsdoc.json"
   },
   "keywords": [],
   "author": "",
